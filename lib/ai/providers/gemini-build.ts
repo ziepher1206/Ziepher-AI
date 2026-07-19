@@ -1,0 +1,17 @@
+import { GoogleGenAI } from "@google/genai";
+
+export async function buildWithGemini(prompt: string, model: string) {
+  const apiKey = process.env.GOOGLE_AI_API_KEY;
+  if (!apiKey) throw new Error("GOOGLE_AI_API_KEY is not configured.");
+
+  const client = new GoogleGenAI({ apiKey });
+  const interaction = await client.interactions.create({
+    model,
+    input: prompt,
+    store: false
+  });
+
+  const text = interaction.output_text;
+  if (!text) throw new Error("Gemini returned an empty build response.");
+  return { text, model };
+}

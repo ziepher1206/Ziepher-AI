@@ -1,0 +1,15 @@
+node_modules
+.next
+.generated-smoke-app
+.ziepher-builds
+.git
+.env
+.env.*
+*.log
+coverage
+ziepher-ai-foundation.zip
+
+clients/desktop/node_modules
+clients/mobile/node_modules
+clients/mobile/android/.gradle
+clients/mobile/ios/DerivedData

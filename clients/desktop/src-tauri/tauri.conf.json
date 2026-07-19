@@ -1,0 +1,28 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Ziepher AI",
+  "version": "0.7.0",
+  "identifier": "ai.ziepher.desktop",
+  "build": {
+    "frontendDist": "../shell"
+  },
+  "app": {
+    "windows": [],
+    "security": {
+      "csp": "default-src 'self' https://app.ziepher.ai; connect-src https://app.ziepher.ai wss://*.supabase.co https://*.supabase.co; frame-src blob: https://app.ziepher.ai; img-src 'self' data: blob: https:; style-src 'self' 'unsafe-inline' https://app.ziepher.ai; script-src 'self' https://app.ziepher.ai"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "category": "DeveloperTool",
+    "shortDescription": "Visual, voice-first AI app builder",
+    "longDescription": "Plan, design, build, test, and launch complete applications from one Ziepher AI workspace.",
+    "icon": [
+      "../icons/32x32.png",
+      "../icons/128x128.png",
+      "../icons/icon.png",
+      "../icons/icon.ico"
+    ]
+  }
+}

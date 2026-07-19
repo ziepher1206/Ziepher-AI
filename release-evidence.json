@@ -1,0 +1,42 @@
+{
+  "name": "Ziepher AI",
+  "version": "0.7.0",
+  "created_utc": "2026-07-18T19:51:23Z",
+  "validated": {
+    "root_typecheck": true,
+    "root_eslint": true,
+    "unit_tests_8_passed": true,
+    "pwa_contract": true,
+    "client_contract": true,
+    "project_sync_contract": true,
+    "next_production_build": true,
+    "root_npm_audit_zero": true
+  },
+  "project_sync_bridge": {
+    "state_schema_version": 1,
+    "optimistic_revisions": true,
+    "idempotent_events": true,
+    "realtime_subscription": true,
+    "polling_fallback_seconds": 15,
+    "offline_queue": true,
+    "ai_context_in_planning_and_builds": true,
+    "desktop_exact_origin_ipc": true,
+    "desktop_user_approved_root": true,
+    "desktop_compare_before_write": true,
+    "desktop_recovery_backups": true
+  },
+  "local_mode": {
+    "account_required": false,
+    "supabase_required": false,
+    "docker_required": false,
+    "ai_key_required": false,
+    "generated_app_runtime_dependencies": 0
+  },
+  "environment_limited": {
+    "desktop_rust_compile": "This workspace does not contain cargo or rustc; the release matrix must compile the Tauri client.",
+    "supabase_migration_execution": "Requires an operator-owned Supabase development project.",
+    "runtime_http_smoke": "The sandbox cannot enumerate network interfaces; Next.js dev startup is blocked after the successful production build.",
+    "desktop_signed_installer": "Requires code-signing credentials and a platform release runner.",
+    "mobile_store_packages": "Require Apple/Google developer credentials."
+  }
+}

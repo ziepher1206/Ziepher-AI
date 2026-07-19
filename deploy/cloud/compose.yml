@@ -1,0 +1,42 @@
+services:
+  web:
+    build:
+      context: ../..
+      dockerfile: Dockerfile
+    image: ziepher-ai-web:0.7.0
+    env_file:
+      - .env.cloud
+    ports:
+      - "3000:3000"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/api/health').then(r=>{if(!r.ok)process.exit(1)})"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  build-worker:
+    build:
+      context: ../..
+      dockerfile: Dockerfile.worker
+    image: ziepher-ai-worker:0.7.0
+    command: ["npm", "run", "worker"]
+    env_file:
+      - .env.cloud
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ziepher-build-cache:/app/.ziepher-builds
+    restart: unless-stopped
+
+  deployment-worker:
+    build:
+      context: ../..
+      dockerfile: Dockerfile.worker
+    image: ziepher-ai-worker:0.7.0
+    command: ["npm", "run", "deploy-worker"]
+    env_file:
+      - .env.cloud
+    restart: unless-stopped
+
+volumes:
+  ziepher-build-cache:

@@ -1,0 +1,120 @@
+import { NextResponse } from "next/server";
+import { z } from "zod";
+import { createClient } from "@/lib/supabase/server";
+import { createFreePlan } from "@/lib/ai/router";
+import { apiError } from "@/lib/http";
+import {
+  projectAIContextSchema,
+  projectIdSchema
+} from "@/lib/domain/schemas";
+import { parseProjectSyncState } from "@/lib/sync/project-state";
+
+const requestSchema = z.object({
+  idea: z.string().trim().min(10).max(12000),
+  context: projectAIContextSchema.optional()
+});
+
+type Context = { params: Promise<{ projectId: string }> };
+
+export async function POST(request: Request, context: Context) {
+  try {
+    const projectId = projectIdSchema.parse((await context.params).projectId);
+    const input = requestSchema.parse(await request.json());
+    const supabase = await createClient();
+    const {
+      data: { user }
+    } = await supabase.auth.getUser();
+    if (!user) throw new Error("Authentication required.");
+
+    const { data: syncRows, error: syncError } = await supabase.rpc(
+      "get_project_sync_state",
+      { p_project_id: projectId }
+    );
+    if (syncError) throw new Error(syncError.message);
+    const syncRow = Array.isArray(syncRows) ? syncRows[0] : syncRows;
+    const projectContext =
+      input.context ?? parseProjectSyncState(syncRow?.state).aiContext;
+
+    const result = await createFreePlan(input.idea, projectContext);
+    const { data: specVersionId, error } = await supabase.rpc(
+      "save_project_plan",
+      {
+        p_project_id: projectId,
+        p_idea: input.idea,
+        p_plan: result.plan,
+        p_provider: result.provider,
+        p_model: result.model
+      }
+    );
+
+    if (error) throw error;
+
+    const { data: concepts, error: conceptsError } = await supabase
+      .from("visual_concepts")
+      .select("id,name,description,tokens,selected")
+      .eq("project_id", projectId)
+      .eq("spec_version_id", specVersionId)
+      .order("created_at");
+
+    if (conceptsError) throw conceptsError;
+
+    const { data: currentSyncRows, error: currentSyncError } = await supabase.rpc(
+      "get_project_sync_state",
+      { p_project_id: projectId }
+    );
+    if (!currentSyncError) {
+      const currentSync = Array.isArray(currentSyncRows)
+        ? currentSyncRows[0]
+        : currentSyncRows;
+      if (currentSync) {
+        const currentState = parseProjectSyncState(currentSync.state);
+        const firstConcept = concepts?.[0];
+        const sourceId =
+          firstConcept?.tokens &&
+          typeof firstConcept.tokens === "object" &&
+          "source_id" in firstConcept.tokens &&
+          typeof firstConcept.tokens.source_id === "string"
+            ? firstConcept.tokens.source_id
+            : result.plan.visualDirections[0]?.id;
+
+        const { error: syncWriteError } = await supabase.rpc(
+          "apply_project_sync_patch",
+          {
+            p_project_id: projectId,
+            p_base_revision: Number(currentSync.revision),
+            p_event_id: crypto.randomUUID(),
+            p_device_id: "server-planner",
+            p_event_type: "state.patch",
+            p_patch: {
+              studio: {
+                ...currentState.studio,
+                prompt: input.idea,
+                plan: result.plan,
+                selectedConcept: sourceId,
+                updatedAt: new Date().toISOString()
+              },
+              aiContext: projectContext
+            }
+          }
+        );
+        if (
+          syncWriteError &&
+          !syncWriteError.message.includes("SYNC_CONFLICT:")
+        ) {
+          throw new Error(syncWriteError.message);
+        }
+      }
+    }
+
+    return NextResponse.json({
+      plan: result.plan,
+      provider: result.provider,
+      model: result.model,
+      specVersionId,
+      concepts,
+      chargedBuildCredits: 0
+    });
+  } catch (error) {
+    return apiError(error, "Unable to save the project plan.");
+  }
+}
