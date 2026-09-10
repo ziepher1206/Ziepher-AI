@@ -30,7 +30,7 @@ describe("source-control lifecycle", () => {
     expect(() => assertSourceControlTransition("preview_ready", "merged")).toThrow();
   });
 
-  it("creates stable isolated branch names", () => {
+  it("does not let blocked recovery bypass approval", () => {\n    expect(canTransitionSourceControl("blocked", "approved")).toBe(false);\n    expect(canTransitionSourceControl("blocked", "merged")).toBe(false);\n    expect(canTransitionSourceControl("blocked", "preview_ready")).toBe(true);\n  });\n\n  it("creates stable isolated branch names", () => {
     expect(createWorkingBranchName("BDF3693D-4BAA-47F4-A51A-8370CA47CB44", "run_2026-09-10_001"))
       .toBe("ziepher/bdf3693d4baa/run202609100");
   });
