@@ -26,7 +26,7 @@ const transitions: Record<SourceControlStage, readonly SourceControlStage[]> = {
   approved: ["merged", "blocked", "failed"],
   merged: ["production_verified", "blocked", "failed"],
   production_verified: [],
-  blocked: ["queued", "branch_created", "changes_ready", "pull_request_open", "checks_running", "preview_ready", "approved", "merged", "failed"],
+  blocked: ["queued", "branch_created", "changes_ready", "pull_request_open", "checks_running", "preview_ready", "failed"],
   failed: ["queued"]
 };
 
