@@ -19,19 +19,31 @@ export default async function ProjectPage({ params }: Props) {
 
   return (
     <>
-      <Link
-        className="button"
-        href={`/projects/${projectId}/settings/repository`}
+      <div
         style={{
           position: "fixed",
           right: 18,
           bottom: 52,
           zIndex: 30,
-          textDecoration: "none"
+          display: "grid",
+          gap: 8
         }}
       >
-        GitHub repository
-      </Link>
+        <Link
+          className="button"
+          href={`/projects/${projectId}/source-control`}
+          style={{ textDecoration: "none" }}
+        >
+          Build review
+        </Link>
+        <Link
+          className="button"
+          href={`/projects/${projectId}/settings/repository`}
+          style={{ textDecoration: "none" }}
+        >
+          GitHub repository
+        </Link>
+      </div>
       <StudioShell
         authenticated
         userEmail={user.email}
