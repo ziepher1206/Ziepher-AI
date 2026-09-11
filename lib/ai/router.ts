@@ -4,6 +4,7 @@ import { planWithGemini } from "./providers/gemini";
 import { planWithOpenAI } from "./providers/openai";
 import { createDeterministicPlan } from "./deterministic-plan";
 import { parseJsonObject } from "./json";
+import { paidAIProviderOrder } from "./provider-policy";
 
 export async function createFreePlan(
   idea: string,
@@ -11,7 +12,24 @@ export async function createFreePlan(
 ): Promise<PlanResult> {
   const prompt = createPlanningPrompt(idea, projectContext);
 
-  if (process.env.GOOGLE_AI_API_KEY) {
+  for (const provider of paidAIProviderOrder()) {
+    if (provider === "openai") {
+      if (!process.env.OPENAI_API_KEY || !process.env.OPENAI_PLANNING_MODEL) continue;
+      try {
+        const result = await planWithOpenAI(prompt);
+        return {
+          plan: appPlanSchema.parse(parseJsonObject(result.text)),
+          provider: "openai",
+          model: result.model,
+          estimatedProviderCostUsd: 0
+        };
+      } catch (error) {
+        console.error("OpenAI planning route failed:", error);
+      }
+      continue;
+    }
+
+    if (!process.env.GOOGLE_AI_API_KEY) continue;
     try {
       const result = await planWithGemini(prompt);
       return {
@@ -22,20 +40,6 @@ export async function createFreePlan(
       };
     } catch (error) {
       console.error("Gemini planning route failed:", error);
-    }
-  }
-
-  if (process.env.OPENAI_API_KEY && process.env.OPENAI_PLANNING_MODEL) {
-    try {
-      const result = await planWithOpenAI(prompt);
-      return {
-        plan: appPlanSchema.parse(parseJsonObject(result.text)),
-        provider: "openai",
-        model: result.model,
-        estimatedProviderCostUsd: 0
-      };
-    } catch (error) {
-      console.error("OpenAI planning route failed:", error);
     }
   }
 
