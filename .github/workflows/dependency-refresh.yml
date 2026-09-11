@@ -26,7 +26,9 @@ jobs:
           cache: npm
 
       - name: Refresh vulnerable dependencies
-        run: npm install --save-exact next@16.3.4 eslint-config-next@16.3.4 vitest@4.1.11
+        run: |
+          npm install --package-lock-only --save-exact next@16.3.4 eslint-config-next@16.3.4 vitest@4.1.11
+          npm ci
 
       - name: Validate dependency audit
         run: npm audit --audit-level=moderate
