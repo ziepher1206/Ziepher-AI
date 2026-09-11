@@ -4,11 +4,20 @@ import {
   ProviderConnectionsPanel,
   type GitHubConnection
 } from "@/components/provider-connections-panel";
+import {
+  VercelConnectionPanel,
+  type VercelConnectionStatus
+} from "@/components/vercel-connection-panel";
 import { isSupabaseConfigured } from "@/lib/env";
 import { getProviderConnection } from "@/lib/provider-connections/store";
 import { createClient } from "@/lib/supabase/server";
 
-const DISCONNECTED: GitHubConnection = {
+const DISCONNECTED_GITHUB: GitHubConnection = {
+  connected: false,
+  status: "disconnected"
+};
+
+const DISCONNECTED_VERCEL: VercelConnectionStatus = {
   connected: false,
   status: "disconnected"
 };
@@ -32,18 +41,38 @@ export default async function ConnectionsPage() {
     .maybeSingle();
   if (workspaceError) throw workspaceError;
 
-  let initialConnection = DISCONNECTED;
+  let initialGitHubConnection = DISCONNECTED_GITHUB;
+  let initialVercelConnection = DISCONNECTED_VERCEL;
+
   if (typeof workspace?.id === "string") {
-    const connection = await getProviderConnection(workspace.id, "github");
-    if (connection && connection.status !== "revoked") {
-      initialConnection = {
-        connected: connection.status === "connected",
-        status: connection.status,
-        displayName: connection.display_name,
-        scopes: connection.scopes,
-        accessTokenExpiresAt: connection.access_token_expires_at,
-        refreshTokenExpiresAt: connection.refresh_token_expires_at,
-        needsAttentionReason: connection.needs_attention_reason
+    const [github, vercel] = await Promise.all([
+      getProviderConnection(workspace.id, "github"),
+      getProviderConnection(workspace.id, "vercel")
+    ]);
+
+    if (github && github.status !== "revoked") {
+      initialGitHubConnection = {
+        connected: github.status === "connected",
+        status: github.status,
+        displayName: github.display_name,
+        scopes: github.scopes,
+        accessTokenExpiresAt: github.access_token_expires_at,
+        refreshTokenExpiresAt: github.refresh_token_expires_at,
+        needsAttentionReason: github.needs_attention_reason
+      };
+    }
+
+    if (vercel && vercel.status !== "revoked") {
+      initialVercelConnection = {
+        connected: vercel.status === "connected",
+        status: vercel.status,
+        displayName: vercel.display_name,
+        accountId: vercel.provider_account_id,
+        teamId: vercel.provider_account_id?.startsWith("team_")
+          ? vercel.provider_account_id
+          : null,
+        scopes: vercel.scopes,
+        needsAttentionReason: vercel.needs_attention_reason
       };
     }
   }
@@ -76,8 +105,9 @@ export default async function ConnectionsPage() {
         </div>
       </section>
 
-      <section className="billing-shell">
-        <ProviderConnectionsPanel initialConnection={initialConnection} />
+      <section className="billing-shell" style={{ display: "grid", gap: 18 }}>
+        <ProviderConnectionsPanel initialConnection={initialGitHubConnection} />
+        <VercelConnectionPanel initialConnection={initialVercelConnection} />
       </section>
     </main>
   );

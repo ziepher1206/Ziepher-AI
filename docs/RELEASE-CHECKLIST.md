@@ -16,6 +16,7 @@
 - [ ] All migrations have been applied to staging and production.
 - [ ] RLS tests cover owners, members, viewers, and unrelated users.
 - [ ] Service-role key exists only in server/worker secret stores.
+- [ ] `ZIEPHER_PROVIDER_CREDENTIALS_KEY` is strong, environment-specific, and stored only in trusted secret management.
 - [ ] Private Storage buckets reject unauthorized reads.
 - [ ] Database backups are enabled.
 - [ ] Storage backup and restore procedure has been tested.
@@ -31,6 +32,15 @@
 - [ ] Private content is not stored by providers unless contractually approved.
 - [ ] Platform-wide learning remains opt-in.
 
+## Provider connections
+
+- [ ] GitHub connection tokens are encrypted at rest and never returned by status APIs.
+- [ ] Vercel connection tokens are encrypted at rest and never returned by status APIs.
+- [ ] A Vercel team-scoped credential cannot bind a project from another Vercel account/team.
+- [ ] An unrelated workspace cannot read or use another workspace's provider credential.
+- [ ] Revoking a provider connection prevents new provider actions for that workspace.
+- [ ] No customer deployment path falls back to a global operator Vercel token.
+
 ## Build workers
 
 - [ ] Workers run on dedicated hosts.
@@ -45,9 +55,12 @@
 
 ## Deployment
 
-- [ ] Vercel deployment is tested in staging.
+- [ ] Vercel deployment is tested in staging using a workspace-scoped Vercel connection.
+- [ ] Project target validation and worker deployment use the same workspace Vercel authority.
+- [ ] The immutable Vercel project/account snapshot is verified before provider work.
 - [ ] Preview and production actions are distinct.
 - [ ] Archive path traversal tests fail safely.
+- [ ] Ambiguous Vercel responses reconcile the existing Ziepher deployment identity instead of creating a duplicate automatically.
 - [ ] Deployment failures do not change the current production URL.
 - [ ] Previous source version can be redeployed.
 - [ ] Custom-domain and TLS ownership procedures are documented.

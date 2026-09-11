@@ -28,7 +28,7 @@ export async function getVercelProjectTarget(
 ): Promise<VercelProjectTarget> {
   const token = accessToken.trim();
   const projectRef = projectIdOrName.trim();
-  if (!token) throw new Error("VERCEL_TOKEN is not configured.");
+  if (!token) throw new Error("A connected Vercel access token is required.");
   if (!projectRef || projectRef.length > 255) {
     throw new Error("A valid Vercel project ID or name is required.");
   }
@@ -50,10 +50,10 @@ export async function getVercelProjectTarget(
 
   if (!response.ok) {
     if (response.status === 404) {
-      throw new Error("Vercel project not found for the configured account or team.");
+      throw new Error("Vercel project not found for the connected account or team.");
     }
     if (response.status === 401 || response.status === 403) {
-      throw new Error("Vercel project access was denied. Check the configured token and team.");
+      throw new Error("Vercel project access was denied. Reconnect Vercel or check the selected team.");
     }
     throw new Error(`Vercel project lookup failed with HTTP ${response.status}.`);
   }

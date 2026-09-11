@@ -30,7 +30,7 @@ Ziepher runs four independent concerns:
 1. **Web control plane** — authentication, projects, planning, project context, review UI, provider connections, repository/deployment settings, and release actions.
 2. **Build worker** — claims build jobs, generates source, runs isolated quality gates, repairs bounded failures, and publishes immutable build artifacts.
 3. **Source-control worker** — creates isolated GitHub branches, publishes generated changes, opens PRs, waits for checks and a real preview, and merges only an explicitly approved exact head SHA.
-4. **Deployment worker** — deploys to an explicitly bound Vercel project and reconciles provider state without blindly duplicating a deployment after an ambiguous response.
+4. **Deployment worker** — deploys to an explicitly bound Vercel project using that workspace's encrypted Vercel credential and reconciles provider state without blindly duplicating a deployment after an ambiguous response.
 
 Generated package scripts never execute inside the public Next.js web process.
 
@@ -46,7 +46,8 @@ Generated package scripts never execute inside the public Next.js web process.
 - Every Vercel deployment snapshots its canonical Vercel project/account identity when queued.
 - Every provider deployment attempt is durably recorded before the Vercel side effect.
 - If Vercel's response is ambiguous, Ziepher reconciles provider metadata and never automatically issues a second deployment for the same deployment row.
-- Provider credentials remain server-side.
+- GitHub and Vercel credentials are workspace-scoped, encrypted at rest, and never returned to the browser after connection.
+- Customer projects never implicitly use a global Ziepher operator Vercel token.
 - Stripe remains disabled until separate financial release gates are deliberately enabled.
 
 ## Providers
@@ -78,18 +79,18 @@ ZIEPHER_PROVIDER_CREDENTIALS_KEY=
 
 ### Vercel
 
-Each Ziepher project must be explicitly bound to a validated Vercel project before a Vercel deployment can be queued.
+Vercel is connected per workspace from **Settings → Connected rails**. A workspace owner supplies a Vercel access token and, when appropriate, a `team_...` ID. Ziepher validates the credential with Vercel and encrypts it before persistence.
+
+Each Ziepher project must then be explicitly bound to a Vercel project that the connected workspace credential can access.
 
 ```text
 VERCEL_DEPLOYMENTS_ENABLED=false
 VERCEL_PRODUCTION_RELEASES_ENABLED=false
-VERCEL_TOKEN=
-VERCEL_TEAM_ID=
 DEPLOYMENT_WORKER_ID=deployment-worker-1
 DEPLOYMENT_WORKER_POLL_MS=5000
 ```
 
-The deployment worker targets only the immutable Vercel project/account snapshot stored on the deployment row. It does not infer a project from a temporary working directory.
+The deployment worker resolves the encrypted workspace credential at runtime and targets only the immutable Vercel project/account snapshot stored on the deployment row. It does not infer a project from a temporary working directory and does not use a global `VERCEL_TOKEN` for customer deployments.
 
 ## Web/PWA delivery
 
@@ -107,9 +108,10 @@ Apply migrations in `supabase/migrations` in order and configure:
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=
 SUPABASE_SERVICE_ROLE_KEY=
+ZIEPHER_PROVIDER_CREDENTIALS_KEY=
 ```
 
-Never expose `SUPABASE_SERVICE_ROLE_KEY` to a browser or generated application.
+Never expose `SUPABASE_SERVICE_ROLE_KEY` or `ZIEPHER_PROVIDER_CREDENTIALS_KEY` to a browser or generated application.
 
 ## Build worker
 
@@ -148,7 +150,7 @@ The source-control worker consumes the durable `source_control_runs` ledger. It 
 npm run deploy-worker
 ```
 
-Vercel deployment is disabled until the operator deliberately sets `VERCEL_DEPLOYMENTS_ENABLED=true`. Production also requires the separate production-release gate.
+Vercel deployment is disabled until the operator deliberately sets `VERCEL_DEPLOYMENTS_ENABLED=true`. Production also requires the separate production-release gate. Each workspace must connect Vercel before its projects can bind or deploy Vercel targets.
 
 ## Stripe
 
