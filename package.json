@@ -13,6 +13,7 @@
     "lint": "eslint .",
     "test": "vitest run",
     "worker": "tsx scripts/build-worker.ts",
+    "source-control-worker": "tsx scripts/source-control-worker.ts",
     "check": "npm run typecheck && npm run lint && npm run test && npm run check:pwa && npm run check:clients && npm run check:sync && npm run build",
     "deploy-worker": "tsx scripts/deployment-worker.ts",
     "smoke:generated": "tsx scripts/smoke-generated-build.ts",
