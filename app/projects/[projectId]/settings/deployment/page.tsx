@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ProjectVercelTargetForm } from "@/components/project-vercel-target-form";
+import { listAccessibleVercelProjects } from "@/lib/deployment/vercel-projects";
 import { isSupabaseConfigured } from "@/lib/env";
 import { getProviderConnection } from "@/lib/provider-connections/store";
 import { createClient } from "@/lib/supabase/server";
@@ -41,6 +42,25 @@ export default async function ProjectDeploymentSettingsPage({ params }: Props) {
   const connectionConfigured =
     vercelConnection?.status === "connected" && Boolean(vercelConnection.accessToken);
 
+  let availableTargets: Array<{ id: string; name: string; orgId: string }> = [];
+  let discoveryError: string | null = null;
+  if (connectionConfigured && vercelConnection?.accessToken) {
+    try {
+      const teamId = vercelConnection.provider_account_id?.startsWith("team_")
+        ? vercelConnection.provider_account_id
+        : null;
+      availableTargets = await listAccessibleVercelProjects(
+        vercelConnection.accessToken,
+        teamId
+      );
+    } catch (caught) {
+      discoveryError =
+        caught instanceof Error
+          ? caught.message
+          : "Vercel projects could not be loaded.";
+    }
+  }
+
   return (
     <main className="settings-page">
       <header className="projects-header">
@@ -68,7 +88,7 @@ export default async function ProjectDeploymentSettingsPage({ params }: Props) {
         <span className="panel-label">{project.name}</span>
         <h1>Choose the project&apos;s Vercel deployment target</h1>
         <p>
-          Ziepher validates the target with the Vercel credential connected to this project&apos;s workspace before saving it. Every future Vercel deployment snapshots the canonical project and account IDs so later settings changes cannot redirect work that was already approved or queued.
+          Ziepher lists projects visible to this workspace&apos;s connected Vercel account and re-validates the exact target before saving it. Every future Vercel deployment snapshots the canonical project and account IDs so later settings changes cannot redirect work that was already approved or queued.
         </p>
       </section>
 
@@ -77,6 +97,8 @@ export default async function ProjectDeploymentSettingsPage({ params }: Props) {
           projectId={projectId}
           currentTarget={currentTarget}
           connectionConfigured={connectionConfigured}
+          availableTargets={availableTargets}
+          discoveryError={discoveryError}
         />
       </section>
     </main>
