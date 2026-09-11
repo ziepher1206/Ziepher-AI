@@ -27,6 +27,28 @@ type SourceControlRun = {
   updatedAt: string;
 };
 
+type DeploymentStatus = {
+  id: string;
+  environment: string;
+  status: string;
+  providerDeploymentId: string | null;
+  url: string | null;
+  failureMessage: string | null;
+  vercelProjectId: string | null;
+  vercelProjectName: string | null;
+  providerAttemptedAt: string | null;
+  providerReconcileAttempts: number;
+  providerLastObservedState: string | null;
+  createdAt: string;
+  startedAt: string | null;
+  completedAt: string | null;
+};
+
+type DeploymentPair = {
+  preview: DeploymentStatus | null;
+  production: DeploymentStatus | null;
+};
+
 type Props = { projectId: string };
 
 function shortSha(value: string | null) {
@@ -37,8 +59,77 @@ function stageLabel(stage: string) {
   return stage.replaceAll("_", " ");
 }
 
+function deploymentStateLabel(deployment: DeploymentStatus) {
+  if (
+    deployment.status === "deploying" &&
+    deployment.providerAttemptedAt &&
+    deployment.providerLastObservedState === "NOT_FOUND"
+  ) {
+    return "Reconciling provider acceptance";
+  }
+  if (deployment.status === "deploying" && deployment.providerLastObservedState) {
+    return `Vercel ${deployment.providerLastObservedState.toLowerCase()}`;
+  }
+  return stageLabel(deployment.status);
+}
+
+function DeploymentRecoveryCard({
+  title,
+  deployment
+}: {
+  title: string;
+  deployment: DeploymentStatus | null;
+}) {
+  if (!deployment) return null;
+
+  return (
+    <div className="panel">
+      <strong>{title}</strong>
+      <p style={{ marginBottom: 6, textTransform: "capitalize" }}>
+        {deploymentStateLabel(deployment)}
+      </p>
+      <p style={{ margin: 0, opacity: 0.78 }}>
+        Target {deployment.vercelProjectName ?? "unavailable"}
+        {deployment.vercelProjectId ? ` · ${deployment.vercelProjectId}` : ""}
+      </p>
+      {deployment.providerDeploymentId ? (
+        <p style={{ margin: "6px 0 0", opacity: 0.78 }}>
+          Vercel deployment {deployment.providerDeploymentId}
+        </p>
+      ) : null}
+      {deployment.providerAttemptedAt ? (
+        <p style={{ margin: "6px 0 0", opacity: 0.78 }}>
+          Provider attempt started {new Date(deployment.providerAttemptedAt).toLocaleString()}
+        </p>
+      ) : null}
+      {deployment.providerReconcileAttempts > 0 ? (
+        <p style={{ margin: "6px 0 0", opacity: 0.78 }}>
+          Reconciliation checks: {deployment.providerReconcileAttempts}
+          {deployment.providerLastObservedState
+            ? ` · last observed ${deployment.providerLastObservedState}`
+            : ""}
+        </p>
+      ) : null}
+      {deployment.failureMessage ? (
+        <p style={{ margin: "10px 0 0" }}>{deployment.failureMessage}</p>
+      ) : null}
+      {deployment.url ? (
+        <div className="inline-actions" style={{ marginTop: 12 }}>
+          <a className="button" href={deployment.url} target="_blank" rel="noreferrer">
+            Open {deployment.environment}
+          </a>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 export function SourceControlReviewPanel({ projectId }: Props) {
   const [run, setRun] = useState<SourceControlRun | null>(null);
+  const [deployments, setDeployments] = useState<DeploymentPair>({
+    preview: null,
+    production: null
+  });
   const [productionReleaseEnabled, setProductionReleaseEnabled] = useState(false);
   const [loading, setLoading] = useState(true);
   const [approving, setApproving] = useState(false);
@@ -52,11 +143,18 @@ export function SourceControlReviewPanel({ projectId }: Props) {
       });
       const data = (await response.json()) as {
         run?: SourceControlRun | null;
+        deployments?: DeploymentPair;
         productionReleaseEnabled?: boolean;
         error?: string;
       };
       if (!response.ok) throw new Error(data.error || "Could not load build review.");
       setRun(data.run ?? null);
+      setDeployments(
+        data.deployments ?? {
+          preview: null,
+          production: null
+        }
+      );
       setProductionReleaseEnabled(data.productionReleaseEnabled === true);
       setError(null);
     } catch (loadError) {
@@ -201,6 +299,12 @@ export function SourceControlReviewPanel({ projectId }: Props) {
             ) : null}
           </div>
         </div>
+
+        <DeploymentRecoveryCard title="Preview deployment" deployment={deployments.preview} />
+        <DeploymentRecoveryCard
+          title="Production deployment"
+          deployment={deployments.production}
+        />
 
         {run.blockedReason || run.lastError ? (
           <div className="panel">
