@@ -8,9 +8,11 @@
 4. The public web process cannot execute generated package scripts.
 5. Build workers are trusted orchestration services but generated containers are
    disposable and untrusted.
-6. The Supabase service role, AI keys, deployment token, and Stripe secret are
-   server/worker secrets.
-7. Generated applications receive no Ziepher platform secrets.
+6. The Supabase service role, AI keys, provider-credential encryption key, and
+   Stripe secret are server/worker secrets.
+7. Workspace-owned GitHub and Vercel credentials are encrypted before database
+   persistence and are decrypted only on trusted server/worker paths that need them.
+8. Generated applications receive no Ziepher platform or workspace provider secrets.
 
 ## Authentication and authorization
 
@@ -20,6 +22,8 @@
 - Do not rely on a project ID supplied by the browser without RLS.
 - Use separate OAuth clients and callback allowlists per environment.
 - Require MFA for production operators and third-party provider accounts.
+- Infrastructure connection changes are owner-controlled; project deployment target
+  changes are limited to project owners or workspace admins.
 
 ## Database
 
@@ -33,13 +37,14 @@
 
 ## Secrets
 
-- Store production secrets in the hosting secret manager.
+- Store production machine secrets in the hosting secret manager.
 - Never use `NEXT_PUBLIC_` for private values.
-- Never log complete environment variables.
-- Never place service-role keys in generated files.
-- Rotate credentials after suspected disclosure.
-- User-owned provider credentials require a dedicated encrypted vault before that
-  feature is enabled.
+- Never log complete environment variables, bearer tokens, OAuth tokens, or provider credentials.
+- Never place service-role keys or provider credentials in generated files.
+- `ZIEPHER_PROVIDER_CREDENTIALS_KEY` must be a strong 32-byte key, kept outside the database, and available only to trusted server/worker processes.
+- Workspace provider access/refresh tokens are encrypted before being stored in `provider_connections` and are never returned by connection-status APIs.
+- Customer Vercel deployments must resolve the Vercel credential from the deployment project's workspace; they must never fall back to a global operator Vercel token.
+- Rotate credentials after suspected disclosure and mark/revoke affected provider connections.
 
 ## Generated source
 
@@ -62,7 +67,7 @@ Required production controls:
 - non-root container image;
 - read-only base filesystem where practical;
 - CPU, memory, process, and time limits;
-- no platform secrets;
+- no platform secrets in generated containers;
 - no host networking;
 - no privileged containers;
 - `no-new-privileges`;
@@ -82,8 +87,13 @@ Preview source must not be inserted into the parent DOM.
 ## Deployment
 
 The deployment worker accepts only successful immutable versions. Archive paths
-are listed and validated before extraction. Vercel credentials exist only on the
-deployment worker. Production deployment is an explicit action.
+are listed and validated before extraction. Each Vercel deployment captures the
+canonical Vercel project/account identity when queued. The worker then resolves
+only the encrypted Vercel credential connected to that deployment project's
+workspace. If a team-scoped connection no longer matches the immutable target,
+the worker fails closed. Provider attempts are recorded before the Vercel side
+effect, and ambiguous outcomes are reconciled rather than automatically redeployed.
+Production deployment remains a separate explicit action.
 
 ## Stripe
 
@@ -104,6 +114,7 @@ Before handling paid production customers:
 - independent application penetration test;
 - generated-code sandbox escape assessment;
 - RLS review;
+- provider-credential isolation and encryption review;
 - billing and credit-ledger review;
 - privacy/terms review;
 - incident-response tabletop;
