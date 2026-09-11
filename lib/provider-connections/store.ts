@@ -157,3 +157,43 @@ export async function revokeProviderConnection(
 
   if (error) throw new Error(`Could not revoke provider connection: ${error.message}`);
 }
+
+
+export async function rotateProviderTokens(input: {
+  workspaceId: string;
+  provider: ProviderKind;
+  accessToken: string;
+  refreshToken?: string;
+  accessTokenExpiresAt?: string;
+  refreshTokenExpiresAt?: string;
+}) {
+  const admin = createAdminClient();
+  const now = new Date().toISOString();
+  const update = {
+    status: "connected" as const,
+    encrypted_access_token: encryptProviderSecret(input.accessToken),
+    ...(input.refreshToken
+      ? { encrypted_refresh_token: encryptProviderSecret(input.refreshToken) }
+      : {}),
+    access_token_expires_at: input.accessTokenExpiresAt ?? null,
+    ...(input.refreshTokenExpiresAt
+      ? { refresh_token_expires_at: input.refreshTokenExpiresAt }
+      : {}),
+    last_refreshed_at: now,
+    needs_attention_reason: null,
+    revoked_at: null,
+    updated_at: now
+  };
+
+  const { data, error } = await admin
+    .from("provider_connections")
+    .update(update)
+    .eq("workspace_id", input.workspaceId)
+    .eq("provider", input.provider)
+    .neq("status", "revoked")
+    .select("*")
+    .single();
+
+  if (error) throw new Error(`Could not rotate provider tokens: ${error.message}`);
+  return decryptRow(data as ProviderConnectionRow);
+}
