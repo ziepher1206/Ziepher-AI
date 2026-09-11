@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { paidAIProviderOrder, primaryAIProvider } from "../lib/ai/provider-policy";
 
 function env(values: Record<string, string | undefined>): NodeJS.ProcessEnv {
-  return { ...values };
+  return { NODE_ENV: "test", ...values };
 }
 
 describe("AI provider policy", () => {
