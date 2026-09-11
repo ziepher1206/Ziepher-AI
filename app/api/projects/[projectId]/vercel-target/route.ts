@@ -3,6 +3,7 @@ import { z } from "zod";
 import { getVercelProjectTarget } from "@/lib/deployment/vercel-projects";
 import { projectIdSchema } from "@/lib/domain/schemas";
 import { apiError } from "@/lib/http";
+import { getUsableVercelConnection } from "@/lib/provider-connections/vercel";
 import { createClient } from "@/lib/supabase/server";
 
 const inputSchema = z.object({
@@ -90,14 +91,20 @@ export async function PUT(request: Request, context: Context) {
     const { supabase, user, project } = await loadProject(projectId);
     await assertCanManageDeploymentTarget(supabase, user.id, project);
 
-    const token = process.env.VERCEL_TOKEN;
-    if (!token) throw new Error("VERCEL_TOKEN is not configured on the Ziepher control plane.");
+    if (!project.workspace_id) {
+      throw new Error("This project has no workspace deployment connection.");
+    }
 
+    const vercel = await getUsableVercelConnection(project.workspace_id);
     const target = await getVercelProjectTarget(
-      token,
+      vercel.accessToken,
       input.projectIdOrName,
-      process.env.VERCEL_TEAM_ID ?? null
+      vercel.teamId
     );
+
+    if (vercel.teamId && target.orgId !== vercel.teamId) {
+      throw new Error("Vercel returned a project outside the connected workspace team.");
+    }
 
     const { error } = await supabase
       .from("projects")
