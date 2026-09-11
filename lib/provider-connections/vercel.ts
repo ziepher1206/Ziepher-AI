@@ -3,9 +3,11 @@ import "server-only";
 import {
   getProviderConnection,
   upsertProviderConnection
-} from "@/lib/provider-connections/store";
+} from "./store";
 
 const VERCEL_API_ORIGIN = "https://api.vercel.com";
+
+type VercelProjectResponse = never;
 
 type TokenMetadataResponse = {
   token?: {
