@@ -48,8 +48,28 @@ type SourceControlRunRow = {
   updated_at: string;
 };
 
+type DeploymentRow = {
+  id: string;
+  environment: string;
+  status: string;
+  provider_deployment_id: string | null;
+  url: string | null;
+  failure_message: string | null;
+  vercel_project_id: string | null;
+  vercel_project_name: string | null;
+  provider_attempted_at: string | null;
+  provider_reconcile_attempts: number;
+  provider_last_observed_state: string | null;
+  created_at: string;
+  started_at: string | null;
+  completed_at: string | null;
+};
+
 const RUN_SELECT =
   "id,project_id,repository_full_name,base_branch,working_branch,head_sha,pull_request_number,preview_url,preview_deployment_id,production_deployment_id,production_requested_by,production_requested_at,production_url,production_verified_at,stage,revision,approved_by,approved_at,merged_sha,merged_at,blocked_reason,last_error,created_at,updated_at";
+
+const DEPLOYMENT_SELECT =
+  "id,environment,status,provider_deployment_id,url,failure_message,vercel_project_id,vercel_project_name,provider_attempted_at,provider_reconcile_attempts,provider_last_observed_state,created_at,started_at,completed_at";
 
 async function loadAccess(projectId: string) {
   const supabase = await createClient();
@@ -95,6 +115,26 @@ function publicRun(run: SourceControlRunRow) {
   };
 }
 
+function publicDeployment(deployment: DeploymentRow | null) {
+  if (!deployment) return null;
+  return {
+    id: deployment.id,
+    environment: deployment.environment,
+    status: deployment.status,
+    providerDeploymentId: deployment.provider_deployment_id,
+    url: deployment.url,
+    failureMessage: deployment.failure_message?.slice(0, 2000) ?? null,
+    vercelProjectId: deployment.vercel_project_id,
+    vercelProjectName: deployment.vercel_project_name,
+    providerAttemptedAt: deployment.provider_attempted_at,
+    providerReconcileAttempts: deployment.provider_reconcile_attempts,
+    providerLastObservedState: deployment.provider_last_observed_state,
+    createdAt: deployment.created_at,
+    startedAt: deployment.started_at,
+    completedAt: deployment.completed_at
+  };
+}
+
 export async function GET(_request: Request, context: Context) {
   try {
     const projectId = projectIdSchema.parse((await context.params).projectId);
@@ -110,8 +150,44 @@ export async function GET(_request: Request, context: Context) {
       .maybeSingle();
     if (error) throw error;
 
+    if (!data) {
+      return NextResponse.json({
+        run: null,
+        deployments: { preview: null, production: null },
+        productionReleaseEnabled:
+          process.env.VERCEL_PRODUCTION_RELEASES_ENABLED === "true"
+      });
+    }
+
+    const run = data as SourceControlRunRow;
+    const deploymentIds = [
+      run.preview_deployment_id,
+      run.production_deployment_id
+    ].filter((value): value is string => Boolean(value));
+
+    let previewDeployment: DeploymentRow | null = null;
+    let productionDeployment: DeploymentRow | null = null;
+
+    if (deploymentIds.length) {
+      const { data: deployments, error: deploymentError } = await admin
+        .from("deployments")
+        .select(DEPLOYMENT_SELECT)
+        .eq("project_id", projectId)
+        .in("id", deploymentIds);
+      if (deploymentError) throw deploymentError;
+
+      for (const deployment of (deployments ?? []) as DeploymentRow[]) {
+        if (deployment.id === run.preview_deployment_id) previewDeployment = deployment;
+        if (deployment.id === run.production_deployment_id) productionDeployment = deployment;
+      }
+    }
+
     return NextResponse.json({
-      run: data ? publicRun(data as SourceControlRunRow) : null,
+      run: publicRun(run),
+      deployments: {
+        preview: publicDeployment(previewDeployment),
+        production: publicDeployment(productionDeployment)
+      },
       productionReleaseEnabled:
         process.env.VERCEL_PRODUCTION_RELEASES_ENABLED === "true"
     });
