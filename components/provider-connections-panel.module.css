@@ -1,0 +1,70 @@
+.card {
+  padding: 22px;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: var(--panel);
+  box-shadow: var(--shadow);
+}
+
+.heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.heading h2 {
+  margin: 4px 0 0;
+  font-size: 26px;
+}
+
+.status {
+  flex: 0 0 auto;
+  padding: 7px 10px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.connected {
+  border-color: rgba(92, 225, 198, 0.28);
+  background: rgba(92, 225, 198, 0.07);
+  color: var(--accent-2);
+}
+
+.attention {
+  border-color: rgba(255, 213, 106, 0.3);
+  color: var(--warning);
+}
+
+.account,
+.note,
+.warning {
+  line-height: 1.55;
+}
+
+.account {
+  color: var(--text);
+}
+
+.note {
+  margin: 18px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.warning {
+  padding: 10px 12px;
+  border: 1px solid rgba(255, 213, 106, 0.3);
+  border-radius: 11px;
+  color: var(--warning);
+  background: rgba(255, 213, 106, 0.06);
+  font-size: 12px;
+}
+
+.actions {
+  margin-top: 18px;
+  flex-wrap: wrap;
+}
