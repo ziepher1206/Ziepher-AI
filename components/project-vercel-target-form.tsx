@@ -13,12 +13,16 @@ type Props = {
   projectId: string;
   currentTarget: Target | null;
   connectionConfigured: boolean;
+  availableTargets: Target[];
+  discoveryError: string | null;
 };
 
 export function ProjectVercelTargetForm({
   projectId,
   currentTarget,
-  connectionConfigured
+  connectionConfigured,
+  availableTargets,
+  discoveryError
 }: Props) {
   const router = useRouter();
   const [projectRef, setProjectRef] = useState(currentTarget?.id ?? "");
@@ -99,12 +103,53 @@ export function ProjectVercelTargetForm({
         </div>
       ) : null}
 
+      {connectionConfigured && availableTargets.length > 0 ? (
+        <div className="panel">
+          <label htmlFor="vercel-project-select">
+            <strong>Choose an accessible Vercel project</strong>
+          </label>
+          <p>
+            These projects came directly from the workspace&apos;s connected Vercel account. Ziepher will still re-verify the selected project before binding it.
+          </p>
+          <select
+            id="vercel-project-select"
+            value={availableTargets.some((target) => target.id === projectRef) ? projectRef : ""}
+            onChange={(event) => setProjectRef(event.target.value)}
+            disabled={saving || disconnecting}
+            style={{ width: "100%" }}
+          >
+            <option value="">Select a Vercel project…</option>
+            {availableTargets.map((target) => (
+              <option key={target.id} value={target.id}>
+                {target.name} · {target.id}
+              </option>
+            ))}
+          </select>
+        </div>
+      ) : null}
+
+      {connectionConfigured && availableTargets.length === 0 && !discoveryError ? (
+        <div className="panel">
+          <strong>No accessible Vercel projects found</strong>
+          <p style={{ marginBottom: 0 }}>
+            The connected account is valid, but Vercel did not return a project to choose from. You can still enter a known project ID or name below.
+          </p>
+        </div>
+      ) : null}
+
+      {discoveryError ? (
+        <div className="panel">
+          <strong>Could not load Vercel projects</strong>
+          <p style={{ marginBottom: 0 }}>{discoveryError}</p>
+        </div>
+      ) : null}
+
       <div className="panel">
         <label htmlFor="vercel-project-ref">
-          <strong>Vercel project ID or name</strong>
+          <strong>{availableTargets.length ? "Or enter a Vercel project ID or name" : "Vercel project ID or name"}</strong>
         </label>
         <p>
-          Ziepher will verify this project using the workspace&apos;s encrypted Vercel credential and save Vercel&apos;s canonical project ID and account ID. Deployment jobs snapshot that identity when queued.
+          Ziepher verifies the exact project using the workspace&apos;s encrypted Vercel credential and saves Vercel&apos;s canonical project ID and account ID. Deployment jobs snapshot that identity when queued.
         </p>
         <input
           id="vercel-project-ref"
@@ -140,7 +185,7 @@ export function ProjectVercelTargetForm({
       <div className="panel">
         <strong>Safety rule</strong>
         <p style={{ marginBottom: 0 }}>
-          Changing or disconnecting this setting cannot redirect a deployment that was already queued. Each deployment keeps the Vercel identity it captured at queue time.
+          Discovery never grants authority by itself. The selected target is re-validated with Vercel before saving, and changing or disconnecting this setting cannot redirect a deployment that was already queued.
         </p>
       </div>
 
