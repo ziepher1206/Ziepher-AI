@@ -1,6 +1,10 @@
 import { setTimeout as sleep } from "node:timers/promises";
 import { getUsableGitHubAccessToken } from "@/lib/provider-connections/github-oauth";
-import { ensureGitHubBranchAtBase } from "@/lib/source-control/github";
+import {
+  ensureGitHubBranchAtBase,
+  publishGitHubFilesAtomically
+} from "@/lib/source-control/github";
+import { readVerifiedSourceArchive } from "@/lib/source-control/source-archive";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 type ClaimedSourceControlRun = {
@@ -10,7 +14,9 @@ type ClaimedSourceControlRun = {
   repository_full_name: string;
   base_branch: string;
   working_branch: string;
-  stage: "queued";
+  base_sha: string | null;
+  head_sha: string | null;
+  stage: "queued" | "branch_created";
   revision: number;
   worker_id: string | null;
 };
@@ -56,41 +62,123 @@ async function blockRun(run: ClaimedSourceControlRun, error: unknown) {
   }
 }
 
+async function workspaceAccessToken(projectId: string) {
+  const { data: project, error } = await supabase
+    .from("projects")
+    .select("workspace_id")
+    .eq("id", projectId)
+    .single();
+
+  if (error) throw error;
+  if (!project.workspace_id) {
+    throw new Error("Project has no workspace for its GitHub connection.");
+  }
+  return getUsableGitHubAccessToken(project.workspace_id);
+}
+
+async function processQueuedRun(
+  run: ClaimedSourceControlRun,
+  accessToken: string
+) {
+  const branch = await ensureGitHubBranchAtBase(
+    accessToken,
+    run.repository_full_name,
+    run.base_branch,
+    run.working_branch
+  );
+
+  const { error } = await supabase.rpc(
+    "complete_source_control_branch_creation",
+    {
+      p_run_id: run.id,
+      p_worker_id: workerId,
+      p_expected_revision: run.revision,
+      p_base_sha: branch.baseSha
+    }
+  );
+  if (error) throw error;
+
+  console.log(
+    `[${workerId}] source-control run ${run.id} branch ${branch.created ? "created" : "reconciled"} at ${branch.baseSha}`
+  );
+}
+
+async function loadPublishedSource(run: ClaimedSourceControlRun) {
+  if (!run.build_job_id) {
+    throw new Error("Source-control run is missing its build job identity.");
+  }
+
+  const { data: artifact, error: artifactError } = await supabase
+    .from("artifacts")
+    .select("storage_path, sha256")
+    .eq("project_id", run.project_id)
+    .eq("build_job_id", run.build_job_id)
+    .eq("artifact_type", "source_archive")
+    .single();
+  if (artifactError) throw artifactError;
+
+  const { data: archive, error: downloadError } = await supabase.storage
+    .from("project-artifacts")
+    .download(artifact.storage_path);
+  if (downloadError) throw downloadError;
+
+  const archiveBytes = Buffer.from(await archive.arrayBuffer());
+  const files = await readVerifiedSourceArchive(archiveBytes, artifact.sha256);
+  return {
+    files,
+    sourceSha256: artifact.sha256.toLowerCase()
+  };
+}
+
+async function processBranchCreatedRun(
+  run: ClaimedSourceControlRun,
+  accessToken: string
+) {
+  if (!run.build_job_id) {
+    throw new Error("Source-control run is missing its build job identity.");
+  }
+  if (!run.head_sha || !/^[a-f0-9]{40}$/i.test(run.head_sha)) {
+    throw new Error("Source-control run is missing a valid recorded branch head.");
+  }
+
+  const source = await loadPublishedSource(run);
+  const published = await publishGitHubFilesAtomically(
+    accessToken,
+    run.repository_full_name,
+    {
+      branch: run.working_branch,
+      expectedParentSha: run.head_sha,
+      runId: run.id,
+      buildJobId: run.build_job_id,
+      sourceSha256: source.sourceSha256,
+      files: source.files
+    }
+  );
+
+  const { error } = await supabase.rpc(
+    "complete_source_control_changes_ready",
+    {
+      p_run_id: run.id,
+      p_worker_id: workerId,
+      p_expected_revision: run.revision,
+      p_head_sha: published.commitSha
+    }
+  );
+  if (error) throw error;
+
+  console.log(
+    `[${workerId}] source-control run ${run.id} source ${published.reconciled ? "reconciled" : "committed"} at ${published.commitSha}`
+  );
+}
+
 async function processRun(run: ClaimedSourceControlRun) {
   try {
-    const { data: project, error: projectError } = await supabase
-      .from("projects")
-      .select("workspace_id")
-      .eq("id", run.project_id)
-      .single();
-
-    if (projectError) throw projectError;
-    if (!project.workspace_id) {
-      throw new Error("Project has no workspace for its GitHub connection.");
+    const accessToken = await workspaceAccessToken(run.project_id);
+    if (run.stage === "queued") {
+      await processQueuedRun(run, accessToken);
+      return;
     }
-
-    const accessToken = await getUsableGitHubAccessToken(project.workspace_id);
-    const branch = await ensureGitHubBranchAtBase(
-      accessToken,
-      run.repository_full_name,
-      run.base_branch,
-      run.working_branch
-    );
-
-    const { error: completeError } = await supabase.rpc(
-      "complete_source_control_branch_creation",
-      {
-        p_run_id: run.id,
-        p_worker_id: workerId,
-        p_expected_revision: run.revision,
-        p_base_sha: branch.baseSha
-      }
-    );
-    if (completeError) throw completeError;
-
-    console.log(
-      `[${workerId}] source-control run ${run.id} branch ${branch.created ? "created" : "reconciled"} at ${branch.baseSha}`
-    );
+    await processBranchCreatedRun(run, accessToken);
   } catch (error) {
     await blockRun(run, error);
     console.error(`[${workerId}] source-control run ${run.id} blocked:`, error);
