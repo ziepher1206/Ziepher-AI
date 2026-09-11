@@ -1,6 +1,7 @@
 import "server-only";
 
 import { execFile } from "node:child_process";
+import { createHash } from "node:crypto";
 import {
   lstat,
   mkdir,
@@ -13,8 +14,7 @@ import {
 import os from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
-import { generatedFileSchema } from "@/lib/ai/build-types";
-import { sha256 } from "@/lib/runner/files";
+import { generatedFileSchema } from "../ai/build-types";
 
 const execFileAsync = promisify(execFile);
 const MAX_SOURCE_BYTES = 8_000_000;
@@ -25,6 +25,10 @@ export type SourceArchiveFile = {
   path: string;
   content: string;
 };
+
+function sha256(value: Buffer) {
+  return createHash("sha256").update(value).digest("hex");
+}
 
 export function normalizeSourceArchiveEntry(value: string) {
   let entry = value.trim();
