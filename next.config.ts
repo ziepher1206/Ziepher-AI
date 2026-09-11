@@ -26,7 +26,11 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
-  output: "standalone",
+  // Next.js 16.3.x currently fails on Vercel when standalone output is combined
+  // with Vercel's build adapter because next-server.js.nft.json is not emitted.
+  // Vercel does not need the standalone server bundle, so keep standalone only
+  // for non-Vercel/self-hosted builds.
+  output: process.env.VERCEL ? undefined : "standalone",
   reactStrictMode: true,
   poweredByHeader: false,
   async headers() {
