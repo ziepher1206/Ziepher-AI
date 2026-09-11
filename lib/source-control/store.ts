@@ -17,10 +17,15 @@ export type SourceControlRun = {
   head_sha: string | null;
   pull_request_number: number | null;
   preview_url: string | null;
+  preview_deployment_id: string | null;
+  next_check_at: string | null;
   stage: SourceControlStage;
   revision: number;
   blocked_reason: string | null;
   last_error: string | null;
+  worker_id: string | null;
+  lease_expires_at: string | null;
+  heartbeat_at: string | null;
 };
 
 function parseRun(value: unknown): SourceControlRun {

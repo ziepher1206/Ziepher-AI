@@ -9,6 +9,7 @@ const FULL_SHA = /^[a-f0-9]{40}$/i;
 type GitHubPullRequest = {
   number: number;
   html_url: string;
+  state?: string;
   head: { sha: string; ref: string };
   base: { ref: string };
 };
@@ -161,9 +162,6 @@ export async function ensureGitHubPullRequest(
       created: true
     };
   } catch (error) {
-    // GitHub may accept PR creation while the response is lost, or another
-    // replacement worker may win a retry race. Re-read provider state and
-    // accept only the exact branch/base/head identity before giving up.
     const reconciled = await findOpenPullRequest(
       accessToken,
       repositoryFullName,
@@ -172,4 +170,34 @@ export async function ensureGitHubPullRequest(
     if (reconciled) return { ...reconciled, created: false };
     throw error;
   }
+}
+
+export async function verifyGitHubPullRequest(
+  accessToken: string,
+  repositoryFullName: string,
+  input: {
+    pullRequestNumber: number;
+    workingBranch: string;
+    baseBranch: string;
+    expectedHeadSha: string;
+  }
+) {
+  if (!Number.isInteger(input.pullRequestNumber) || input.pullRequestNumber < 1) {
+    throw new Error("A valid pull request number is required.");
+  }
+  if (!FULL_SHA.test(input.expectedHeadSha)) {
+    throw new Error("A full expected pull request head SHA is required.");
+  }
+
+  const { owner, repo } = parseRepositoryFullName(repositoryFullName);
+  const url = `${GITHUB_API}/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/pulls/${input.pullRequestNumber}`;
+  const pullRequest = await request<GitHubPullRequest>(accessToken, url);
+  if (pullRequest.state !== "open") {
+    throw new Error("GitHub pull request is no longer open.");
+  }
+  const normalized = normalizePullRequest(pullRequest, input);
+  if (normalized.number !== input.pullRequestNumber) {
+    throw new Error("GitHub returned a different pull request than requested.");
+  }
+  return normalized;
 }
