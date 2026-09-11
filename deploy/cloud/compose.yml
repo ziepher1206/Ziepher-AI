@@ -28,6 +28,16 @@ services:
       - ziepher-build-cache:/app/.ziepher-builds
     restart: unless-stopped
 
+  source-control-worker:
+    build:
+      context: ../..
+      dockerfile: Dockerfile.worker
+    image: ziepher-ai-worker:0.7.0
+    command: ["npm", "run", "source-control-worker"]
+    env_file:
+      - .env.cloud
+    restart: unless-stopped
+
   deployment-worker:
     build:
       context: ../..
