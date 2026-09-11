@@ -10,6 +10,8 @@ type GitHubPullRequest = {
   number: number;
   html_url: string;
   state?: string;
+  merged?: boolean;
+  merge_commit_sha?: string | null;
   head: { sha: string; ref: string };
   base: { ref: string };
 };
@@ -29,7 +31,7 @@ class GitHubPullRequestApiError extends Error {
 async function request<T>(
   accessToken: string,
   url: string,
-  options: { method?: "GET" | "POST"; body?: unknown } = {}
+  options: { method?: "GET" | "POST" | "PUT"; body?: unknown } = {}
 ): Promise<T> {
   if (!accessToken.trim()) throw new Error("GitHub access token is required.");
   const response = await fetch(url, {
@@ -84,6 +86,16 @@ function normalizePullRequest(
     url: pullRequest.html_url,
     headSha
   };
+}
+
+async function fetchPullRequest(
+  accessToken: string,
+  repositoryFullName: string,
+  pullRequestNumber: number
+) {
+  const { owner, repo } = parseRepositoryFullName(repositoryFullName);
+  const url = `${GITHUB_API}/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/pulls/${pullRequestNumber}`;
+  return request<GitHubPullRequest>(accessToken, url);
 }
 
 async function findOpenPullRequest(
@@ -189,10 +201,12 @@ export async function verifyGitHubPullRequest(
     throw new Error("A full expected pull request head SHA is required.");
   }
 
-  const { owner, repo } = parseRepositoryFullName(repositoryFullName);
-  const url = `${GITHUB_API}/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/pulls/${input.pullRequestNumber}`;
-  const pullRequest = await request<GitHubPullRequest>(accessToken, url);
-  if (pullRequest.state !== "open") {
+  const pullRequest = await fetchPullRequest(
+    accessToken,
+    repositoryFullName,
+    input.pullRequestNumber
+  );
+  if (pullRequest.state !== "open" || pullRequest.merged === true) {
     throw new Error("GitHub pull request is no longer open.");
   }
   const normalized = normalizePullRequest(pullRequest, input);
@@ -200,4 +214,86 @@ export async function verifyGitHubPullRequest(
     throw new Error("GitHub returned a different pull request than requested.");
   }
   return normalized;
+}
+
+function reconciledMerge(
+  pullRequest: GitHubPullRequest,
+  input: {
+    pullRequestNumber: number;
+    workingBranch: string;
+    baseBranch: string;
+    expectedHeadSha: string;
+  }
+) {
+  const normalized = normalizePullRequest(pullRequest, input);
+  if (normalized.number !== input.pullRequestNumber) {
+    throw new Error("GitHub returned a different pull request than requested.");
+  }
+  if (pullRequest.merged !== true || !FULL_SHA.test(pullRequest.merge_commit_sha ?? "")) {
+    return null;
+  }
+  return {
+    mergeSha: pullRequest.merge_commit_sha!.toLowerCase(),
+    reconciled: true
+  };
+}
+
+export async function ensureApprovedGitHubPullRequestMerged(
+  accessToken: string,
+  repositoryFullName: string,
+  input: {
+    pullRequestNumber: number;
+    workingBranch: string;
+    baseBranch: string;
+    expectedHeadSha: string;
+  }
+) {
+  if (!Number.isInteger(input.pullRequestNumber) || input.pullRequestNumber < 1) {
+    throw new Error("A valid pull request number is required.");
+  }
+  if (!FULL_SHA.test(input.expectedHeadSha)) {
+    throw new Error("A full approved head SHA is required.");
+  }
+
+  const before = await fetchPullRequest(
+    accessToken,
+    repositoryFullName,
+    input.pullRequestNumber
+  );
+  const alreadyMerged = reconciledMerge(before, input);
+  if (alreadyMerged) return alreadyMerged;
+  if (before.state !== "open") {
+    throw new Error("Approved GitHub pull request closed without being merged.");
+  }
+  normalizePullRequest(before, input);
+
+  const { owner, repo } = parseRepositoryFullName(repositoryFullName);
+  const mergeUrl = `${GITHUB_API}/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/pulls/${input.pullRequestNumber}/merge`;
+
+  try {
+    const result = await request<{ sha: string; merged: boolean; message: string }>(
+      accessToken,
+      mergeUrl,
+      {
+        method: "PUT",
+        body: {
+          sha: input.expectedHeadSha.toLowerCase(),
+          merge_method: "squash"
+        }
+      }
+    );
+    if (!result.merged || !FULL_SHA.test(result.sha ?? "")) {
+      throw new Error("GitHub did not merge the approved pull request.");
+    }
+    return { mergeSha: result.sha.toLowerCase(), reconciled: false };
+  } catch (error) {
+    const after = await fetchPullRequest(
+      accessToken,
+      repositoryFullName,
+      input.pullRequestNumber
+    );
+    const accepted = reconciledMerge(after, input);
+    if (accepted) return accepted;
+    throw error;
+  }
 }
