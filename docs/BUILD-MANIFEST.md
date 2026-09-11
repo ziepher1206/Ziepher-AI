@@ -1,130 +1,93 @@
 # Ziepher AI Build Manifest
 
-**Release:** 0.7.0  
-**Checkpoint date:** July 18, 2026  
+**Current rebuild checkpoint:** September 11, 2026  
 **Product:** Ziepher AI — Build Your Dreams
 
-## Included systems
+## Active delivered systems
 
-- Visual, voice-first planning studio with typed input
-- Free planning with deterministic, Gemini, and optional OpenAI routes
-- Multiple visual directions and responsive live-preview controls
-- Supabase authentication, projects, specifications, concepts, storage, RLS, and job queues
-- Credit-aware build orchestration with atomic reservation and release
-- Deterministic complete-app generator plus AI generation and repair routes
-- Docker-oriented isolated runner contracts and security scanning
-- Version history, source export, restore, build history, and deployment history
-- Preview and production deployment queue with Vercel and manual-delivery providers
-- Stripe subscriptions, billing portal, webhook idempotency, and monthly credit grants
-- Stripe and Vercel production activation disabled by default
-- Revisioned project snapshots, append-only sync events, and optimistic conflict handling
-- Realtime project updates with polling fallback and browser-local offline replay
-- Durable AI context shared by planning, generation, and repair
-- Exact-origin Tauri bridge with a native user-approved workspace boundary
-- Guarded local file scanning, hashing, reading, writing, and recovery backups
-- Health, readiness, CI, container, security, operations, and release documentation
+- Browser-first visual/voice planning studio and installable PWA surface
+- Deterministic, OpenAI, and optional Gemini planning/build routes
+- OpenAI-first paid-provider policy with paid fallback disabled by default
+- Supabase authentication, workspaces, projects, specifications, context, private artifacts, build/deployment ledgers, and project sync state
+- Docker-oriented isolated build runner contracts and generated-source security checks
+- Durable build publication with idempotent project-version/artifact creation
+- Encrypted provider-connection storage
+- GitHub OAuth with token refresh and sanitized connection status
+- Verified project-to-GitHub repository binding
+- Durable source-control run ledger and worker leases
+- Isolated generated-code branch creation
+- Atomic generated-source publication to GitHub
+- Retry-safe PR creation and PR identity verification
+- GitHub check gating
+- Explicit project-to-Vercel project binding with immutable per-deployment target snapshots
+- Vercel preview gating before human approval
+- Owner/admin approval recorded against the reviewed source-control run
+- Exact-head, retry-safe squash merge
+- Production release separated from merge and disabled by default
+- Production release tied to the exact merged source-control run and build version
+- Vercel provider-attempt marker written before deployment side effects
+- Vercel metadata reconciliation to prevent blind duplicate deployment retries
+- Build Review visibility for preview/production deployment and reconciliation state
+- Stripe code retained but disabled until separate financial release gates pass
+- CI, web/worker Dockerfiles, cloud topology documentation, health/readiness endpoints, and release/security runbooks
 
-## Validation completed in this environment
+## Current validation pattern
 
-| Check | Result |
+Every PR in the rebuild is required to pass:
+
+| Check | Gate |
 |---|---|
-| `npm run typecheck` | Passed |
-| `npm run lint` | Passed |
-| `npm run test` | Passed — 8 tests |
-| `npm run build` | Passed — optimized production build |
-| `npm audit --audit-level=moderate` | Passed — 0 vulnerabilities |
-| `npm run check:sync` | Passed — sync, AI-context, and bridge contracts |
-| `npm run check:clients` | Passed — desktop/mobile packaging contracts |
-| Generated fallback app type check | Passed |
-| Generated fallback app production build | Passed |
+| TypeScript | `npm run typecheck` |
+| ESLint | `npm run lint` |
+| Unit tests | `npm test` |
+| Production compilation | `npm run build` |
+| Dependency audit | `npm audit --audit-level=moderate` |
 
-The generated-app dependency installation was rerun from the local npm cache after
-the online smoke command stalled in this restricted environment. Its type check
-and optimized production build both passed.
+Schema milestones are additionally reviewed, applied to the Ziepher AI Supabase project, checked with Supabase security/performance advisors, and exercised with rollback-only synthetic transactions where practical.
 
-## External validation still required
+Recent rollback tests have covered:
 
-These items require operator-owned infrastructure or credentials and therefore
-cannot be completed inside this repository alone:
+- source-control worker leases and exact state transitions;
+- owner/admin approval authority;
+- exact-head merge completion;
+- production-release authorization and stale-release rejection;
+- idempotent production queueing and failed-release retry;
+- Vercel project target snapshotting and immutability;
+- Vercel provider-attempt durability and reconciliation state preservation.
 
-- Provision development, staging, and production Supabase projects.
-- Apply and verify all seven migrations, including sync conflict and multi-user RLS behavior.
-- Build and run the web container on the intended container platform.
-- Run build workers on dedicated Docker-capable hosts.
-- Configure approved AI models, quotas, retention settings, and spending limits.
-- Configure Vercel credentials and complete staging deployment tests.
-- Configure Stripe test products, prices, webhook endpoint, and end-to-end test payments.
-- Complete the production release checklist before enabling Stripe or production deployments.
+Synthetic tests are rolled back and verified for zero residue.
 
-## Checkpoint 0.7.0 — Project Sync Bridge
+## External/operator validation still required
 
-Added:
+These items cannot be proven by repository code alone:
 
-- `project_sync_states`, `project_sync_events`, and `project_bridge_devices`;
-- idempotent revision-checked sync and bridge registration functions;
-- Realtime subscription, reconnect polling, offline queue, and conflict retry;
-- project AI context editor and prompt integration;
-- guarded Tauri commands for folder approval, scans, reads, and writes;
-- compare-before-write hashes and recoverable local backups;
-- authenticated sync, context, and bridge API routes.
+- Protect GitHub `main` with branch protection/rulesets so direct pushes cannot bypass PR/CI policy.
+- Operate the web control plane and private workers on intended production infrastructure.
+- Configure production-grade worker monitoring/restart policy and secret delivery.
+- Connect and validate the intended Vercel account/project targets for real projects.
+- Run controlled real preview deployments only after Vercel deployment execution is deliberately enabled.
+- Enable production releases only after preview, recovery, approval, and operational checks are complete.
+- Configure Stripe test products/webhooks and complete end-to-end financial tests before any live billing activation.
+- Configure spending limits, retention rules, backups, alerts, and incident response for production services.
 
-Validated here:
+## Delivery scope
 
-- TypeScript, ESLint, 8 unit tests, PWA checks, client checks, sync contract
-  checks, optimized production build, and npm audit all passed.
+The active client is the HTTPS web application/PWA.
 
-Environment-limited:
+The former Tauri desktop and Capacitor Android/iOS wrappers were removed from the active working tree and release pipeline during the browser-first rebuild. Their history remains available in Git if a future native client becomes justified.
 
-- the Tauri Rust source could not be compiled because this workspace has no
-  `cargo` or `rustc`; the platform release matrix remains the compilation gate;
-- the Supabase migration needs an operator-owned development project for live
-  RLS, Realtime, and concurrency testing;
-- local HTTP smoke startup is blocked by sandbox network-interface discovery,
-  after the production compilation and static generation completed successfully.
+Browser project synchronization remains active. Legacy bridge schema/API compatibility is retained without keeping native packaging as an active product surface.
 
 ## Safety defaults
 
-- Planning does not reserve or spend build credits.
 - Generated code is treated as untrusted.
-- Unsandboxed execution is disabled by default.
-- Automated repair is limited and does not add user credit charges.
-- Financial integrations are scheduled after core application validation.
-- Stripe live billing is disabled until `STRIPE_ENABLED=true`.
-- Vercel deployment is disabled until `VERCEL_DEPLOYMENTS_ENABLED=true`.
-- Production activation requires explicit operator configuration.
-
-
-## Checkpoint 0.5.0 — installable clients
-
-Added:
-
-- installable Next.js PWA surface;
-- safe service-worker cache boundaries;
-- branded PWA and native icons;
-- Tauri desktop packaging source;
-- Capacitor Android and iOS projects;
-- automated desktop and mobile packaging workflow;
-- cloud control-plane and worker compose topology;
-- dedicated installation-delivery runbook.
-
-Validation evidence:
-
-- root TypeScript, ESLint, unit tests, PWA checks, client-contract checks, and
-  optimized Next.js build passed;
-- Capacitor TypeScript validation and Android/iOS synchronization passed;
-- desktop Rust compilation is delegated to the platform matrix because the
-  current build environment does not contain an executable Rust toolchain;
-- signed installers and store packages still require operator-owned signing
-  credentials and developer accounts.
-
-
-### Environment-limited checks
-
-The 0.5.0 generated-app smoke test reached dependency installation but the
-restricted execution environment could not resolve `registry.npmjs.org`
-(`EAI_AGAIN`). The generator itself is unchanged from the previously validated
-checkpoint. CI must rerun `npm run smoke:generated` with package-registry access.
-
-The desktop source was not compiled locally because this environment has no
-executable Rust toolchain. The release workflow compiles it separately on
-Windows, macOS, and Linux runners.
+- Unsandboxed build execution is disabled by default.
+- Paid AI fallback is disabled by default.
+- Provider credentials remain server-side and encrypted where persisted.
+- AI-generated code cannot merge without owner/admin approval of the reviewed build.
+- Merge does not trigger production automatically.
+- Vercel deployments require an explicit validated project target.
+- Ambiguous Vercel provider outcomes do not cause blind duplicate deploys.
+- `VERCEL_DEPLOYMENTS_ENABLED=false` by default.
+- `VERCEL_PRODUCTION_RELEASES_ENABLED=false` by default.
+- `STRIPE_ENABLED=false` by default.
