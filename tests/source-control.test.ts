@@ -41,6 +41,15 @@ describe("source-control lifecycle", () => {
       .toBe("ziepher/bdf3693d4baa/run202609100");
   });
 
+  it("matches the database branch identity for UUID project and build ids", () => {
+    expect(
+      createWorkingBranchName(
+        "BDF3693D-4BAA-47F4-A51A-8370CA47CB44",
+        "38C23EE2-5704-4BD3-AB4C-BC9F33C6F432"
+      )
+    ).toBe("ziepher/bdf3693d4baa/38c23ee25704");
+  });
+
   it("parses repository names", () => {
     expect(parseRepositoryFullName("ziepher1206/Ziepher-AI")).toEqual({
       owner: "ziepher1206",
