@@ -1,9 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import styles from "./provider-connections-panel.module.css";
 
-type GitHubConnection = {
+export type GitHubConnection = {
   connected: boolean;
   status: "connected" | "needs_attention" | "disconnected";
   displayName?: string | null;
@@ -13,9 +13,13 @@ type GitHubConnection = {
   needsAttentionReason?: string | null;
 };
 
-export function ProviderConnectionsPanel() {
-  const [connection, setConnection] = useState<GitHubConnection | null>(null);
-  const [loading, setLoading] = useState(true);
+export function ProviderConnectionsPanel({
+  initialConnection
+}: {
+  initialConnection: GitHubConnection;
+}) {
+  const [connection, setConnection] = useState<GitHubConnection>(initialConnection);
+  const [loading, setLoading] = useState(false);
   const [disconnecting, setDisconnecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -35,10 +39,6 @@ export function ProviderConnectionsPanel() {
     }
   }, []);
 
-  useEffect(() => {
-    void load();
-  }, [load]);
-
   async function disconnect() {
     setDisconnecting(true);
     setError(null);
@@ -53,8 +53,8 @@ export function ProviderConnectionsPanel() {
     }
   }
 
-  const connected = connection?.connected === true;
-  const attention = connection?.status === "needs_attention";
+  const connected = connection.connected === true;
+  const attention = connection.status === "needs_attention";
 
   return (
     <section className={styles.card}>
@@ -81,13 +81,13 @@ export function ProviderConnectionsPanel() {
         pull requests, approvals, and recoverable production changes.
       </p>
 
-      {connection?.displayName ? (
+      {connection.displayName ? (
         <p className={styles.account}>
           Connected as <strong>{connection.displayName}</strong>
         </p>
       ) : null}
 
-      {attention && connection?.needsAttentionReason ? (
+      {attention && connection.needsAttentionReason ? (
         <p className={styles.warning}>{connection.needsAttentionReason}</p>
       ) : null}
 
