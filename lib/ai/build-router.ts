@@ -5,6 +5,7 @@ import { createDeterministicBuild } from "./deterministic-build";
 import { buildWithGemini } from "./providers/gemini-build";
 import { buildWithOpenAI } from "./providers/openai-build";
 import { parseJsonObject } from "./json";
+import { paidAIProviderOrder } from "./provider-policy";
 import type { QualityMode } from "@/lib/domain/schemas";
 
 export type BuildRouteResult = {
@@ -39,7 +40,24 @@ export async function createApplicationBuild(
 ): Promise<BuildRouteResult> {
   const prompt = createBuildPrompt(plan, visualConceptId, projectContext);
 
-  if (process.env.GOOGLE_AI_API_KEY) {
+  for (const provider of paidAIProviderOrder()) {
+    if (provider === "openai") {
+      const model = openAIModelFor(mode);
+      if (!process.env.OPENAI_API_KEY || !model) continue;
+      try {
+        const result = await buildWithOpenAI(prompt, model);
+        return {
+          artifact: buildArtifactSchema.parse(parseJsonObject(result.text)),
+          provider: "openai",
+          model
+        };
+      } catch (error) {
+        console.error("OpenAI build route failed:", error);
+      }
+      continue;
+    }
+
+    if (!process.env.GOOGLE_AI_API_KEY) continue;
     const model = googleModelFor(mode);
     try {
       const result = await buildWithGemini(prompt, model);
@@ -53,27 +71,12 @@ export async function createApplicationBuild(
     }
   }
 
-  const openAIModel = openAIModelFor(mode);
-  if (process.env.OPENAI_API_KEY && openAIModel) {
-    try {
-      const result = await buildWithOpenAI(prompt, openAIModel);
-      return {
-        artifact: buildArtifactSchema.parse(parseJsonObject(result.text)),
-        provider: "openai",
-        model: openAIModel
-      };
-    } catch (error) {
-      console.error("OpenAI build route failed:", error);
-    }
-  }
-
   return {
     artifact: createDeterministicBuild(plan, visualConceptId),
     provider: "deterministic",
     model: "ziepher-scaffold-v2"
   };
 }
-
 
 export async function repairApplicationBuild(
   plan: AppPlan,
@@ -91,7 +94,24 @@ export async function repairApplicationBuild(
     projectContext
   );
 
-  if (process.env.GOOGLE_AI_API_KEY) {
+  for (const provider of paidAIProviderOrder()) {
+    if (provider === "openai") {
+      const model = process.env.OPENAI_ESCALATION_MODEL ?? process.env.OPENAI_BUILD_MODEL;
+      if (!process.env.OPENAI_API_KEY || !model) continue;
+      try {
+        const result = await buildWithOpenAI(prompt, model);
+        return {
+          artifact: buildArtifactSchema.parse(parseJsonObject(result.text)),
+          provider: "openai",
+          model
+        };
+      } catch (error) {
+        console.error("OpenAI repair route failed:", error);
+      }
+      continue;
+    }
+
+    if (!process.env.GOOGLE_AI_API_KEY) continue;
     const model =
       mode === "economy"
         ? (process.env.GOOGLE_BUILD_MODEL ?? "gemini-3.5-flash")
@@ -107,21 +127,6 @@ export async function repairApplicationBuild(
       };
     } catch (error) {
       console.error("Gemini repair route failed:", error);
-    }
-  }
-
-  const openAIModel =
-    process.env.OPENAI_ESCALATION_MODEL ?? process.env.OPENAI_BUILD_MODEL;
-  if (process.env.OPENAI_API_KEY && openAIModel) {
-    try {
-      const result = await buildWithOpenAI(prompt, openAIModel);
-      return {
-        artifact: buildArtifactSchema.parse(parseJsonObject(result.text)),
-        provider: "openai",
-        model: openAIModel
-      };
-    } catch (error) {
-      console.error("OpenAI repair route failed:", error);
     }
   }
 
