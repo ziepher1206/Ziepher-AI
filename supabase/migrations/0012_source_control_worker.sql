@@ -33,7 +33,7 @@ create or replace function public.claim_next_source_control_run(
 returns public.source_control_runs
 language plpgsql
 security definer
-set search_path = public
+set search_path = public, pg_temp
 as $$
 declare
   v_run public.source_control_runs;
@@ -75,8 +75,8 @@ create or replace function public.heartbeat_source_control_run(
 returns void
 language plpgsql
 security definer
-set search_path = public
-as $$;
+set search_path = public, pg_temp
+as $$
 begin
   update public.source_control_runs
   set heartbeat_at = now(),
@@ -91,3 +91,13 @@ begin
   end if;
 end;
 $$;
+
+revoke all on function public.claim_next_source_control_run(text, integer)
+from public, anon, authenticated;
+revoke all on function public.heartbeat_source_control_run(uuid, text, integer)
+from public, anon, authenticated;
+
+grant execute on function public.claim_next_source_control_run(text, integer)
+to service_role;
+grant execute on function public.heartbeat_source_control_run(uuid, text, integer)
+to service_role;
