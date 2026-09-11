@@ -12,6 +12,9 @@ type DeploymentJob = {
   requested_by: string;
   provider: "vercel" | "manual";
   environment: "preview" | "production";
+  vercel_project_id: string | null;
+  vercel_project_name: string | null;
+  vercel_org_id: string | null;
 };
 
 type CommandResult = {
@@ -137,6 +140,11 @@ async function deployToVercel(sourceDir: string, job: DeploymentJob) {
 
   const token = process.env.VERCEL_TOKEN;
   if (!token) throw new Error("VERCEL_TOKEN is not configured.");
+  if (!job.vercel_project_id || !job.vercel_project_name || !job.vercel_org_id) {
+    throw new Error(
+      "Vercel deployment is missing its immutable project target snapshot. Requeue after binding the Ziepher project to Vercel."
+    );
+  }
 
   const args = [
     "--yes",
@@ -149,12 +157,17 @@ async function deployToVercel(sourceDir: string, job: DeploymentJob) {
     token
   ];
 
-  if (process.env.VERCEL_TEAM_ID) {
-    args.push("--scope", process.env.VERCEL_TEAM_ID);
-  }
   if (job.environment === "production") args.push("--prod");
 
-  const result = await runCommand("npx", args, sourceDir);
+  const result = await runCommand(
+    "npx",
+    args,
+    sourceDir,
+    {
+      VERCEL_PROJECT_ID: job.vercel_project_id,
+      VERCEL_ORG_ID: job.vercel_org_id
+    }
+  );
   const url = result.stdout
     .split(/\r?\n/)
     .map((line) => line.trim())
@@ -221,7 +234,7 @@ async function processJob(job: DeploymentJob) {
     const deployment = await deployToVercel(sourceDir, job);
     await complete(job, true, deployment.id, deployment.url, null);
     console.log(
-      `[${workerId}] deployed ${job.id} to ${deployment.url}`
+      `[${workerId}] deployed ${job.id} to ${job.vercel_project_name} (${job.vercel_project_id}) at ${deployment.url}`
     );
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
