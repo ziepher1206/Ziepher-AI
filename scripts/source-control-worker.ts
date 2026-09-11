@@ -4,6 +4,7 @@ import {
   ensureGitHubBranchAtBase,
   publishGitHubFilesAtomically
 } from "@/lib/source-control/github";
+import { ensureGitHubPullRequest } from "@/lib/source-control/pull-request";
 import { readVerifiedSourceArchive } from "@/lib/source-control/source-archive";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -16,7 +17,7 @@ type ClaimedSourceControlRun = {
   working_branch: string;
   base_sha: string | null;
   head_sha: string | null;
-  stage: "queued" | "branch_created";
+  stage: "queued" | "branch_created" | "changes_ready";
   revision: number;
   worker_id: string | null;
 };
@@ -171,6 +172,46 @@ async function processBranchCreatedRun(
   );
 }
 
+async function processChangesReadyRun(
+  run: ClaimedSourceControlRun,
+  accessToken: string
+) {
+  if (!run.build_job_id) {
+    throw new Error("Source-control run is missing its build job identity.");
+  }
+  if (!run.head_sha || !/^[a-f0-9]{40}$/i.test(run.head_sha)) {
+    throw new Error("Source-control run is missing a valid source commit SHA.");
+  }
+
+  const pullRequest = await ensureGitHubPullRequest(
+    accessToken,
+    run.repository_full_name,
+    {
+      workingBranch: run.working_branch,
+      baseBranch: run.base_branch,
+      expectedHeadSha: run.head_sha,
+      runId: run.id,
+      buildJobId: run.build_job_id
+    }
+  );
+
+  const { error } = await supabase.rpc(
+    "complete_source_control_pull_request_open",
+    {
+      p_run_id: run.id,
+      p_worker_id: workerId,
+      p_expected_revision: run.revision,
+      p_pull_request_number: pullRequest.number,
+      p_head_sha: pullRequest.headSha
+    }
+  );
+  if (error) throw error;
+
+  console.log(
+    `[${workerId}] source-control run ${run.id} pull request #${pullRequest.number} ${pullRequest.created ? "created" : "reconciled"}`
+  );
+}
+
 async function processRun(run: ClaimedSourceControlRun) {
   try {
     const accessToken = await workspaceAccessToken(run.project_id);
@@ -178,7 +219,11 @@ async function processRun(run: ClaimedSourceControlRun) {
       await processQueuedRun(run, accessToken);
       return;
     }
-    await processBranchCreatedRun(run, accessToken);
+    if (run.stage === "branch_created") {
+      await processBranchCreatedRun(run, accessToken);
+      return;
+    }
+    await processChangesReadyRun(run, accessToken);
   } catch (error) {
     await blockRun(run, error);
     console.error(`[${workerId}] source-control run ${run.id} blocked:`, error);
