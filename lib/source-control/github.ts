@@ -1,6 +1,6 @@
 import "server-only";
 
-import { parseRepositoryFullName, type SourceControlStage } from "@/lib/source-control/lifecycle";
+import { parseRepositoryFullName, type SourceControlStage } from "./lifecycle";
 
 const GITHUB_API = "https://api.github.com";
 const API_VERSION = "2022-11-28";
