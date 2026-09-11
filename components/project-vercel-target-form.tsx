@@ -12,13 +12,13 @@ type Target = {
 type Props = {
   projectId: string;
   currentTarget: Target | null;
-  tokenConfigured: boolean;
+  connectionConfigured: boolean;
 };
 
 export function ProjectVercelTargetForm({
   projectId,
   currentTarget,
-  tokenConfigured
+  connectionConfigured
 }: Props) {
   const router = useRouter();
   const [projectRef, setProjectRef] = useState(currentTarget?.id ?? "");
@@ -28,7 +28,7 @@ export function ProjectVercelTargetForm({
   const [savedTarget, setSavedTarget] = useState<Target | null>(currentTarget);
 
   async function save() {
-    if (!projectRef.trim() || saving || !tokenConfigured) return;
+    if (!projectRef.trim() || saving || !connectionConfigured) return;
     setSaving(true);
     setError(null);
     try {
@@ -87,13 +87,15 @@ export function ProjectVercelTargetForm({
         </div>
       ) : null}
 
-      {!tokenConfigured ? (
+      {!connectionConfigured ? (
         <div className="panel">
-          <strong>Vercel connection not configured</strong>
-          <p style={{ marginBottom: 0 }}>
-            The Ziepher control plane needs a server-side VERCEL_TOKEN before a project
-            target can be validated. No token is exposed to the browser.
+          <strong>Connect Vercel first</strong>
+          <p>
+            This project can only bind to the Vercel account connected to its Ziepher workspace. Global operator credentials are never used for customer project deployment.
           </p>
+          <a className="button primary" href="/settings/connections">
+            Open connected rails
+          </a>
         </div>
       ) : null}
 
@@ -102,8 +104,7 @@ export function ProjectVercelTargetForm({
           <strong>Vercel project ID or name</strong>
         </label>
         <p>
-          Ziepher will verify this project with Vercel and save Vercel&apos;s canonical
-          project ID and account ID. Deployment jobs snapshot that identity when queued.
+          Ziepher will verify this project using the workspace&apos;s encrypted Vercel credential and save Vercel&apos;s canonical project ID and account ID. Deployment jobs snapshot that identity when queued.
         </p>
         <input
           id="vercel-project-ref"
@@ -111,14 +112,14 @@ export function ProjectVercelTargetForm({
           onChange={(event) => setProjectRef(event.target.value)}
           placeholder="prj_... or my-vercel-project"
           autoComplete="off"
-          disabled={!tokenConfigured || saving || disconnecting}
+          disabled={!connectionConfigured || saving || disconnecting}
           style={{ width: "100%", marginBottom: 12 }}
         />
         <div className="inline-actions">
           <button
             className="button primary"
             type="button"
-            disabled={!tokenConfigured || !projectRef.trim() || saving || disconnecting}
+            disabled={!connectionConfigured || !projectRef.trim() || saving || disconnecting}
             onClick={save}
           >
             {saving ? "Verifying…" : savedTarget ? "Verify & update target" : "Verify & connect target"}
@@ -139,8 +140,7 @@ export function ProjectVercelTargetForm({
       <div className="panel">
         <strong>Safety rule</strong>
         <p style={{ marginBottom: 0 }}>
-          Changing or disconnecting this setting cannot redirect a deployment that was
-          already queued. Each deployment keeps the Vercel identity it captured at queue time.
+          Changing or disconnecting this setting cannot redirect a deployment that was already queued. Each deployment keeps the Vercel identity it captured at queue time.
         </p>
       </div>
 
