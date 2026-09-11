@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
@@ -19,11 +20,13 @@ type CurrentRepository = {
 export function ProjectRepositoryPicker({
   projectId,
   repositories,
-  currentRepository
+  currentRepository,
+  discoveryError
 }: {
   projectId: string;
   repositories: RepositoryOption[];
   currentRepository: CurrentRepository;
+  discoveryError?: string | null;
 }) {
   const router = useRouter();
   const [selected, setSelected] = useState(
@@ -91,7 +94,14 @@ export function ProjectRepositoryPicker({
         </p>
       ) : null}
 
-      {repositories.length ? (
+      {discoveryError ? (
+        <div>
+          <p className="error-banner">{discoveryError}</p>
+          <Link className="button" href="/settings/connections">
+            Open GitHub connection settings
+          </Link>
+        </div>
+      ) : repositories.length ? (
         <label className="field">
           <span>Writable GitHub repository</span>
           <select
@@ -117,7 +127,12 @@ export function ProjectRepositoryPicker({
       {error ? <p className="error-banner">{error}</p> : null}
 
       <div className="inline-actions" style={{ marginTop: 18 }}>
-        <button className="button primary" type="button" onClick={save} disabled={!selected || saving}>
+        <button
+          className="button primary"
+          type="button"
+          onClick={save}
+          disabled={!selected || saving || Boolean(discoveryError)}
+        >
           {saving ? "Saving…" : currentRepository ? "Change repository" : "Connect repository"}
         </button>
         {currentRepository ? (
