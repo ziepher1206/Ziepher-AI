@@ -8,6 +8,7 @@ import {
   findVercelDeploymentByZiepherId,
   type VercelDeploymentObservation
 } from "@/lib/deployment/vercel-deployments";
+import { getUsableVercelConnection } from "@/lib/provider-connections/vercel";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 type DeploymentJob = {
@@ -166,23 +167,38 @@ async function rescheduleReconciliation(
   if (error) throw error;
 }
 
-function requireVercelRuntime(job: DeploymentJob) {
+async function requireVercelRuntime(job: DeploymentJob) {
   if (process.env.VERCEL_DEPLOYMENTS_ENABLED !== "true") {
     throw new Error(
-      "Vercel deployment is disabled. Set VERCEL_DEPLOYMENTS_ENABLED=true after configuring a deployment token."
+      "Vercel deployment is disabled. Set VERCEL_DEPLOYMENTS_ENABLED=true after connecting Vercel for the workspace."
     );
   }
 
-  const token = process.env.VERCEL_TOKEN;
-  if (!token) throw new Error("VERCEL_TOKEN is not configured.");
   if (!job.vercel_project_id || !job.vercel_project_name || !job.vercel_org_id) {
     throw new Error(
       "Vercel deployment is missing its immutable project target snapshot. Requeue after binding the Ziepher project to Vercel."
     );
   }
 
+  const { data: project, error } = await supabase
+    .from("projects")
+    .select("workspace_id")
+    .eq("id", job.project_id)
+    .single();
+  if (error) throw error;
+  if (!project?.workspace_id) {
+    throw new Error("The deployment project has no workspace Vercel connection.");
+  }
+
+  const connection = await getUsableVercelConnection(project.workspace_id);
+  if (connection.teamId && connection.teamId !== job.vercel_org_id) {
+    throw new Error(
+      "The connected Vercel team no longer matches the deployment target snapshot. Rebind the project before creating a new deployment."
+    );
+  }
+
   return {
-    token,
+    token: connection.accessToken,
     target: {
       projectId: job.vercel_project_id,
       orgId: job.vercel_org_id
@@ -335,7 +351,7 @@ async function processJob(job: DeploymentJob) {
       return;
     }
 
-    const { token } = requireVercelRuntime(job);
+    const { token } = await requireVercelRuntime(job);
     const existing = await observeVercelDeployment(job, token);
     if (existing) {
       await finishObservedVercelDeployment(job, existing);
