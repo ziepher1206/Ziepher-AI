@@ -2,9 +2,13 @@ import { setTimeout as sleep } from "node:timers/promises";
 import { getUsableGitHubAccessToken } from "@/lib/provider-connections/github-oauth";
 import {
   ensureGitHubBranchAtBase,
+  getGitHubCheckSummary,
   publishGitHubFilesAtomically
 } from "@/lib/source-control/github";
-import { ensureGitHubPullRequest } from "@/lib/source-control/pull-request";
+import {
+  ensureGitHubPullRequest,
+  verifyGitHubPullRequest
+} from "@/lib/source-control/pull-request";
 import { readVerifiedSourceArchive } from "@/lib/source-control/source-archive";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -17,9 +21,24 @@ type ClaimedSourceControlRun = {
   working_branch: string;
   base_sha: string | null;
   head_sha: string | null;
-  stage: "queued" | "branch_created" | "changes_ready";
+  pull_request_number: number | null;
+  preview_deployment_id: string | null;
+  stage:
+    | "queued"
+    | "branch_created"
+    | "changes_ready"
+    | "pull_request_open"
+    | "checks_running";
   revision: number;
   worker_id: string | null;
+};
+
+type PreviewDeployment = {
+  status: "queued" | "building" | "deploying" | "ready" | "failed" | "cancelled";
+  url: string | null;
+  failure_message: string | null;
+  provider: string;
+  environment: string;
 };
 
 const workerId =
@@ -212,6 +231,136 @@ async function processChangesReadyRun(
   );
 }
 
+function requirePullRequestIdentity(run: ClaimedSourceControlRun) {
+  if (!run.pull_request_number || run.pull_request_number < 1) {
+    throw new Error("Source-control run is missing its pull request number.");
+  }
+  if (!run.head_sha || !/^[a-f0-9]{40}$/i.test(run.head_sha)) {
+    throw new Error("Source-control run is missing a valid pull request head SHA.");
+  }
+  return {
+    pullRequestNumber: run.pull_request_number,
+    headSha: run.head_sha.toLowerCase()
+  };
+}
+
+async function rescheduleChecks(
+  run: ClaimedSourceControlRun,
+  pullRequestNumber: number,
+  headSha: string,
+  delaySeconds: number
+) {
+  const { error } = await supabase.rpc("reschedule_source_control_checks", {
+    p_run_id: run.id,
+    p_worker_id: workerId,
+    p_expected_revision: run.revision,
+    p_pull_request_number: pullRequestNumber,
+    p_head_sha: headSha,
+    p_delay_seconds: delaySeconds,
+    p_last_error: null
+  });
+  if (error) throw error;
+}
+
+async function processChecksAndPreviewRun(
+  run: ClaimedSourceControlRun,
+  accessToken: string
+) {
+  const identity = requirePullRequestIdentity(run);
+  await verifyGitHubPullRequest(accessToken, run.repository_full_name, {
+    pullRequestNumber: identity.pullRequestNumber,
+    workingBranch: run.working_branch,
+    baseBranch: run.base_branch,
+    expectedHeadSha: identity.headSha
+  });
+
+  const checks = await getGitHubCheckSummary(
+    accessToken,
+    run.repository_full_name,
+    identity.headSha
+  );
+
+  if (checks.failed > 0) {
+    throw new Error(
+      `GitHub checks failed for pull request #${identity.pullRequestNumber}.`
+    );
+  }
+
+  if (!checks.passed) {
+    await rescheduleChecks(run, identity.pullRequestNumber, identity.headSha, 30);
+    console.log(
+      `[${workerId}] source-control run ${run.id} waiting for GitHub checks (${checks.pending} pending, ${checks.total} total)`
+    );
+    return;
+  }
+
+  if (!run.preview_deployment_id) {
+    const { error } = await supabase.rpc(
+      "queue_source_control_preview_deployment",
+      {
+        p_run_id: run.id,
+        p_worker_id: workerId,
+        p_expected_revision: run.revision,
+        p_pull_request_number: identity.pullRequestNumber,
+        p_head_sha: identity.headSha,
+        p_delay_seconds: 20
+      }
+    );
+    if (error) throw error;
+    console.log(
+      `[${workerId}] source-control run ${run.id} queued its Vercel preview after green checks`
+    );
+    return;
+  }
+
+  const { data: deployment, error: deploymentError } = await supabase
+    .from("deployments")
+    .select("status,url,failure_message,provider,environment")
+    .eq("id", run.preview_deployment_id)
+    .eq("project_id", run.project_id)
+    .single();
+  if (deploymentError) throw deploymentError;
+
+  const preview = deployment as PreviewDeployment;
+  if (preview.provider !== "vercel" || preview.environment !== "preview") {
+    throw new Error("Linked preview deployment does not match the Vercel preview rail.");
+  }
+
+  if (preview.status === "failed" || preview.status === "cancelled") {
+    throw new Error(
+      preview.failure_message || `Vercel preview deployment ${preview.status}.`
+    );
+  }
+
+  if (preview.status !== "ready") {
+    await rescheduleChecks(run, identity.pullRequestNumber, identity.headSha, 20);
+    console.log(
+      `[${workerId}] source-control run ${run.id} waiting for Vercel preview (${preview.status})`
+    );
+    return;
+  }
+
+  if (!preview.url || !/^https:\/\/\S+$/.test(preview.url)) {
+    throw new Error("Vercel preview is ready but has no valid HTTPS URL.");
+  }
+
+  const { error } = await supabase.rpc(
+    "complete_source_control_preview_ready",
+    {
+      p_run_id: run.id,
+      p_worker_id: workerId,
+      p_expected_revision: run.revision,
+      p_pull_request_number: identity.pullRequestNumber,
+      p_head_sha: identity.headSha
+    }
+  );
+  if (error) throw error;
+
+  console.log(
+    `[${workerId}] source-control run ${run.id} preview ready at ${preview.url}`
+  );
+}
+
 async function processRun(run: ClaimedSourceControlRun) {
   try {
     const accessToken = await workspaceAccessToken(run.project_id);
@@ -223,7 +372,11 @@ async function processRun(run: ClaimedSourceControlRun) {
       await processBranchCreatedRun(run, accessToken);
       return;
     }
-    await processChangesReadyRun(run, accessToken);
+    if (run.stage === "changes_ready") {
+      await processChangesReadyRun(run, accessToken);
+      return;
+    }
+    await processChecksAndPreviewRun(run, accessToken);
   } catch (error) {
     await blockRun(run, error);
     console.error(`[${workerId}] source-control run ${run.id} blocked:`, error);
