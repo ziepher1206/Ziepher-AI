@@ -38,3 +38,6 @@ jobs:
 
       - name: Test
         run: npm test
+
+      - name: Dependency audit
+        run: npm audit --audit-level=moderate
