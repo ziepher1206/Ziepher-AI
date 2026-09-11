@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import styles from "./provider-connections-panel.module.css";
 
 type GitHubConnection = {
   connected: boolean;
@@ -56,14 +57,22 @@ export function ProviderConnectionsPanel() {
   const attention = connection?.status === "needs_attention";
 
   return (
-    <section className="connection-card">
-      <div className="connection-heading">
+    <section className={styles.card}>
+      <div className={styles.heading}>
         <div>
           <span className="panel-label">Source control</span>
           <h2>GitHub</h2>
         </div>
-        <span className={`connection-status ${connected ? "connected" : attention ? "attention" : ""}`}>
-          {loading ? "Checking" : connected ? "Connected" : attention ? "Needs attention" : "Not connected"}
+        <span
+          className={`${styles.status} ${connected ? styles.connected : attention ? styles.attention : ""}`}
+        >
+          {loading
+            ? "Checking"
+            : connected
+              ? "Connected"
+              : attention
+                ? "Needs attention"
+                : "Not connected"}
         </span>
       </div>
 
@@ -73,16 +82,18 @@ export function ProviderConnectionsPanel() {
       </p>
 
       {connection?.displayName ? (
-        <p className="connection-account">Connected as <strong>{connection.displayName}</strong></p>
+        <p className={styles.account}>
+          Connected as <strong>{connection.displayName}</strong>
+        </p>
       ) : null}
 
       {attention && connection?.needsAttentionReason ? (
-        <p className="connection-warning">{connection.needsAttentionReason}</p>
+        <p className={styles.warning}>{connection.needsAttentionReason}</p>
       ) : null}
 
-      {error ? <p className="connection-warning">{error}</p> : null}
+      {error ? <p className={styles.warning}>{error}</p> : null}
 
-      <div className="inline-actions connection-actions">
+      <div className={`inline-actions ${styles.actions}`}>
         {connected ? (
           <>
             <a className="button primary" href="/api/connections/github/start">
@@ -102,7 +113,7 @@ export function ProviderConnectionsPanel() {
         </button>
       </div>
 
-      <p className="connection-note">
+      <p className={styles.note}>
         OAuth tokens are stored encrypted on the server. They are never returned by this page or exposed to generated applications.
       </p>
     </section>
