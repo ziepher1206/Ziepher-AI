@@ -31,6 +31,11 @@ type SourceControlRunRow = {
   pull_request_number: number | null;
   preview_url: string | null;
   preview_deployment_id: string | null;
+  production_deployment_id: string | null;
+  production_requested_by: string | null;
+  production_requested_at: string | null;
+  production_url: string | null;
+  production_verified_at: string | null;
   stage: string;
   revision: number;
   approved_by: string | null;
@@ -42,6 +47,9 @@ type SourceControlRunRow = {
   created_at: string;
   updated_at: string;
 };
+
+const RUN_SELECT =
+  "id,project_id,repository_full_name,base_branch,working_branch,head_sha,pull_request_number,preview_url,preview_deployment_id,production_deployment_id,production_requested_by,production_requested_at,production_url,production_verified_at,stage,revision,approved_by,approved_at,merged_sha,merged_at,blocked_reason,last_error,created_at,updated_at";
 
 async function loadAccess(projectId: string) {
   const supabase = await createClient();
@@ -75,6 +83,11 @@ function publicRun(run: SourceControlRunRow) {
     approvedAt: run.approved_at,
     mergedSha: run.merged_sha,
     mergedAt: run.merged_at,
+    productionDeploymentId: run.production_deployment_id,
+    productionRequestedBy: run.production_requested_by,
+    productionRequestedAt: run.production_requested_at,
+    productionUrl: run.production_url,
+    productionVerifiedAt: run.production_verified_at,
     blockedReason: run.blocked_reason,
     lastError: run.last_error,
     createdAt: run.created_at,
@@ -90,9 +103,7 @@ export async function GET(_request: Request, context: Context) {
 
     const { data, error } = await admin
       .from("source_control_runs")
-      .select(
-        "id,project_id,repository_full_name,base_branch,working_branch,head_sha,pull_request_number,preview_url,preview_deployment_id,stage,revision,approved_by,approved_at,merged_sha,merged_at,blocked_reason,last_error,created_at,updated_at"
-      )
+      .select(RUN_SELECT)
       .eq("project_id", projectId)
       .order("created_at", { ascending: false })
       .limit(1)
@@ -100,7 +111,9 @@ export async function GET(_request: Request, context: Context) {
     if (error) throw error;
 
     return NextResponse.json({
-      run: data ? publicRun(data as SourceControlRunRow) : null
+      run: data ? publicRun(data as SourceControlRunRow) : null,
+      productionReleaseEnabled:
+        process.env.VERCEL_PRODUCTION_RELEASES_ENABLED === "true"
     });
   } catch (error) {
     return apiError(error, "Unable to load source-control status.");
@@ -119,9 +132,7 @@ export async function POST(request: Request, context: Context) {
     const admin = createAdminClient();
     const { data, error } = await admin
       .from("source_control_runs")
-      .select(
-        "id,project_id,repository_full_name,base_branch,working_branch,head_sha,pull_request_number,preview_url,preview_deployment_id,stage,revision,approved_by,approved_at,merged_sha,merged_at,blocked_reason,last_error,created_at,updated_at"
-      )
+      .select(RUN_SELECT)
       .eq("id", input.runId)
       .eq("project_id", projectId)
       .single();
