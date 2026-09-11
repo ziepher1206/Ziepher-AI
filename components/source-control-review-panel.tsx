@@ -16,6 +16,11 @@ type SourceControlRun = {
   approvedAt: string | null;
   mergedSha: string | null;
   mergedAt: string | null;
+  productionDeploymentId: string | null;
+  productionRequestedBy: string | null;
+  productionRequestedAt: string | null;
+  productionUrl: string | null;
+  productionVerifiedAt: string | null;
   blockedReason: string | null;
   lastError: string | null;
   createdAt: string;
@@ -34,8 +39,10 @@ function stageLabel(stage: string) {
 
 export function SourceControlReviewPanel({ projectId }: Props) {
   const [run, setRun] = useState<SourceControlRun | null>(null);
+  const [productionReleaseEnabled, setProductionReleaseEnabled] = useState(false);
   const [loading, setLoading] = useState(true);
   const [approving, setApproving] = useState(false);
+  const [releasing, setReleasing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
@@ -45,10 +52,12 @@ export function SourceControlReviewPanel({ projectId }: Props) {
       });
       const data = (await response.json()) as {
         run?: SourceControlRun | null;
+        productionReleaseEnabled?: boolean;
         error?: string;
       };
       if (!response.ok) throw new Error(data.error || "Could not load build review.");
       setRun(data.run ?? null);
+      setProductionReleaseEnabled(data.productionReleaseEnabled === true);
       setError(null);
     } catch (loadError) {
       setError(loadError instanceof Error ? loadError.message : String(loadError));
@@ -93,6 +102,41 @@ export function SourceControlReviewPanel({ projectId }: Props) {
     }
   }
 
+  async function releaseProduction() {
+    if (!run || run.stage !== "merged" || !productionReleaseEnabled) return;
+    const confirmed = window.confirm(
+      `Deploy merge ${shortSha(run.mergedSha)} to production? This is a live production action.`
+    );
+    if (!confirmed) return;
+
+    setReleasing(true);
+    setError(null);
+    try {
+      const response = await fetch(
+        `/api/projects/${projectId}/source-control/production`,
+        {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ runId: run.id, revision: run.revision })
+        }
+      );
+      const data = (await response.json()) as {
+        deploymentId?: string;
+        error?: string;
+      };
+      if (!response.ok || !data.deploymentId) {
+        throw new Error(data.error || "Production release request failed.");
+      }
+      await load();
+    } catch (releaseError) {
+      setError(
+        releaseError instanceof Error ? releaseError.message : String(releaseError)
+      );
+    } finally {
+      setReleasing(false);
+    }
+  }
+
   if (loading) {
     return <p>Loading build review…</p>;
   }
@@ -113,6 +157,10 @@ export function SourceControlReviewPanel({ projectId }: Props) {
     ? `https://github.com/${run.repositoryFullName}/pull/${run.pullRequestNumber}`
     : null;
   const canApprove = run.stage === "preview_ready";
+  const canRequestProduction =
+    run.stage === "merged" &&
+    productionReleaseEnabled &&
+    (!run.productionRequestedAt || Boolean(run.lastError));
 
   return (
     <section className="billing-shell">
@@ -121,7 +169,7 @@ export function SourceControlReviewPanel({ projectId }: Props) {
         <h1 style={{ marginTop: 8 }}>Build review</h1>
         <p>
           Ziepher will never merge this generated build until an owner or admin approves
-          the exact reviewed commit. Approval does not deploy production.
+          the exact reviewed commit. Production is a separate explicit release.
         </p>
       </div>
 
@@ -144,6 +192,11 @@ export function SourceControlReviewPanel({ projectId }: Props) {
             {pullRequestUrl ? (
               <a className="button" href={pullRequestUrl} target="_blank" rel="noreferrer">
                 Open GitHub PR #{run.pullRequestNumber}
+              </a>
+            ) : null}
+            {run.productionUrl ? (
+              <a className="button" href={run.productionUrl} target="_blank" rel="noreferrer">
+                Open production
               </a>
             ) : null}
           </div>
@@ -174,6 +227,24 @@ export function SourceControlReviewPanel({ projectId }: Props) {
           </div>
         ) : null}
 
+        {run.productionRequestedAt ? (
+          <div className="panel">
+            <strong>Production release requested</strong>
+            <p>
+              {new Date(run.productionRequestedAt).toLocaleString()} · linked deployment {run.productionDeploymentId?.slice(0, 8) ?? "—"}
+            </p>
+          </div>
+        ) : null}
+
+        {run.productionVerifiedAt ? (
+          <div className="panel">
+            <strong>Production verified</strong>
+            <p>
+              {new Date(run.productionVerifiedAt).toLocaleString()} · exact merged build is live
+            </p>
+          </div>
+        ) : null}
+
         {canApprove ? (
           <div className="panel">
             <strong>Ready for your approval</strong>
@@ -183,6 +254,34 @@ export function SourceControlReviewPanel({ projectId }: Props) {
             </p>
             <button className="button primary" type="button" disabled={approving} onClick={approve}>
               {approving ? "Approving…" : "Approve exact build & merge"}
+            </button>
+          </div>
+        ) : null}
+
+        {run.stage === "merged" && !productionReleaseEnabled ? (
+          <div className="panel">
+            <strong>Production release locked</strong>
+            <p>
+              The merge is safe in GitHub. Production deployment remains disabled until the
+              Vercel production rail is explicitly enabled by the operator.
+            </p>
+          </div>
+        ) : null}
+
+        {canRequestProduction ? (
+          <div className="panel">
+            <strong>{run.lastError ? "Retry production release" : "Ready for production release"}</strong>
+            <p>
+              This is separate from merge approval. Ziepher will re-check that {run.baseBranch}
+              still points exactly to merge {shortSha(run.mergedSha)} before queueing the live deployment.
+            </p>
+            <button
+              className="button primary"
+              type="button"
+              disabled={releasing}
+              onClick={releaseProduction}
+            >
+              {releasing ? "Requesting…" : "Deploy exact merge to production"}
             </button>
           </div>
         ) : null}
