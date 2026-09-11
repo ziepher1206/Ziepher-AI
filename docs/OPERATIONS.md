@@ -15,9 +15,11 @@ with the public web process.
 
 ## Environments
 
-Maintain separate Supabase projects and secrets for development, staging, and
-production. Never copy production service-role, Vercel, Stripe, or AI keys into
-development.
+Maintain separate Supabase projects and machine secrets for development, staging,
+and production. Never copy production service-role, provider-credential encryption,
+Stripe, or AI keys into development. Workspace-owned GitHub/Vercel credentials are
+stored encrypted in the environment's own Supabase database and must not be copied
+between environments as a shortcut.
 
 Recommended release path:
 
@@ -82,7 +84,7 @@ Ship structured stdout/stderr to the central logging platform. Redact:
 
 - authorization headers;
 - cookies and session tokens;
-- API keys;
+- API keys and workspace provider tokens;
 - generated environment files;
 - source code from private projects;
 - Stripe payload fields not required for troubleshooting.
@@ -126,10 +128,13 @@ Never bypass sandboxing to recover production capacity.
 
 1. Stop deployment workers.
 2. Keep source export and previews available.
-3. Check Vercel token/team scope and provider status.
-4. Confirm the source version remains downloadable.
-5. Resume with preview deployments first.
-6. Promote to production only after health validation.
+3. Identify the affected project's workspace and inspect its sanitized Vercel connection status.
+4. Reauthorize or revoke that workspace's Vercel credential if required; do not substitute an operator/global token.
+5. Confirm the immutable deployment target snapshot still matches the intended Vercel project/account.
+6. Confirm the source version remains downloadable.
+7. For an ambiguous provider attempt, allow reconciliation to resolve the existing Ziepher deployment ID; do not manually create a second deployment until provider state is understood.
+8. Resume with preview deployments first.
+9. Promote to production only after health validation.
 
 ## Stripe incident
 
@@ -153,7 +158,8 @@ Generated project: use the History page to restore an immutable source snapshot,
 which creates a new project version.
 
 Deployment: redeploy the last known-good source version or use the hosting
-provider's rollback.
+provider's rollback after confirming the workspace provider credential and
+immutable target identity still match.
 
 ## Capacity
 
@@ -180,6 +186,7 @@ Monthly:
 
 - run `npm audit`;
 - rotate non-user-facing machine credentials where practical;
+- review provider connections that need attention or have been revoked;
 - test a staging database and artifact restore;
 - reconcile Stripe subscriptions and credit ledger;
 - review RLS and service-role usage.
