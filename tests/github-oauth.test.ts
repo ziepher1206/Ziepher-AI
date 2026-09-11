@@ -4,7 +4,8 @@ vi.mock("server-only", () => ({}));
 vi.mock("../lib/provider-connections/store", () => ({
   getProviderConnection: vi.fn(),
   markProviderConnectionNeedsAttention: vi.fn(),
-  rotateProviderTokens: vi.fn()
+  rotateProviderTokens: vi.fn(),
+  upsertProviderConnection: vi.fn()
 }));
 
 import { createGitHubAuthorizationUrl } from "../lib/provider-connections/github-oauth";

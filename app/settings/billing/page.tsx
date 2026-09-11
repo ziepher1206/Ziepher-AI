@@ -23,9 +23,14 @@ export default async function BillingPage() {
             <div className="brand-subtitle">BILLING & CREDITS</div>
           </div>
         </div>
-        <Link className="button" href="/">
-          Return to studio
-        </Link>
+        <div className="inline-actions">
+          <Link className="button" href="/settings/connections">
+            Connections
+          </Link>
+          <Link className="button" href="/">
+            Return to studio
+          </Link>
+        </div>
       </header>
 
       <section className="settings-intro">

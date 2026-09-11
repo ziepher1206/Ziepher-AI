@@ -4,11 +4,13 @@ import { requireServerEnv } from "../env";
 import {
   getProviderConnection,
   markProviderConnectionNeedsAttention,
-  rotateProviderTokens
+  rotateProviderTokens,
+  upsertProviderConnection
 } from "./store";
 
 const AUTH_URL = "https://github.com/login/oauth/authorize";
 const TOKEN_URL = "https://github.com/login/oauth/access_token";
+const USER_URL = "https://api.github.com/user";
 const REFRESH_BUFFER_MS = 5 * 60_000;
 
 type GitHubTokenResponse = {
@@ -22,10 +24,23 @@ type GitHubTokenResponse = {
   error_description?: string;
 };
 
+type GitHubUserResponse = {
+  id?: number;
+  login?: string;
+  name?: string | null;
+};
+
 function expiresAt(seconds?: number, nowMs = Date.now()) {
   return typeof seconds === "number" && Number.isFinite(seconds) && seconds > 0
     ? new Date(nowMs + seconds * 1000).toISOString()
     : undefined;
+}
+
+function scopesFromResponse(scope?: string) {
+  return (scope ?? "")
+    .split(/[\s,]+/)
+    .map((value) => value.trim())
+    .filter(Boolean);
 }
 
 export function createGitHubAuthorizationUrl(input: {
@@ -60,6 +75,25 @@ async function tokenRequest(body: URLSearchParams) {
   return payload;
 }
 
+async function getGitHubUser(accessToken: string) {
+  const response = await fetch(USER_URL, {
+    headers: {
+      Accept: "application/vnd.github+json",
+      Authorization: `Bearer ${accessToken}`,
+      "X-GitHub-Api-Version": "2022-11-28"
+    },
+    cache: "no-store"
+  });
+  if (!response.ok) {
+    throw new Error(`GitHub user lookup failed: http_${response.status}`);
+  }
+  const user = (await response.json()) as GitHubUserResponse;
+  if (!Number.isInteger(user.id) || !user.login?.trim()) {
+    throw new Error("GitHub returned an invalid authenticated user.");
+  }
+  return { id: String(user.id), login: user.login, name: user.name?.trim() || null };
+}
+
 export async function exchangeGitHubAuthorizationCode(input: {
   code: string;
   redirectUri: string;
@@ -71,6 +105,31 @@ export async function exchangeGitHubAuthorizationCode(input: {
     redirect_uri: input.redirectUri
   });
   return tokenRequest(body);
+}
+
+export async function connectGitHubFromAuthorizationCode(input: {
+  workspaceId: string;
+  code: string;
+  redirectUri: string;
+}) {
+  const token = await exchangeGitHubAuthorizationCode({
+    code: input.code,
+    redirectUri: input.redirectUri
+  });
+  const accessToken = token.access_token!;
+  const user = await getGitHubUser(accessToken);
+
+  return upsertProviderConnection({
+    workspaceId: input.workspaceId,
+    provider: "github",
+    providerAccountId: user.id,
+    displayName: user.name ? `${user.name} (${user.login})` : user.login,
+    scopes: scopesFromResponse(token.scope),
+    accessToken,
+    refreshToken: token.refresh_token,
+    accessTokenExpiresAt: expiresAt(token.expires_in),
+    refreshTokenExpiresAt: expiresAt(token.refresh_token_expires_in)
+  });
 }
 
 export async function refreshGitHubOAuthToken(refreshToken: string) {
