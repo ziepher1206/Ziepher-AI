@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ProjectVercelTargetForm } from "@/components/project-vercel-target-form";
 import { isSupabaseConfigured } from "@/lib/env";
+import { getProviderConnection } from "@/lib/provider-connections/store";
 import { createClient } from "@/lib/supabase/server";
 
 type Props = { params: Promise<{ projectId: string }> };
@@ -19,7 +20,7 @@ export default async function ProjectDeploymentSettingsPage({ params }: Props) {
   const { data: project, error } = await supabase
     .from("projects")
     .select(
-      "id,name,vercel_project_id,vercel_project_name,vercel_org_id"
+      "id,name,workspace_id,vercel_project_id,vercel_project_name,vercel_org_id"
     )
     .eq("id", projectId)
     .single();
@@ -33,6 +34,12 @@ export default async function ProjectDeploymentSettingsPage({ params }: Props) {
           orgId: project.vercel_org_id
         }
       : null;
+
+  const vercelConnection = project.workspace_id
+    ? await getProviderConnection(project.workspace_id, "vercel")
+    : null;
+  const connectionConfigured =
+    vercelConnection?.status === "connected" && Boolean(vercelConnection.accessToken);
 
   return (
     <main className="settings-page">
@@ -51,6 +58,9 @@ export default async function ProjectDeploymentSettingsPage({ params }: Props) {
           <Link className="button" href={`/projects/${projectId}/settings/repository`}>
             GitHub repository
           </Link>
+          <Link className="button" href="/settings/connections">
+            Connected rails
+          </Link>
         </div>
       </header>
 
@@ -58,9 +68,7 @@ export default async function ProjectDeploymentSettingsPage({ params }: Props) {
         <span className="panel-label">{project.name}</span>
         <h1>Choose the project&apos;s Vercel deployment target</h1>
         <p>
-          Ziepher validates the target with Vercel before saving it. Every future Vercel
-          deployment snapshots the canonical project and account IDs so later settings
-          changes cannot redirect work that was already approved or queued.
+          Ziepher validates the target with the Vercel credential connected to this project&apos;s workspace before saving it. Every future Vercel deployment snapshots the canonical project and account IDs so later settings changes cannot redirect work that was already approved or queued.
         </p>
       </section>
 
@@ -68,7 +76,7 @@ export default async function ProjectDeploymentSettingsPage({ params }: Props) {
         <ProjectVercelTargetForm
           projectId={projectId}
           currentTarget={currentTarget}
-          tokenConfigured={Boolean(process.env.VERCEL_TOKEN)}
+          connectionConfigured={connectionConfigured}
         />
       </section>
     </main>
