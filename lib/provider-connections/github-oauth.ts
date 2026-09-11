@@ -1,11 +1,11 @@
 import "server-only";
 
-import { requireServerEnv } from "@/lib/env";
+import { requireServerEnv } from "../env";
 import {
   getProviderConnection,
   markProviderConnectionNeedsAttention,
   rotateProviderTokens
-} from "@/lib/provider-connections/store";
+} from "./store";
 
 const AUTH_URL = "https://github.com/login/oauth/authorize";
 const TOKEN_URL = "https://github.com/login/oauth/access_token";
