@@ -58,9 +58,12 @@ export function SourceControlReviewPanel({ projectId }: Props) {
   }, [projectId]);
 
   useEffect(() => {
-    void load();
-    const timer = window.setInterval(() => void load(), 15000);
-    return () => window.clearInterval(timer);
+    const initialTimer = window.setTimeout(() => void load(), 0);
+    const interval = window.setInterval(() => void load(), 15000);
+    return () => {
+      window.clearTimeout(initialTimer);
+      window.clearInterval(interval);
+    };
   }, [load]);
 
   async function approve() {
