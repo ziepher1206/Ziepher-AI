@@ -43,6 +43,13 @@ export default async function ProjectPage({ params }: Props) {
         >
           GitHub repository
         </Link>
+        <Link
+          className="button"
+          href={`/projects/${projectId}/settings/deployment`}
+          style={{ textDecoration: "none" }}
+        >
+          Vercel target
+        </Link>
       </div>
       <StudioShell
         authenticated
