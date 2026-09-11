@@ -7,8 +7,6 @@ import {
 
 const VERCEL_API_ORIGIN = "https://api.vercel.com";
 
-type VercelProjectResponse = never;
-
 type TokenMetadataResponse = {
   token?: {
     scopes?: Array<{ type?: unknown }>;
