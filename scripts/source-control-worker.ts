@@ -6,6 +6,7 @@ import {
   publishGitHubFilesAtomically
 } from "@/lib/source-control/github";
 import {
+  ensureApprovedGitHubPullRequestMerged,
   ensureGitHubPullRequest,
   verifyGitHubPullRequest
 } from "@/lib/source-control/pull-request";
@@ -23,12 +24,15 @@ type ClaimedSourceControlRun = {
   head_sha: string | null;
   pull_request_number: number | null;
   preview_deployment_id: string | null;
+  preview_url: string | null;
+  approved_by: string | null;
   stage:
     | "queued"
     | "branch_created"
     | "changes_ready"
     | "pull_request_open"
-    | "checks_running";
+    | "checks_running"
+    | "approved";
   revision: number;
   worker_id: string | null;
 };
@@ -361,6 +365,104 @@ async function processChecksAndPreviewRun(
   );
 }
 
+async function rescheduleApprovedMerge(
+  run: ClaimedSourceControlRun,
+  headSha: string,
+  delaySeconds: number
+) {
+  const { error } = await supabase.rpc(
+    "reschedule_source_control_approved_merge",
+    {
+      p_run_id: run.id,
+      p_worker_id: workerId,
+      p_expected_revision: run.revision,
+      p_head_sha: headSha,
+      p_delay_seconds: delaySeconds,
+      p_last_error: null
+    }
+  );
+  if (error) throw error;
+}
+
+async function processApprovedRun(
+  run: ClaimedSourceControlRun,
+  accessToken: string
+) {
+  if (!run.approved_by) {
+    throw new Error("Approved source-control run is missing its approving user.");
+  }
+  const identity = requirePullRequestIdentity(run);
+
+  await verifyGitHubPullRequest(accessToken, run.repository_full_name, {
+    pullRequestNumber: identity.pullRequestNumber,
+    workingBranch: run.working_branch,
+    baseBranch: run.base_branch,
+    expectedHeadSha: identity.headSha
+  });
+
+  const checks = await getGitHubCheckSummary(
+    accessToken,
+    run.repository_full_name,
+    identity.headSha
+  );
+  if (checks.failed > 0) {
+    throw new Error(
+      `GitHub checks failed after approval for pull request #${identity.pullRequestNumber}.`
+    );
+  }
+  if (!checks.passed) {
+    await rescheduleApprovedMerge(run, identity.headSha, 30);
+    console.log(
+      `[${workerId}] approved source-control run ${run.id} waiting for GitHub checks before merge`
+    );
+    return;
+  }
+
+  if (!run.preview_deployment_id || !run.preview_url) {
+    throw new Error("Approved source-control run is missing its verified preview.");
+  }
+  const { data: deployment, error: deploymentError } = await supabase
+    .from("deployments")
+    .select("status,url,provider,environment")
+    .eq("id", run.preview_deployment_id)
+    .eq("project_id", run.project_id)
+    .single();
+  if (deploymentError) throw deploymentError;
+  const preview = deployment as PreviewDeployment;
+  if (
+    preview.provider !== "vercel" ||
+    preview.environment !== "preview" ||
+    preview.status !== "ready" ||
+    preview.url !== run.preview_url
+  ) {
+    throw new Error("Approved preview is no longer the ready Vercel preview that was reviewed.");
+  }
+
+  const merged = await ensureApprovedGitHubPullRequestMerged(
+    accessToken,
+    run.repository_full_name,
+    {
+      pullRequestNumber: identity.pullRequestNumber,
+      workingBranch: run.working_branch,
+      baseBranch: run.base_branch,
+      expectedHeadSha: identity.headSha
+    }
+  );
+
+  const { error } = await supabase.rpc("complete_source_control_merged", {
+    p_run_id: run.id,
+    p_worker_id: workerId,
+    p_expected_revision: run.revision,
+    p_head_sha: identity.headSha,
+    p_merge_sha: merged.mergeSha
+  });
+  if (error) throw error;
+
+  console.log(
+    `[${workerId}] approved source-control run ${run.id} ${merged.reconciled ? "reconciled merged" : "merged"} at ${merged.mergeSha}`
+  );
+}
+
 async function processRun(run: ClaimedSourceControlRun) {
   try {
     const accessToken = await workspaceAccessToken(run.project_id);
@@ -374,6 +476,10 @@ async function processRun(run: ClaimedSourceControlRun) {
     }
     if (run.stage === "changes_ready") {
       await processChangesReadyRun(run, accessToken);
+      return;
+    }
+    if (run.stage === "approved") {
+      await processApprovedRun(run, accessToken);
       return;
     }
     await processChecksAndPreviewRun(run, accessToken);
