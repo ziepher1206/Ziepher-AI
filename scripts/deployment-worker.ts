@@ -3,6 +3,11 @@ import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { setTimeout as sleep } from "node:timers/promises";
+import {
+  classifyVercelDeployment,
+  findVercelDeploymentByZiepherId,
+  type VercelDeploymentObservation
+} from "@/lib/deployment/vercel-deployments";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 type DeploymentJob = {
@@ -15,6 +20,8 @@ type DeploymentJob = {
   vercel_project_id: string | null;
   vercel_project_name: string | null;
   vercel_org_id: string | null;
+  provider_attempted_at: string | null;
+  provider_reconcile_attempts: number;
 };
 
 type CommandResult = {
@@ -28,6 +35,7 @@ const pollMs = Math.max(
   500,
   Number(process.env.DEPLOYMENT_WORKER_POLL_MS ?? "5000")
 );
+const maxReconcileAttempts = 20;
 const supabase = createAdminClient();
 
 function firstRow<T>(data: T | T[] | null): T | null {
@@ -37,6 +45,10 @@ function firstRow<T>(data: T | T[] | null): T | null {
 function boundedAppend(current: string, next: string) {
   const combined = current + next;
   return combined.length > 120_000 ? combined.slice(-120_000) : combined;
+}
+
+function errorMessage(error: unknown) {
+  return error instanceof Error ? error.message : String(error);
 }
 
 function runCommand(
@@ -131,7 +143,30 @@ async function complete(
   if (error) throw error;
 }
 
-async function deployToVercel(sourceDir: string, job: DeploymentJob) {
+async function markProviderAttempt(job: DeploymentJob) {
+  const { error } = await supabase.rpc("mark_deployment_provider_attempt", {
+    p_deployment_id: job.id,
+    p_worker_id: workerId
+  });
+  if (error) throw error;
+}
+
+async function rescheduleReconciliation(
+  job: DeploymentJob,
+  observedState: string,
+  message: string
+) {
+  const { error } = await supabase.rpc("reschedule_deployment_reconciliation", {
+    p_deployment_id: job.id,
+    p_worker_id: workerId,
+    p_delay_seconds: 30,
+    p_observed_state: observedState,
+    p_failure_message: message.slice(0, 30_000)
+  });
+  if (error) throw error;
+}
+
+function requireVercelRuntime(job: DeploymentJob) {
   if (process.env.VERCEL_DEPLOYMENTS_ENABLED !== "true") {
     throw new Error(
       "Vercel deployment is disabled. Set VERCEL_DEPLOYMENTS_ENABLED=true after configuring a deployment token."
@@ -146,6 +181,77 @@ async function deployToVercel(sourceDir: string, job: DeploymentJob) {
     );
   }
 
+  return {
+    token,
+    target: {
+      projectId: job.vercel_project_id,
+      orgId: job.vercel_org_id
+    }
+  };
+}
+
+async function observeVercelDeployment(job: DeploymentJob, token: string) {
+  if (!job.vercel_project_id || !job.vercel_org_id) {
+    throw new Error("Vercel deployment target snapshot is missing.");
+  }
+
+  return findVercelDeploymentByZiepherId(
+    token,
+    {
+      projectId: job.vercel_project_id,
+      orgId: job.vercel_org_id
+    },
+    job.id,
+    job.project_id,
+    job.environment
+  );
+}
+
+async function finishObservedVercelDeployment(
+  job: DeploymentJob,
+  observation: VercelDeploymentObservation
+) {
+  const classification = classifyVercelDeployment(observation);
+
+  if (classification === "ready") {
+    if (!observation.url) {
+      await rescheduleReconciliation(
+        job,
+        observation.state,
+        "Vercel reports READY but has not exposed a deployment URL yet."
+      );
+      return;
+    }
+    await complete(job, true, observation.id, observation.url, null);
+    console.log(
+      `[${workerId}] reconciled deployment ${job.id} to ${observation.id} at ${observation.url}`
+    );
+    return;
+  }
+
+  if (classification === "failed") {
+    await complete(
+      job,
+      false,
+      observation.id,
+      observation.url,
+      `Vercel deployment ${observation.id} reached terminal state ${observation.state}.`
+    );
+    return;
+  }
+
+  await rescheduleReconciliation(
+    job,
+    observation.state,
+    `Vercel deployment ${observation.id} is still ${observation.state}; waiting for provider completion.`
+  );
+}
+
+async function invokeVercelDeploy(sourceDir: string, job: DeploymentJob, token: string) {
+  if (!job.vercel_project_id || !job.vercel_org_id) {
+    throw new Error("Vercel deployment target snapshot is missing.");
+  }
+
   const args = [
     "--yes",
     "vercel@56.3.1",
@@ -153,13 +259,19 @@ async function deployToVercel(sourceDir: string, job: DeploymentJob) {
     "--yes",
     "--no-color",
     "--archive=tgz",
+    "--meta",
+    `ziepherDeploymentId=${job.id}`,
+    "--meta",
+    `ziepherProjectId=${job.project_id}`,
+    "--meta",
+    `ziepherEnvironment=${job.environment}`,
     "--token",
     token
   ];
 
   if (job.environment === "production") args.push("--prod");
 
-  const result = await runCommand(
+  await runCommand(
     "npx",
     args,
     sourceDir,
@@ -168,26 +280,45 @@ async function deployToVercel(sourceDir: string, job: DeploymentJob) {
       VERCEL_ORG_ID: job.vercel_org_id
     }
   );
-  const url = result.stdout
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .reverse()
-    .find((line) => /^https:\/\/.+/i.test(line));
+}
 
-  if (!url) {
-    throw new Error(
-      `Vercel completed without returning a deployment URL.\n${result.stderr}`
-    );
-  }
+async function materializeSourceArchive(
+  tempRoot: string,
+  sourceSnapshotPath: string
+) {
+  const { data: archiveBlob, error: downloadError } = await supabase.storage
+    .from("project-artifacts")
+    .download(sourceSnapshotPath);
+  if (downloadError) throw downloadError;
 
-  return {
-    id: url.replace(/^https?:\/\//, "").split(".")[0] ?? url,
-    url
-  };
+  const archivePath = path.join(tempRoot, "source.tar.gz");
+  const sourceDir = path.join(tempRoot, "source");
+  await mkdir(sourceDir, { recursive: true });
+  await writeFile(archivePath, Buffer.from(await archiveBlob.arrayBuffer()));
+
+  const listing = await runCommand(
+    "tar",
+    ["-tzf", archivePath],
+    tempRoot,
+    {},
+    60_000
+  );
+  validateArchiveListing(listing.stdout);
+
+  await runCommand(
+    "tar",
+    ["-xzf", archivePath, "-C", sourceDir, "--no-same-owner", "--no-same-permissions"],
+    tempRoot,
+    {},
+    60_000
+  );
+
+  return sourceDir;
 }
 
 async function processJob(job: DeploymentJob) {
   const tempRoot = await mkdtemp(path.join(os.tmpdir(), "ziepher-deploy-"));
+  let providerAttemptStarted = Boolean(job.provider_attempted_at);
   try {
     const { data: version, error: versionError } = await supabase
       .from("project_versions")
@@ -204,45 +335,87 @@ async function processJob(job: DeploymentJob) {
       return;
     }
 
-    const { data: archiveBlob, error: downloadError } = await supabase.storage
-      .from("project-artifacts")
-      .download(version.source_snapshot_path);
-    if (downloadError) throw downloadError;
+    const { token } = requireVercelRuntime(job);
+    const existing = await observeVercelDeployment(job, token);
+    if (existing) {
+      await finishObservedVercelDeployment(job, existing);
+      return;
+    }
 
-    const archivePath = path.join(tempRoot, "source.tar.gz");
-    const sourceDir = path.join(tempRoot, "source");
-    await mkdir(sourceDir, { recursive: true });
-    await writeFile(archivePath, Buffer.from(await archiveBlob.arrayBuffer()));
+    if (providerAttemptStarted) {
+      if (job.provider_reconcile_attempts >= maxReconcileAttempts) {
+        await complete(
+          job,
+          false,
+          null,
+          null,
+          "Vercel provider acceptance could not be reconciled after repeated authoritative lookups. No second deployment was created; manual review is required."
+        );
+        return;
+      }
 
-    const listing = await runCommand(
-      "tar",
-      ["-tzf", archivePath],
+      await rescheduleReconciliation(
+        job,
+        "NOT_FOUND",
+        "A Vercel deployment attempt was already started, but the provider record is not visible yet. No second deployment will be created automatically."
+      );
+      return;
+    }
+
+    const sourceDir = await materializeSourceArchive(
       tempRoot,
-      {},
-      60_000
-    );
-    validateArchiveListing(listing.stdout);
-
-    await runCommand(
-      "tar",
-      ["-xzf", archivePath, "-C", sourceDir, "--no-same-owner", "--no-same-permissions"],
-      tempRoot,
-      {},
-      60_000
+      version.source_snapshot_path
     );
 
-    const deployment = await deployToVercel(sourceDir, job);
-    await complete(job, true, deployment.id, deployment.url, null);
-    console.log(
-      `[${workerId}] deployed ${job.id} to ${job.vercel_project_name} (${job.vercel_project_id}) at ${deployment.url}`
+    await markProviderAttempt(job);
+    providerAttemptStarted = true;
+
+    let cliError: string | null = null;
+    try {
+      await invokeVercelDeploy(sourceDir, job, token);
+    } catch (error) {
+      cliError = errorMessage(error);
+    }
+
+    let observedAfterAttempt: VercelDeploymentObservation | null = null;
+    try {
+      observedAfterAttempt = await observeVercelDeployment(job, token);
+    } catch (error) {
+      await rescheduleReconciliation(
+        job,
+        "NOT_FOUND",
+        `Vercel deployment attempt was started but reconciliation failed: ${errorMessage(error)}`
+      );
+      return;
+    }
+
+    if (observedAfterAttempt) {
+      await finishObservedVercelDeployment(job, observedAfterAttempt);
+      return;
+    }
+
+    await rescheduleReconciliation(
+      job,
+      "NOT_FOUND",
+      cliError
+        ? `Vercel CLI returned an error after the provider attempt began: ${cliError}. Ziepher will reconcile before any retry.`
+        : "Vercel CLI returned after the provider attempt began, but the deployment is not visible in the provider list yet. Ziepher will reconcile before any retry."
     );
   } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
+    const message = errorMessage(error);
     try {
-      await complete(job, false, null, null, message.slice(0, 30_000));
+      if (job.provider === "vercel" && providerAttemptStarted) {
+        await rescheduleReconciliation(
+          job,
+          "NOT_FOUND",
+          `Provider-side outcome is ambiguous; automatic redeploy is blocked until reconciliation succeeds: ${message}`
+        );
+      } else {
+        await complete(job, false, null, null, message.slice(0, 30_000));
+      }
     } catch (completionError) {
       console.error(
-        `[${workerId}] could not finalize failed deployment ${job.id}:`,
+        `[${workerId}] could not finalize or reschedule deployment ${job.id}:`,
         completionError
       );
     }
