@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { StudioShell } from "@/components/studio-shell";
 import { isSupabaseConfigured } from "@/lib/env";
@@ -17,10 +18,25 @@ export default async function ProjectPage({ params }: Props) {
   if (!user) redirect("/auth/sign-in");
 
   return (
-    <StudioShell
-      authenticated
-      userEmail={user.email}
-      initialProjectId={projectId}
-    />
+    <>
+      <Link
+        className="button"
+        href={`/projects/${projectId}/settings/repository`}
+        style={{
+          position: "fixed",
+          right: 18,
+          bottom: 52,
+          zIndex: 30,
+          textDecoration: "none"
+        }}
+      >
+        GitHub repository
+      </Link>
+      <StudioShell
+        authenticated
+        userEmail={user.email}
+        initialProjectId={projectId}
+      />
+    </>
   );
 }
