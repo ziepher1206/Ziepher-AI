@@ -13,6 +13,7 @@
     "lint": "eslint .",
     "test": "vitest run",
     "worker": "tsx scripts/build-worker.ts",
+    "source-control-worker": "tsx scripts/source-control-worker.ts",
     "check": "npm run typecheck && npm run lint && npm run test && npm run check:pwa && npm run check:clients && npm run check:sync && npm run build",
     "deploy-worker": "tsx scripts/deployment-worker.ts",
     "smoke:generated": "tsx scripts/smoke-generated-build.ts",
@@ -35,7 +36,7 @@
   "devDependencies": {
     "@types/node": "26.1.1",
     "@types/react": "19.2.17",
-    "@types/react-dom": "19.2.3",
+    "@types/react-dom": "19.2.17",
     "eslint": "9.39.5",
     "eslint-config-next": "16.3.4",
     "tsx": "4.23.1",
