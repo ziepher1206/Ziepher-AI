@@ -2,17 +2,11 @@
 
 ## End-user promise
 
-A Ziepher user installs only Ziepher AI, or opens its HTTPS application. The
-user does not install Node.js, Docker, Git, a code editor, Supabase CLI, Stripe
-CLI, AI SDKs, build tools, or deployment tools.
+A Ziepher user opens Ziepher AI in a browser or installs the web application as a PWA. The user does not install Node.js, Docker, Git, a code editor, Supabase CLI, Stripe CLI, AI SDKs, build tools, or deployment tools.
 
-All planning, source generation, dependency installation, testing, repair,
-preview publishing, storage, and deployment orchestration run in Ziepher-managed
-cloud services.
+Planning, source generation, dependency installation, testing, repair, preview publishing, source-control orchestration, storage, and deployment orchestration run in Ziepher-managed services.
 
-## Delivery channels
-
-### Installable web application
+## Active delivery channel: HTTPS + PWA
 
 The Next.js application includes:
 
@@ -23,62 +17,49 @@ The Next.js application includes:
 - a visible **Install Ziepher** control;
 - standalone display mode.
 
-The service worker caches only public application-shell assets. It explicitly
-does not cache API responses, authentication routes, private projects, or
-generated previews.
+The service worker caches only public application-shell assets. It must not cache API responses, authentication routes, private projects, provider credentials, or generated private previews.
 
-### Desktop
-
-`clients/desktop` is a Tauri 2 client. Release automation packages:
-
-- Windows `.msi` and setup `.exe`;
-- macOS `.dmg`/application bundles;
-- Linux `.AppImage` and `.deb`.
-
-The installed client opens the production HTTPS control plane. No build engine
-or platform secret is stored on the device.
-
-### Android and iOS
-
-`clients/mobile` is a Capacitor 8 client with committed Android and iOS native
-projects. It opens the same production HTTPS control plane and includes Ziepher
-branding assets.
-
-Android CI produces an installable debug APK and a release AAB. Production Play
-Store publishing requires the operator's signing key and Google Play developer
-account.
-
-iOS CI validates an unsigned simulator application. App Store distribution
-requires the operator's Apple Developer account, distribution certificate,
-provisioning profile, privacy declarations, and Apple review.
+The former Tauri desktop and Capacitor mobile wrappers are not part of the active product or release pipeline. They were removed from the working tree so Ziepher can focus on one browser-first client and one cloud control plane. Historical implementations remain recoverable through Git history if a native client becomes justified later.
 
 ## Cloud processes
 
-1. **Web control plane** — authentication, projects, free planning, billing
-   interface, build requests, preview gateway, version control, and deployment
-   requests.
-2. **Build worker** — private queue consumer that generates code and runs
-   dependency installation, type checking, tests, production compilation,
-   secret scanning, and repair in isolated containers.
-3. **Deployment worker** — private queue consumer that publishes successful
-   versions to approved hosting providers.
+1. **Web control plane** — authentication, projects, planning, provider connections, repository/deployment settings, review UI, billing interface, and explicit release actions.
+2. **Build worker** — private queue consumer that generates code and runs dependency installation, type checking, production compilation, secret scanning, and bounded repair in isolated containers.
+3. **Source-control worker** — private queue consumer that creates isolated GitHub changes, opens PRs, checks CI/preview readiness, waits for owner/admin approval, and performs an exact-SHA merge.
+4. **Deployment worker** — private queue consumer that publishes approved versions to an explicitly bound Vercel project and reconciles ambiguous provider outcomes without blind duplicate deployment attempts.
 
-Only the build-worker host receives Docker access. The public web service must
-never receive the Docker socket.
+Only the build-worker host receives Docker access. The public web service must never receive the Docker socket.
+
+## Deployment identity
+
+A Ziepher project must be bound to a validated Vercel project before a Vercel deployment can be queued. The canonical Vercel project and account IDs are snapshotted into the deployment row when it is created.
+
+Later project settings changes cannot redirect that queued deployment.
+
+Before invoking Vercel, the deployment worker records `provider_attempted_at`. It also attaches the durable Ziepher deployment/project/environment identity as Vercel metadata. Once the attempt marker exists, workers reconcile Vercel state instead of automatically issuing another deployment request for the same row.
 
 ## Release gates
 
-Before publishing one-click installers:
+Before enabling production releases:
 
 1. deploy the web control plane to its permanent HTTPS origin;
-2. set `ZIEPHER_APP_URL` in the client release workflow;
-3. configure desktop code-signing certificates;
-4. configure Android release signing;
-5. configure Apple signing and store metadata;
-6. run root `npm run check`;
-7. run mobile `npm run validate`;
-8. build installers in GitHub Actions;
-9. malware-scan and manually smoke-test every package;
-10. publish from the draft release or app-store console.
+2. operate the build, source-control, and deployment workers on private infrastructure;
+3. configure Supabase and run all migrations;
+4. configure encrypted GitHub provider credentials and verify repository access;
+5. bind the project to the intended Vercel project;
+6. keep `VERCEL_DEPLOYMENTS_ENABLED=false` until preview deployment testing is ready;
+7. keep `VERCEL_PRODUCTION_RELEASES_ENABLED=false` until preview, checks, approval, merge, and recovery behavior have been tested;
+8. protect GitHub `main` with repository rules/branch protection so direct pushes cannot bypass PR/CI policy;
+9. run the root validation suite and generated-app smoke build;
+10. verify monitoring, backups, and incident/recovery procedures;
+11. keep Stripe disabled until the separate financial release gates pass.
 
-Stripe remains disabled until the separate financial release gates pass.
+## Operator validation
+
+```bash
+npm run check
+npm run smoke:generated
+npm audit --audit-level=moderate
+```
+
+The browser/PWA client is the supported end-user installation surface. Native app-store signing, desktop installer signing, Android packaging, and iOS packaging are intentionally outside the active release scope.
