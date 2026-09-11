@@ -10,6 +10,16 @@ type GitHubRequestOptions = {
   body?: unknown;
 };
 
+class GitHubApiError extends Error {
+  constructor(
+    readonly status: number,
+    readonly requestId: string | null
+  ) {
+    super(`GitHub API request failed (${status})${requestId ? ` [${requestId}]` : ""}`);
+    this.name = "GitHubApiError";
+  }
+}
+
 async function githubRequest<T>(
   accessToken: string,
   path: string,
@@ -29,9 +39,9 @@ async function githubRequest<T>(
   });
 
   if (!response.ok) {
-    const requestId = response.headers.get("x-github-request-id");
-    throw new Error(
-      `GitHub API request failed (${response.status})${requestId ? ` [${requestId}]` : ""}`
+    throw new GitHubApiError(
+      response.status,
+      response.headers.get("x-github-request-id")
     );
   }
 
@@ -58,7 +68,20 @@ export async function getGitHubRefSha(
   if (!/^[a-f0-9]{40}$/i.test(result.object.sha)) {
     throw new Error("GitHub returned an invalid branch SHA.");
   }
-  return result.object.sha;
+  return result.object.sha.toLowerCase();
+}
+
+async function getOptionalGitHubRefSha(
+  accessToken: string,
+  repositoryFullName: string,
+  branch: string
+) {
+  try {
+    return await getGitHubRefSha(accessToken, repositoryFullName, branch);
+  } catch (error) {
+    if (error instanceof GitHubApiError && error.status === 404) return null;
+    throw error;
+  }
 }
 
 export async function createGitHubBranch(
@@ -73,6 +96,57 @@ export async function createGitHubBranch(
     method: "POST",
     body: { ref: `refs/heads/${branch}`, sha: baseSha }
   });
+}
+
+export async function ensureGitHubBranchAtBase(
+  accessToken: string,
+  repositoryFullName: string,
+  baseBranch: string,
+  workingBranch: string
+) {
+  const baseSha = await getGitHubRefSha(
+    accessToken,
+    repositoryFullName,
+    baseBranch
+  );
+
+  const existingSha = await getOptionalGitHubRefSha(
+    accessToken,
+    repositoryFullName,
+    workingBranch
+  );
+
+  if (existingSha) {
+    if (existingSha !== baseSha) {
+      throw new Error(
+        "Ziepher working branch already exists at an unexpected commit. Refusing to overwrite it."
+      );
+    }
+    return { baseSha, created: false };
+  }
+
+  try {
+    await createGitHubBranch(
+      accessToken,
+      repositoryFullName,
+      workingBranch,
+      baseSha
+    );
+    return { baseSha, created: true };
+  } catch (error) {
+    // A stale worker can race a replacement worker after a lease expires. If
+    // GitHub reports the ref was concurrently created, verify its exact SHA
+    // instead of treating the provider side effect as failed.
+    if (error instanceof GitHubApiError && error.status === 422) {
+      const racedSha = await getOptionalGitHubRefSha(
+        accessToken,
+        repositoryFullName,
+        workingBranch
+      );
+      if (racedSha === baseSha) return { baseSha, created: false };
+    }
+    throw error;
+  }
 }
 
 export async function putGitHubFile(
