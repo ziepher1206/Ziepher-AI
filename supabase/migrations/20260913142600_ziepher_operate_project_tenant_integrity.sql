@@ -11,4 +11,4 @@ alter table public.leads
   add constraint leads_project_workspace_fk
   foreign key (project_id, workspace_id)
   references public.projects(id, workspace_id)
-  on delete set null;
+  on delete restrict;
