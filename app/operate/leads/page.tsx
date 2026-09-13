@@ -34,6 +34,7 @@ export default async function OperateLeadsPage() {
         </div>
         <div className="inline-actions">
           <Link className="button" href="/operate">Dashboard</Link>
+          <Link className="button" href="/operate/attribution">Attribution</Link>
           <Link className="button" href="/projects">Websites</Link>
         </div>
       </header>
