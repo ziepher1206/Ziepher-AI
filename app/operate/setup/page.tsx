@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { OperateBusinessSetup } from "@/components/operate-business-setup";
+import { OperateTimezoneSetup } from "@/components/operate-timezone-setup";
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/env";
 
@@ -77,9 +78,9 @@ export default async function OperateSetupPage() {
           <h1 style={{ margin: "6px 0 8px" }}>Business setup</h1>
           <p className="auth-copy" style={{ maxWidth: 760, margin: 0 }}>Configure services, crews, crew staffing, timezone, and normal working hours. These records feed estimates, jobs, and scheduling throughout Ziepher.</p>
         </div>
+        <OperateTimezoneSetup workspaceId={workspaceId} timezone={workspace?.timezone ?? null} />
         <OperateBusinessSetup
           workspaceId={workspaceId}
-          timezone={workspace?.timezone ?? null}
           services={services ?? []}
           crews={crews ?? []}
           workspaceMembers={workspaceMembers ?? []}
