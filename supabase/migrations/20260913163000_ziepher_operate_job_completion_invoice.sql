@@ -56,8 +56,9 @@ begin
 end;
 $$;
 
-grant execute on function public.set_operate_job_execution_state(uuid,text) to authenticated;
+revoke all on function public.set_operate_job_execution_state(uuid,text) from public;
 revoke all on function public.set_operate_job_execution_state(uuid,text) from anon;
+grant execute on function public.set_operate_job_execution_state(uuid,text) to authenticated;
 
 create or replace function public.complete_operate_job(
   p_job_id uuid,
@@ -165,5 +166,6 @@ begin
 end;
 $$;
 
-grant execute on function public.complete_operate_job(uuid,integer) to authenticated;
+revoke all on function public.complete_operate_job(uuid,integer) from public;
 revoke all on function public.complete_operate_job(uuid,integer) from anon;
+grant execute on function public.complete_operate_job(uuid,integer) to authenticated;
