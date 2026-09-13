@@ -20,8 +20,7 @@ export default async function OperateCalendarPage() {
     .from("appointments")
     .select("id,title,appointment_type,status,starts_at,ends_at,service_address:properties(address_line_1),crews(name),jobs(id),estimates(id),customers(display_name)")
     .eq("workspace_id", workspaceId)
-    .gte("starts_at", new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
-    .neq("status", "canceled")
+    .in("status", ["tentative", "confirmed", "in_progress"])
     .order("starts_at", { ascending: true })
     .limit(100);
   if (error) throw error;
@@ -35,7 +34,7 @@ export default async function OperateCalendarPage() {
       <section className="auth-card" style={{ maxWidth: 1000 }}>
         <p className="panel-label">Operate</p>
         <h1 style={{ margin: "6px 0 8px" }}>Schedule</h1>
-        <p className="auth-copy" style={{ marginTop: 0 }}>Upcoming estimate appointments and jobs across the business.</p>
+        <p className="auth-copy" style={{ marginTop: 0 }}>Active estimate appointments and jobs across the business.</p>
         <div style={{ display: "grid", gap: 12, marginTop: 18 }}>
           {(appointments ?? []).map((appointment) => {
             const customer = Array.isArray(appointment.customers) ? appointment.customers[0] : appointment.customers;
@@ -55,7 +54,7 @@ export default async function OperateCalendarPage() {
               </Link>
             );
           })}
-          {!appointments?.length ? <p className="auth-copy">Nothing is scheduled yet.</p> : null}
+          {!appointments?.length ? <p className="auth-copy">Nothing is currently scheduled.</p> : null}
         </div>
       </section>
     </main>
