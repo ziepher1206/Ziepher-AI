@@ -68,6 +68,7 @@ export default async function ProjectPage({ params }: Props) {
         </div>
         <div className="inline-actions">
           <Link className="button" href="/projects">All websites</Link>
+          <Link className="button" href={`/projects/${projectId}/media`}>Photo library</Link>
           <Link className="button" href={`/projects/${projectId}/studio`}>AI workspace</Link>
         </div>
       </header>
@@ -85,6 +86,9 @@ export default async function ProjectPage({ params }: Props) {
           </div>
           <div className="inline-actions">
             {domain ? <SiteScanButton projectId={projectId} /> : null}
+            <Link className="button" href={`/projects/${projectId}/media`}>
+              Manage photos
+            </Link>
             {domain ? (
               <a className="button" href={`https://${domain}`} target="_blank" rel="noreferrer">
                 Open current website
@@ -112,6 +116,15 @@ export default async function ProjectPage({ params }: Props) {
                 ? "Run the first scan to establish a baseline."
                 : "This first-pass score covers foundational homepage signals. Deeper SEO, accessibility, CRO, content, and performance analysis will build on it."}
             </p>
+          </article>
+
+          <article className="project-card">
+            <p className="panel-label">Business media</p>
+            <h2>Private photo library</h2>
+            <p>Keep business-owned website photos separated by client and project before they are used in an approved build.</p>
+            <Link className="button" href={`/projects/${projectId}/media`} style={{ marginTop: 12 }}>
+              Open photo library
+            </Link>
           </article>
 
           <article className="project-card">
