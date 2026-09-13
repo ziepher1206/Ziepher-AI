@@ -69,6 +69,7 @@ export default async function ProjectPage({ params }: Props) {
         <div className="inline-actions">
           <Link className="button" href="/projects">All websites</Link>
           <Link className="button" href={`/projects/${projectId}/media`}>Photo library</Link>
+          <Link className="button" href={`/projects/${projectId}/usage`}>Usage & cost</Link>
           <Link className="button" href={`/projects/${projectId}/studio`}>AI workspace</Link>
         </div>
       </header>
@@ -88,6 +89,9 @@ export default async function ProjectPage({ params }: Props) {
             {domain ? <SiteScanButton projectId={projectId} /> : null}
             <Link className="button" href={`/projects/${projectId}/media`}>
               Manage photos
+            </Link>
+            <Link className="button" href={`/projects/${projectId}/usage`}>
+              View usage & cost
             </Link>
             {domain ? (
               <a className="button" href={`https://${domain}`} target="_blank" rel="noreferrer">
@@ -137,6 +141,9 @@ export default async function ProjectPage({ params }: Props) {
             <p className="panel-label">AI usage</p>
             <h2>Tracked by website</h2>
             <p>Model usage and provider cost records remain attached to this website project so customer usage can be reported separately.</p>
+            <Link className="button" href={`/projects/${projectId}/usage`} style={{ marginTop: 12 }}>
+              Open usage & cost
+            </Link>
           </article>
         </section>
 
