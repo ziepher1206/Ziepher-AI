@@ -41,8 +41,18 @@ export async function POST(request: Request, { params }: Props) {
       if (input.accessNotes !== undefined) update.access_notes = input.accessNotes?.trim() || null;
       if (input.hazardNotes !== undefined) update.hazard_notes = input.hazardNotes?.trim() || null;
       if (input.treeNotes !== undefined) {
+        const { data: property, error: propertyError } = await supabase
+          .from("properties")
+          .select("tree_notes")
+          .eq("id", job.property_id)
+          .eq("workspace_id", job.workspace_id)
+          .single();
+        if (propertyError) throw propertyError;
+        const existing = property?.tree_notes && typeof property.tree_notes === "object" && !Array.isArray(property.tree_notes)
+          ? property.tree_notes as Record<string, unknown>
+          : {};
         const value = input.treeNotes?.trim();
-        update.tree_notes = value ? { summary: value } : {};
+        update.tree_notes = { ...existing, ...(value ? { summary: value } : { summary: "" }) };
       }
       const { error } = await supabase
         .from("properties")
