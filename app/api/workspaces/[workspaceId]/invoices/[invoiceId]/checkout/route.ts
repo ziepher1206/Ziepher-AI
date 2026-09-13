@@ -5,6 +5,7 @@ import { apiError } from "@/lib/http";
 import { requireWorkspaceMember } from "@/lib/operate/workspace-auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { applicationFeeCents, getOperateStripeTestClient } from "@/lib/stripe/operate";
+import { operateCheckoutIdempotencyKey } from "@/lib/stripe/operate-payment-events";
 
 export const runtime = "nodejs";
 type Context = { params: Promise<{ workspaceId: string; invoiceId: string }> };
@@ -145,14 +146,13 @@ export async function POST(request: Request, context: Context) {
     if (feeCents > 0) paymentIntentData.application_fee_amount = feeCents;
 
     const base = input.origin ? new URL(input.origin).origin : new URL(request.url).origin;
-    const idempotencyKey = [
-      "operate-checkout",
+    const idempotencyKey = operateCheckoutIdempotencyKey({
       workspaceId,
       invoiceId,
-      milestone?.id ?? "full",
-      String(amountCents),
-      connectedAccount.id
-    ].join(":");
+      milestoneId: milestone?.id ?? null,
+      amountCents,
+      connectedAccountId: connectedAccount.id
+    });
 
     const paramsForStripe: Stripe.Checkout.SessionCreateParams = {
       mode: "payment",
