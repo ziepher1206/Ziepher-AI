@@ -69,6 +69,7 @@ export default async function ProjectPage({ params }: Props) {
         <div className="inline-actions">
           <Link className="button" href="/projects">All websites</Link>
           <Link className="button" href={`/projects/${projectId}/media`}>Photo library</Link>
+          <Link className="button" href={`/projects/${projectId}/campaigns`}>Promotions</Link>
           <Link className="button" href={`/projects/${projectId}/usage`}>Usage & cost</Link>
           <Link className="button" href={`/projects/${projectId}/studio`}>AI workspace</Link>
         </div>
@@ -87,6 +88,9 @@ export default async function ProjectPage({ params }: Props) {
           </div>
           <div className="inline-actions">
             {domain ? <SiteScanButton projectId={projectId} /> : null}
+            <Link className="button" href={`/projects/${projectId}/campaigns`}>
+              Create promotion
+            </Link>
             <Link className="button" href={`/projects/${projectId}/media`}>
               Manage photos
             </Link>
@@ -120,6 +124,15 @@ export default async function ProjectPage({ params }: Props) {
                 ? "Run the first scan to establish a baseline."
                 : "This first-pass score covers foundational homepage signals. Deeper SEO, accessibility, CRO, content, and performance analysis will build on it."}
             </p>
+          </article>
+
+          <article className="project-card">
+            <p className="panel-label">Promotions</p>
+            <h2>Campaign drafts</h2>
+            <p>Capture offers, dates, and intended channels before AI generation or publishing is authorized.</p>
+            <Link className="button" href={`/projects/${projectId}/campaigns`} style={{ marginTop: 12 }}>
+              Open promotions
+            </Link>
           </article>
 
           <article className="project-card">
