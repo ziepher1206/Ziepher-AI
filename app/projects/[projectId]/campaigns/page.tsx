@@ -24,6 +24,17 @@ function dateLabel(value: string | null) {
   return value ? new Date(value).toLocaleDateString() : "Not set";
 }
 
+function campaignInstructions(campaign: Campaign) {
+  const dates = `${dateLabel(campaign.starts_at)} through ${dateLabel(campaign.ends_at)}`;
+  const channels = campaign.channels.length ? campaign.channels.join(", ") : "website";
+  return [
+    campaign.instructions ?? campaign.name,
+    `Campaign window: ${dates}.`,
+    `Requested channels: ${channels}.`,
+    "Create a reviewable website change for this campaign. Do not publish automatically."
+  ].join("\n");
+}
+
 export default async function CampaignsPage({ params }: Props) {
   if (!isSupabaseConfigured()) redirect("/auth/sign-in");
 
@@ -63,6 +74,7 @@ export default async function CampaignsPage({ params }: Props) {
         </div>
         <div className="inline-actions">
           <Link className="button" href={`/projects/${projectId}`}>Website overview</Link>
+          <Link className="button" href={`/projects/${projectId}/changes`}>Change requests</Link>
           <Link className="button" href="/projects">All websites</Link>
         </div>
       </header>
@@ -72,7 +84,7 @@ export default async function CampaignsPage({ params }: Props) {
           <p className="panel-label">{project.business_name ?? project.name}</p>
           <h1 style={{ margin: "6px 0 10px" }}>Promotions and marketing requests</h1>
           <p className="auth-copy" style={{ maxWidth: 820 }}>
-            {domain ? `${domain} · ` : ""}Create the campaign request once, then SiteRefiner can use it as the source for website and social creative after an AI-generation step is explicitly started and reviewed.
+            {domain ? `${domain} · ` : ""}Create the campaign request once, then send it into the SiteRefiner change pipeline for AI generation, preview, and approval when those steps are authorized.
           </p>
         </div>
 
@@ -80,9 +92,9 @@ export default async function CampaignsPage({ params }: Props) {
 
         <section className="project-card">
           <p className="panel-label">Current safety state</p>
-          <h2>Drafting only</h2>
+          <h2>Draft first, publish later</h2>
           <p>
-            Campaign records can be created now, but this workspace does not currently call paid AI, publish a website change, post to social profiles, or start paid advertising. Those actions will remain separate approval-gated steps.
+            Campaign records can be created without paid AI. Turning a campaign into a website change creates a separate tracked request, and provider generation plus production publishing remain separately approval-gated.
           </p>
         </section>
 
@@ -101,6 +113,22 @@ export default async function CampaignsPage({ params }: Props) {
                   <p>
                     {dateLabel(campaign.starts_at)} → {dateLabel(campaign.ends_at)}
                   </p>
+                  <div className="inline-actions" style={{ marginTop: 10 }}>
+                    <Link
+                      className="button"
+                      href={{
+                        pathname: `/projects/${projectId}/changes`,
+                        query: {
+                          source: "campaign",
+                          reference: campaign.id,
+                          title: campaign.name,
+                          instructions: campaignInstructions(campaign)
+                        }
+                      }}
+                    >
+                      Turn into website change
+                    </Link>
+                  </div>
                   <small>
                     Created {new Date(campaign.created_at).toLocaleString()}
                     {campaign.published_at ? ` · Published ${new Date(campaign.published_at).toLocaleString()}` : " · Not published"}
@@ -111,7 +139,7 @@ export default async function CampaignsPage({ params }: Props) {
           ) : (
             <section className="empty-projects" style={{ marginTop: 12 }}>
               <h2>No campaigns yet</h2>
-              <p>Save the first promotion request above. It remains a draft until later generation and approval steps are added.</p>
+              <p>Save the first promotion request above. It remains a draft until it is deliberately moved into the change pipeline.</p>
             </section>
           )}
         </section>
