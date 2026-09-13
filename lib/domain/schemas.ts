@@ -5,8 +5,21 @@ export type QualityMode = z.infer<typeof qualityModeSchema>;
 
 export const projectIdSchema = z.string().uuid();
 
+const domainSchema = z
+  .string()
+  .trim()
+  .min(3)
+  .max(253)
+  .transform((value) => value.toLowerCase().replace(/^https?:\/\//, "").replace(/^www\./, "").replace(/\/$/, ""))
+  .refine(
+    (value) => /^(?=.{1,253}$)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}(?::\d+)?$/i.test(value),
+    "Enter a valid domain such as example.com."
+  );
+
 export const createProjectSchema = z.object({
   name: z.string().trim().min(2).max(100),
+  businessName: z.string().trim().min(2).max(160).optional(),
+  domain: domainSchema.optional(),
   idea: z.string().trim().min(10).max(12000)
 });
 
