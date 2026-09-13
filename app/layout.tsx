@@ -2,13 +2,13 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  applicationName: "Ziepher AI",
+  applicationName: "SiteRefiner",
   title: {
-    default: "Ziepher AI — Build Your Dreams",
-    template: "%s · Ziepher AI"
+    default: "SiteRefiner — AI Website Improvement",
+    template: "%s · SiteRefiner"
   },
   description:
-    "A visual, voice-first AI platform that plans, builds, tests, and launches complete applications.",
+    "Connect an existing business website, review AI recommendations, preview improvements, and publish approved changes safely.",
   manifest: "/manifest.webmanifest",
   icons: {
     icon: [
@@ -20,7 +20,7 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "Ziepher AI"
+    title: "SiteRefiner"
   },
   formatDetection: {
     telephone: false
