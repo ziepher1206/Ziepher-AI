@@ -3,6 +3,19 @@
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 
+const sourceOptions = [
+  "Angi",
+  "Google Business Profile",
+  "Google Ads",
+  "Organic Google",
+  "Ziepher Tech referral",
+  "Facebook",
+  "Direct",
+  "Manual / Offline",
+  "Other referral",
+  "Unknown"
+] as const;
+
 export function OperateLeadForm({ workspaceId }: { workspaceId: string }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
@@ -24,7 +37,8 @@ export function OperateLeadForm({ workspaceId }: { workspaceId: string }) {
         phone: form.get("phone"),
         serviceAddress: form.get("serviceAddress"),
         message: form.get("message"),
-        source: "manual"
+        source: form.get("source"),
+        sourceDetail: form.get("sourceDetail")
       })
     });
 
@@ -46,7 +60,7 @@ export function OperateLeadForm({ workspaceId }: { workspaceId: string }) {
         <div>
           <p className="panel-label">Quick capture</p>
           <h2 style={{ margin: "6px 0 8px" }}>Add a new lead</h2>
-          <p className="auth-copy" style={{ margin: 0 }}>Save a phone call, referral, or offline request directly into Ziepher.</p>
+          <p className="auth-copy" style={{ margin: 0 }}>Save a call, referral, ad lead, or offline request and keep its acquisition source attached through revenue.</p>
         </div>
         <button className="button primary" disabled={busy} type="submit">
           {busy ? "Saving…" : "Save lead"}
@@ -69,6 +83,16 @@ export function OperateLeadForm({ workspaceId }: { workspaceId: string }) {
         <label className="field">
           <span>Service address</span>
           <input name="serviceAddress" maxLength={500} placeholder="Job or estimate address" />
+        </label>
+        <label className="field">
+          <span>Lead source</span>
+          <select name="source" defaultValue="Manual / Offline">
+            {sourceOptions.map((source) => <option key={source} value={source}>{source}</option>)}
+          </select>
+        </label>
+        <label className="field">
+          <span>Source detail</span>
+          <input name="sourceDetail" maxLength={500} placeholder="Campaign, referrer, ad, person, or note" />
         </label>
       </div>
 
