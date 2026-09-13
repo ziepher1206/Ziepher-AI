@@ -36,7 +36,6 @@ export async function GET(_request: Request, context: Context) {
 
     const stripe = getOperateStripeTestClient();
     const account = await stripe.accounts.retrieve(record.provider_account_id);
-    if (account.livemode) throw new Error("Live Stripe accounts are not allowed in this stage.");
 
     const snapshot = {
       charges_enabled: account.charges_enabled,
