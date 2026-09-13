@@ -2,6 +2,11 @@ import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 
+const foundation = readFileSync(
+  path.join(process.cwd(), "supabase/migrations/20260913142500_ziepher_operate_foundation.sql"),
+  "utf8"
+);
+
 const migration = readFileSync(
   path.join(process.cwd(), "supabase/migrations/20260913235500_tree_service_phase2_public_lead_intake.sql"),
   "utf8"
@@ -32,7 +37,7 @@ describe("Tree Service Phase 2 lead intake", () => {
   });
 
   it("makes public form retries idempotent", () => {
-    expect(migration).toContain("unique (workspace_id, public_submission_id)");
+    expect(foundation).toContain("unique (workspace_id, public_submission_id)");
     expect(migration).toContain("where workspace_id = v_token.workspace_id and public_submission_id = p_submission_id");
     expect(migration).toContain("when unique_violation then");
     expect(publicRoute).toContain("submissionId: z.string().uuid()");
