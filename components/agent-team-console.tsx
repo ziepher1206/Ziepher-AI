@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { agentById, defaultAgentWorkflow, ziepherAgents } from "@/lib/agents/registry";
 
 type RunState = "idle" | "running" | "done" | "error";
@@ -11,7 +11,7 @@ type AgentResult = {
   output: string;
 };
 
-type SavedRun = {
+export type SavedRun = {
   id: string;
   brief: string;
   mode: "dry_run" | "live";
@@ -27,13 +27,17 @@ type SavedRun = {
   completed_at: string | null;
 };
 
-export function AgentTeamConsole() {
+type Props = {
+  initialHistory: SavedRun[];
+};
+
+export function AgentTeamConsole({ initialHistory }: Props) {
   const [brief, setBrief] = useState(
     "Build and improve Ziepher for Tree Service Businesses using the existing Ziepher platform, GitHub source of truth, Supabase, Vercel, and safe approval gates."
   );
   const [state, setState] = useState<RunState>("idle");
   const [results, setResults] = useState<AgentResult[]>([]);
-  const [history, setHistory] = useState<SavedRun[]>([]);
+  const [history, setHistory] = useState<SavedRun[]>(initialHistory);
   const [error, setError] = useState<string | null>(null);
   const [selectedAgent, setSelectedAgent] = useState<string>("atlas");
 
@@ -41,17 +45,6 @@ export function AgentTeamConsole() {
     () => agentById.get(selectedAgent) ?? ziepherAgents[0],
     [selectedAgent]
   );
-
-  async function loadHistory() {
-    const response = await fetch("/api/team/runs", { cache: "no-store" });
-    if (!response.ok) return;
-    const payload = (await response.json()) as { runs?: SavedRun[] };
-    setHistory(payload.runs ?? []);
-  }
-
-  useEffect(() => {
-    void loadHistory();
-  }, []);
 
   async function runTeam() {
     const normalized = brief.trim();
@@ -70,11 +63,12 @@ export function AgentTeamConsole() {
     const payload = (await response.json().catch(() => null)) as
       | {
           error?: string;
+          run?: SavedRun;
           steps?: Array<{ agent_id: string; feedback: string | null }>;
         }
       | null;
 
-    if (!response.ok || !payload?.steps) {
+    if (!response.ok || !payload?.steps || !payload.run) {
       setError(payload?.error ?? "The team run could not be saved.");
       setState("error");
       return;
@@ -87,8 +81,8 @@ export function AgentTeamConsole() {
         output: step.feedback ?? "Review completed."
       }))
     );
+    setHistory((current) => [payload.run!, ...current].slice(0, 10));
     setState("done");
-    await loadHistory();
   }
 
   function resetRun() {
