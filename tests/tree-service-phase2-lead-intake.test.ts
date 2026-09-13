@@ -12,6 +12,11 @@ const migration = readFileSync(
   "utf8"
 );
 
+const lockMigration = readFileSync(
+  path.join(process.cwd(), "supabase/migrations/20260913235700_tree_service_phase2_lock_public_lead_rpc.sql"),
+  "utf8"
+);
+
 const publicRoute = readFileSync(
   path.join(process.cwd(), "app/api/public/operate/leads/[token]/route.ts"),
   "utf8"
@@ -33,7 +38,6 @@ describe("Tree Service Phase 2 lead intake", () => {
     expect(migration).toContain("revoked_at is null");
     expect(migration).toContain("expires_at is null or expires_at > now()");
     expect(migration).toContain("v_token.allowed_origin is not null");
-    expect(migration).toContain("grant execute on function public.submit_public_operate_lead");
   });
 
   it("makes public form retries idempotent", () => {
@@ -60,9 +64,10 @@ describe("Tree Service Phase 2 lead intake", () => {
     expect(leadsPage).toContain("source_detail");
   });
 
-  it("does not use the service-role key in the public intake route", () => {
-    expect(publicRoute).toContain("NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY");
-    expect(publicRoute).not.toContain("SUPABASE_SERVICE_ROLE_KEY");
-    expect(publicRoute).not.toContain("createAdminClient");
+  it("keeps the public database rpc behind the server route", () => {
+    expect(publicRoute).toContain("createAdminClient");
+    expect(publicRoute).not.toContain("NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY");
+    expect(lockMigration).toContain("from public, anon, authenticated");
+    expect(lockMigration).toContain("to service_role");
   });
 });
