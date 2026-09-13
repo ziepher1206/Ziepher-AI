@@ -1,10 +1,10 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 import {
   applicationFeeCents,
-  getOperateStripeTestClient,
   operatePlatformFeeBps,
-  operateStripeTestEnabled
-} from "../lib/stripe/operate";
+  operateStripeTestEnabled,
+  requireOperateStripeTestKey
+} from "../lib/stripe/operate-payment-config";
 import {
   assertOperateTestEvent,
   assertPositivePaidAmount,
@@ -13,23 +13,24 @@ import {
   operateCheckoutIdempotencyKey
 } from "../lib/stripe/operate-payment-events";
 
-const originalEnv = { ...process.env };
-
-afterEach(() => {
-  process.env = { ...originalEnv };
-});
-
 describe("Ziepher Operate Stripe safety locks", () => {
   it("keeps Stripe disabled unless explicitly enabled", () => {
-    delete process.env.ZIEPHER_OPERATE_STRIPE_TEST_ENABLED;
-    expect(operateStripeTestEnabled()).toBe(false);
-    expect(() => getOperateStripeTestClient()).toThrow(/test mode is disabled/i);
+    expect(operateStripeTestEnabled({})).toBe(false);
+    expect(() => requireOperateStripeTestKey({})).toThrow(/test mode is disabled/i);
   });
 
   it("rejects live Stripe secret keys even when test mode is enabled", () => {
-    process.env.ZIEPHER_OPERATE_STRIPE_TEST_ENABLED = "true";
-    process.env.STRIPE_SECRET_KEY = "sk_live_forbidden";
-    expect(() => getOperateStripeTestClient()).toThrow(/test keys only/i);
+    expect(() => requireOperateStripeTestKey({
+      ZIEPHER_OPERATE_STRIPE_TEST_ENABLED: "true",
+      STRIPE_SECRET_KEY: "sk_live_forbidden"
+    })).toThrow(/test keys only/i);
+  });
+
+  it("accepts only a test secret key when test mode is enabled", () => {
+    expect(requireOperateStripeTestKey({
+      ZIEPHER_OPERATE_STRIPE_TEST_ENABLED: "true",
+      STRIPE_SECRET_KEY: "sk_test_example"
+    })).toBe("sk_test_example");
   });
 
   it("rejects live webhook events", () => {
@@ -74,15 +75,13 @@ describe("Ziepher Operate Stripe safety locks", () => {
   });
 
   it("defaults the platform fee to zero and caps configuration at 10 percent", () => {
-    delete process.env.ZIEPHER_OPERATE_PLATFORM_FEE_BPS;
-    expect(operatePlatformFeeBps()).toBe(0);
-    expect(applicationFeeCents(10000)).toBe(0);
+    expect(operatePlatformFeeBps({})).toBe(0);
+    expect(applicationFeeCents(10000, {})).toBe(0);
 
-    process.env.ZIEPHER_OPERATE_PLATFORM_FEE_BPS = "250";
-    expect(operatePlatformFeeBps()).toBe(250);
-    expect(applicationFeeCents(10000)).toBe(250);
+    const feeEnv = { ZIEPHER_OPERATE_PLATFORM_FEE_BPS: "250" };
+    expect(operatePlatformFeeBps(feeEnv)).toBe(250);
+    expect(applicationFeeCents(10000, feeEnv)).toBe(250);
 
-    process.env.ZIEPHER_OPERATE_PLATFORM_FEE_BPS = "1001";
-    expect(() => operatePlatformFeeBps()).toThrow(/between 0 and 1000/i);
+    expect(() => operatePlatformFeeBps({ ZIEPHER_OPERATE_PLATFORM_FEE_BPS: "1001" })).toThrow(/between 0 and 1000/i);
   });
 });
