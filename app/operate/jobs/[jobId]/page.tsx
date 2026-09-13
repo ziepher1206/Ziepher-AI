@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
+import { OperateFieldReadiness } from "@/components/operate-field-readiness";
 import { OperateJobExecution } from "@/components/operate-job-execution";
 import { OperateJobScheduler } from "@/components/operate-job-scheduler";
 import { createClient } from "@/lib/supabase/server";
@@ -16,6 +17,12 @@ function dateTime(value: string | null) {
   return new Intl.DateTimeFormat("en-US", { dateStyle: "medium", timeStyle: "short" }).format(new Date(value));
 }
 
+function treeSummary(value: unknown) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return "";
+  const summary = (value as Record<string, unknown>).summary;
+  return typeof summary === "string" ? summary : "";
+}
+
 export default async function OperateJobPage({ params }: Props) {
   if (!isSupabaseConfigured()) redirect("/auth/sign-in");
   const supabase = await createClient();
@@ -25,7 +32,7 @@ export default async function OperateJobPage({ params }: Props) {
 
   const { data: job, error } = await supabase
     .from("jobs")
-    .select("id,workspace_id,title,description,status,service_address,estimated_value_cents,final_value_cents,planned_start_at,planned_end_at,actual_start_at,actual_end_at,assigned_crew_id,customers(display_name,phone,email),estimates(id),crews(name)")
+    .select("id,workspace_id,property_id,title,description,status,service_address,estimated_value_cents,final_value_cents,planned_start_at,planned_end_at,actual_start_at,actual_end_at,assigned_crew_id,customers(display_name,phone,email,notes),properties(id,label,address_line_1,address_line_2,city,region,postal_code,access_notes,hazard_notes,tree_notes),estimates(id),crews(name)")
     .eq("id", jobId)
     .maybeSingle();
   if (error) throw error;
@@ -38,6 +45,7 @@ export default async function OperateJobPage({ params }: Props) {
   ]);
 
   const customer = Array.isArray(job.customers) ? job.customers[0] : job.customers;
+  const property = Array.isArray(job.properties) ? job.properties[0] : job.properties;
   const estimate = Array.isArray(job.estimates) ? job.estimates[0] : job.estimates;
   const crew = Array.isArray(job.crews) ? job.crews[0] : job.crews;
 
@@ -58,8 +66,12 @@ export default async function OperateJobPage({ params }: Props) {
           <div><p className="panel-label">{customer?.display_name ?? "Customer"}</p><h1 style={{ margin: "6px 0 8px" }}>{job.title}</h1></div>
           <span className="status-pill">{job.status}</span>
         </div>
-        <p className="auth-copy">{job.service_address ?? "Service address not added"}</p>
-        {job.description ? <p>{job.description}</p> : null}
+        <p className="auth-copy">{job.service_address ?? property?.address_line_1 ?? "Service address not added"}</p>
+        <div className="inline-actions" style={{ marginTop: 10 }}>
+          {customer?.phone ? <a className="button" href={`tel:${customer.phone}`}>Call customer</a> : null}
+          {customer?.email ? <a className="button" href={`mailto:${customer.email}`}>Email customer</a> : null}
+        </div>
+        {customer?.notes ? <p className="auth-copy" style={{ marginTop: 14 }}><strong>Customer note:</strong> {customer.notes}</p> : null}
         <div style={{ marginTop: 20 }}><strong>{job.status === "completed" ? "Final value" : "Estimated value"}: {money(job.status === "completed" ? job.final_value_cents : job.estimated_value_cents)}</strong></div>
         {job.planned_start_at ? (
           <div style={{ marginTop: 14 }}>
@@ -71,6 +83,15 @@ export default async function OperateJobPage({ params }: Props) {
         ) : null}
         {job.actual_start_at ? <p className="auth-copy" style={{ marginBottom: 0 }}>Started {dateTime(job.actual_start_at)}{job.actual_end_at ? ` · Completed ${dateTime(job.actual_end_at)}` : ""}</p> : null}
       </section>
+
+      <OperateFieldReadiness
+        jobId={job.id}
+        hasProperty={Boolean(property?.id)}
+        accessNotes={property?.access_notes ?? ""}
+        hazardNotes={property?.hazard_notes ?? ""}
+        treeNotes={treeSummary(property?.tree_notes)}
+        jobNotes={job.description ?? ""}
+      />
 
       {job.status !== "completed" && job.status !== "canceled" ? (
         <OperateJobScheduler
