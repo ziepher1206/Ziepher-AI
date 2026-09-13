@@ -1,22 +1,14 @@
-import { StudioShell } from "@/components/studio-shell";
+import { redirect } from "next/navigation";
 import { isSupabaseConfigured } from "@/lib/env";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function HomePage() {
-  let userEmail: string | undefined;
+  if (!isSupabaseConfigured()) redirect("/auth/sign-in");
 
-  if (isSupabaseConfigured()) {
-    const supabase = await createClient();
-    const {
-      data: { user }
-    } = await supabase.auth.getUser();
-    userEmail = user?.email;
-  }
+  const supabase = await createClient();
+  const {
+    data: { user }
+  } = await supabase.auth.getUser();
 
-  return (
-    <StudioShell
-      authenticated={Boolean(userEmail)}
-      userEmail={userEmail}
-    />
-  );
+  redirect(user ? "/projects" : "/auth/sign-in");
 }
