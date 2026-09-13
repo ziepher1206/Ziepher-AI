@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { OperateDailyPriorities } from "@/components/operate-daily-priorities";
 import { OperateLeadForm } from "@/components/operate-lead-form";
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/env";
@@ -41,23 +42,23 @@ export default async function OperatePage() {
     .eq("id", workspaceId)
     .single();
 
-  const { count: newLeadCount } = await supabase
-    .from("leads")
-    .select("id", { count: "exact", head: true })
-    .eq("workspace_id", workspaceId)
-    .eq("status", "new");
-
-  const { count: activeJobCount } = await supabase
-    .from("jobs")
-    .select("id", { count: "exact", head: true })
-    .eq("workspace_id", workspaceId)
-    .in("status", ["scheduled", "active", "paused"]);
-
-  const { count: openEstimateCount } = await supabase
-    .from("estimates")
-    .select("id", { count: "exact", head: true })
-    .eq("workspace_id", workspaceId)
-    .in("status", ["draft", "scheduled", "completed", "sent"]);
+  const [
+    { count: newLeadCount },
+    { count: activeJobCount },
+    { count: pausedJobCount },
+    { count: openEstimateCount },
+    { count: readyEstimateCount },
+    { count: draftInvoiceCount },
+    { count: overdueInvoiceCount }
+  ] = await Promise.all([
+    supabase.from("leads").select("id", { count: "exact", head: true }).eq("workspace_id", workspaceId).eq("status", "new"),
+    supabase.from("jobs").select("id", { count: "exact", head: true }).eq("workspace_id", workspaceId).in("status", ["scheduled", "active", "paused"]),
+    supabase.from("jobs").select("id", { count: "exact", head: true }).eq("workspace_id", workspaceId).eq("status", "paused"),
+    supabase.from("estimates").select("id", { count: "exact", head: true }).eq("workspace_id", workspaceId).in("status", ["draft", "scheduled", "completed", "sent"]),
+    supabase.from("estimates").select("id", { count: "exact", head: true }).eq("workspace_id", workspaceId).in("status", ["completed", "sent"]),
+    supabase.from("invoices").select("id", { count: "exact", head: true }).eq("workspace_id", workspaceId).eq("status", "draft"),
+    supabase.from("invoices").select("id", { count: "exact", head: true }).eq("workspace_id", workspaceId).eq("status", "overdue")
+  ]);
 
   const { data: invoiceRows } = await supabase
     .from("invoices")
@@ -96,6 +97,10 @@ export default async function OperatePage() {
           </div>
         </div>
         <div className="inline-actions">
+          <Link className="button" href="/operate/leads">Leads</Link>
+          <Link className="button" href="/operate/estimates">Estimates</Link>
+          <Link className="button" href="/operate/calendar">Calendar</Link>
+          <Link className="button" href="/operate/invoices">Invoices</Link>
           <Link className="button" href="/projects">Websites</Link>
           <Link className="button" href="/settings">Settings</Link>
           <form action="/auth/sign-out" method="post">
@@ -113,27 +118,37 @@ export default async function OperatePage() {
           </p>
         </div>
 
+        <OperateDailyPriorities
+          newLeads={newLeadCount ?? 0}
+          readyEstimates={readyEstimateCount ?? 0}
+          activeJobs={activeJobCount ?? 0}
+          pausedJobs={pausedJobCount ?? 0}
+          draftInvoices={draftInvoiceCount ?? 0}
+          overdueInvoices={overdueInvoiceCount ?? 0}
+          outstandingCents={outstandingCents}
+        />
+
         <section style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))", gap: 14 }}>
-          <article className="project-card" style={{ minHeight: 0 }}>
+          <Link href="/operate/leads" className="project-card" style={{ minHeight: 0 }}>
             <p className="panel-label">New leads</p>
             <h2 style={{ fontSize: 34, margin: "8px 0 4px" }}>{newLeadCount ?? 0}</h2>
             <p>Waiting for first contact</p>
-          </article>
-          <article className="project-card" style={{ minHeight: 0 }}>
+          </Link>
+          <Link href="/operate/estimates" className="project-card" style={{ minHeight: 0 }}>
             <p className="panel-label">Open estimates</p>
             <h2 style={{ fontSize: 34, margin: "8px 0 4px" }}>{openEstimateCount ?? 0}</h2>
             <p>Draft through sent</p>
-          </article>
-          <article className="project-card" style={{ minHeight: 0 }}>
+          </Link>
+          <Link href="/operate/calendar" className="project-card" style={{ minHeight: 0 }}>
             <p className="panel-label">Active jobs</p>
             <h2 style={{ fontSize: 34, margin: "8px 0 4px" }}>{activeJobCount ?? 0}</h2>
             <p>Scheduled or in progress</p>
-          </article>
-          <article className="project-card" style={{ minHeight: 0 }}>
+          </Link>
+          <Link href="/operate/invoices" className="project-card" style={{ minHeight: 0 }}>
             <p className="panel-label">Outstanding</p>
             <h2 style={{ fontSize: 34, margin: "8px 0 4px" }}>{money(outstandingCents)}</h2>
             <p>Open invoice balance</p>
-          </article>
+          </Link>
         </section>
 
         <OperateLeadForm workspaceId={workspaceId} />
@@ -145,11 +160,11 @@ export default async function OperatePage() {
                 <p className="panel-label">Lead inbox</p>
                 <h2 style={{ margin: "6px 0 0" }}>Newest requests</h2>
               </div>
-              <span className="status-pill">{leads?.length ?? 0} shown</span>
+              <Link href="/operate/leads" className="status-pill">View all</Link>
             </div>
             <div style={{ display: "grid", gap: 10, marginTop: 18 }}>
               {(leads ?? []).map((lead) => (
-                <div key={lead.id} style={{ borderTop: "1px solid rgba(255,255,255,.09)", paddingTop: 12 }}>
+                <Link href="/operate/leads" key={lead.id} style={{ borderTop: "1px solid rgba(255,255,255,.09)", paddingTop: 12, color: "inherit", textDecoration: "none" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "start" }}>
                     <div>
                       <strong>{lead.contact_name}</strong>
@@ -162,18 +177,20 @@ export default async function OperatePage() {
                   <div className="auth-copy" style={{ fontSize: 13, marginTop: 6 }}>
                     {lead.service_address ?? "Address not added"} · {dateTime(lead.received_at)}
                   </div>
-                </div>
+                </Link>
               ))}
               {!leads?.length ? <p className="auth-copy">No leads yet. Add the first one above.</p> : null}
             </div>
           </article>
 
           <article className="auth-card" style={{ maxWidth: "none" }}>
-            <p className="panel-label">Schedule</p>
-            <h2 style={{ margin: "6px 0 0" }}>Coming up</h2>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 12 }}>
+              <div><p className="panel-label">Schedule</p><h2 style={{ margin: "6px 0 0" }}>Coming up</h2></div>
+              <Link href="/operate/calendar" className="status-pill">Open calendar</Link>
+            </div>
             <div style={{ display: "grid", gap: 10, marginTop: 18 }}>
               {(appointments ?? []).map((appointment) => (
-                <div key={appointment.id} style={{ borderTop: "1px solid rgba(255,255,255,.09)", paddingTop: 12 }}>
+                <Link href="/operate/calendar" key={appointment.id} style={{ borderTop: "1px solid rgba(255,255,255,.09)", paddingTop: 12, color: "inherit", textDecoration: "none" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
                     <strong>{appointment.title}</strong>
                     <span className="status-pill">{appointment.appointment_type}</span>
@@ -181,7 +198,7 @@ export default async function OperatePage() {
                   <div className="auth-copy" style={{ fontSize: 13, marginTop: 6 }}>
                     {dateTime(appointment.starts_at)}{appointment.service_address ? ` · ${appointment.service_address}` : ""}
                   </div>
-                </div>
+                </Link>
               ))}
               {!appointments?.length ? <p className="auth-copy">Nothing scheduled yet.</p> : null}
             </div>
@@ -189,21 +206,21 @@ export default async function OperatePage() {
         </section>
 
         <section className="project-grid" style={{ marginTop: 0 }}>
+          <Link className="project-card" href="/operate/leads">
+            <span className="status-pill">Operate</span>
+            <h2>Lead → Estimate → Job</h2>
+            <p>Capture work, schedule estimates, price it, accept it, assign the crew, and complete the job in one workflow.</p>
+          </Link>
+          <Link className="project-card" href="/operate/invoices">
+            <span className="status-pill">Payments</span>
+            <h2>Invoices</h2>
+            <p>Completed jobs create draft invoices with the existing Stripe payment rails kept safely in test mode.</p>
+          </Link>
           <Link className="project-card" href="/projects">
             <span className="status-pill">Create & Grow</span>
             <h2>Websites</h2>
             <p>Build, connect, scan, improve, preview, and safely publish business websites.</p>
           </Link>
-          <article className="project-card">
-            <span className="status-pill">Operate</span>
-            <h2>Estimates → Jobs → Payments</h2>
-            <p>The data foundation is active. Customer-facing workflow screens are the next build slice.</p>
-          </article>
-          <article className="project-card">
-            <span className="status-pill">Ziepher AI</span>
-            <h2>Assistant</h2>
-            <p>Next, the assistant will summarize what needs attention using this live operational data.</p>
-          </article>
         </section>
       </section>
     </main>
