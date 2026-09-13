@@ -17,10 +17,13 @@ export default async function OperateLeadsPage() {
   if (workspaceError || !workspaceId) throw workspaceError ?? new Error("Workspace unavailable.");
 
   const [
+    { data: workspace, error: workspaceDetailsError },
+    { data: membership, error: membershipError },
     { data: leads, error: leadsError },
-    { data: projects, error: projectsError },
-    { data: tokens, error: tokensError }
+    { data: projects, error: projectsError }
   ] = await Promise.all([
+    supabase.from("workspaces").select("owner_id").eq("id", workspaceId).single(),
+    supabase.from("workspace_members").select("role").eq("workspace_id", workspaceId).eq("user_id", user.id).maybeSingle(),
     supabase
       .from("leads")
       .select("id,contact_name,email,phone,service_address,message,source,source_detail,status,received_at")
@@ -30,16 +33,34 @@ export default async function OperateLeadsPage() {
       .from("projects")
       .select("id,name,primary_domain,source_domain")
       .eq("workspace_id", workspaceId)
-      .order("created_at", { ascending: true }),
-    supabase
+      .order("created_at", { ascending: true })
+  ]);
+  if (workspaceDetailsError) throw workspaceDetailsError;
+  if (membershipError) throw membershipError;
+  if (leadsError) throw leadsError;
+  if (projectsError) throw projectsError;
+
+  const canManageIntake = workspace.owner_id === user.id || ["owner", "admin"].includes(membership?.role ?? "");
+  let tokens: Array<{
+    id: string;
+    token: string;
+    label: string;
+    allowed_origin: string | null;
+    project_id: string | null;
+    expires_at: string | null;
+    revoked_at: string | null;
+    created_at: string;
+  }> = [];
+
+  if (canManageIntake) {
+    const { data, error } = await supabase
       .from("operate_lead_intake_tokens")
       .select("id,token,label,allowed_origin,project_id,expires_at,revoked_at,created_at")
       .eq("workspace_id", workspaceId)
-      .order("created_at", { ascending: false })
-  ]);
-  if (leadsError) throw leadsError;
-  if (projectsError) throw projectsError;
-  if (tokensError) throw tokensError;
+      .order("created_at", { ascending: false });
+    if (error) throw error;
+    tokens = data ?? [];
+  }
 
   return (
     <main className="projects-page">
@@ -68,7 +89,7 @@ export default async function OperateLeadsPage() {
         </div>
 
         <OperateLeadForm workspaceId={workspaceId} />
-        <OperateLeadIntakeSettings workspaceId={workspaceId} projects={projects ?? []} tokens={tokens ?? []} />
+        {canManageIntake ? <OperateLeadIntakeSettings workspaceId={workspaceId} projects={projects ?? []} tokens={tokens} /> : null}
         <OperateLeadInbox initialLeads={leads ?? []} />
       </section>
     </main>
