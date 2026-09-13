@@ -22,6 +22,7 @@ type Lead = {
   service_address: string | null;
   message: string | null;
   source: string | null;
+  source_detail: string | null;
   status: string;
   received_at: string;
 };
@@ -103,7 +104,7 @@ export function OperateLeadInbox({ initialLeads }: { initialLeads: Lead[] }) {
                 </div>
                 {lead.message ? <p className="auth-copy" style={{ margin: "8px 0 0", fontSize: 14 }}>{lead.message}</p> : null}
                 <div className="auth-copy" style={{ marginTop: 7, fontSize: 12 }}>
-                  Source: {lead.source ?? "unknown"} · {new Date(lead.received_at).toLocaleString()}
+                  Source: {lead.source ?? "Unknown"}{lead.source_detail ? ` · ${lead.source_detail}` : ""} · {new Date(lead.received_at).toLocaleString()}
                 </div>
               </div>
               <select
