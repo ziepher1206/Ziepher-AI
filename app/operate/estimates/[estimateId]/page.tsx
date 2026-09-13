@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { OperateEstimateEditor } from "@/components/operate-estimate-editor";
+import { OperateEstimateShareLink } from "@/components/operate-estimate-share-link";
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/env";
 
@@ -30,6 +31,7 @@ export default async function OperateEstimatePage({ params }: Props) {
 
   const customer = Array.isArray(estimate.customers) ? estimate.customers[0] : estimate.customers;
   const property = Array.isArray(estimate.properties) ? estimate.properties[0] : estimate.properties;
+  const shareClosed = ["accepted", "declined", "expired", "canceled"].includes(estimate.status);
 
   return (
     <main className="projects-page">
@@ -55,6 +57,7 @@ export default async function OperateEstimatePage({ params }: Props) {
           validUntil={estimate.valid_until}
           items={(items ?? []).map((item) => ({ description: item.description, quantity: Number(item.quantity), unitPriceCents: item.unit_price_cents }))}
         />
+        <OperateEstimateShareLink estimateId={estimate.id} disabled={shareClosed || (estimate.total_cents ?? 0) <= 0} />
       </section>
     </main>
   );
