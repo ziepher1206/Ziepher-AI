@@ -14,6 +14,7 @@ type Profile = {
   years_in_business: number | null;
   emergency_service: boolean;
   license_insurance_notes: string | null;
+  review_url?: string | null;
 } | null;
 
 export function OperateBusinessProfile({ workspaceId, profile }: { workspaceId: string; profile: Profile }) {
@@ -22,6 +23,7 @@ export function OperateBusinessProfile({ workspaceId, profile }: { workspaceId: 
   const [phone, setPhone] = useState(profile?.phone ?? "");
   const [email, setEmail] = useState(profile?.email ?? "");
   const [websiteUrl, setWebsiteUrl] = useState(profile?.website_url ?? "");
+  const [reviewUrl, setReviewUrl] = useState(profile?.review_url ?? "");
   const [serviceArea, setServiceArea] = useState(profile?.service_area ?? "");
   const [about, setAbout] = useState(profile?.about ?? "");
   const [ownerName, setOwnerName] = useState(profile?.owner_name ?? "");
@@ -44,6 +46,7 @@ export function OperateBusinessProfile({ workspaceId, profile }: { workspaceId: 
         phone,
         email,
         websiteUrl,
+        reviewUrl,
         serviceArea,
         about,
         ownerName,
@@ -71,6 +74,7 @@ export function OperateBusinessProfile({ workspaceId, profile }: { workspaceId: 
           <label className="field"><span>Phone</span><input value={phone} onChange={(e) => setPhone(e.target.value)} maxLength={80} /></label>
           <label className="field"><span>Email</span><input type="email" value={email} onChange={(e) => setEmail(e.target.value)} maxLength={254} /></label>
           <label className="field"><span>Website</span><input type="url" value={websiteUrl} onChange={(e) => setWebsiteUrl(e.target.value)} maxLength={1000} placeholder="https://…" /></label>
+          <label className="field"><span>Verified review link</span><input type="url" value={reviewUrl} onChange={(e) => setReviewUrl(e.target.value)} maxLength={1000} placeholder="Google review link or another verified review destination" /></label>
           <label className="field"><span>Years in business</span><input type="number" min={0} max={250} value={years} onChange={(e) => setYears(e.target.value)} /></label>
         </div>
         <label className="field"><span>Service area</span><textarea rows={3} value={serviceArea} onChange={(e) => setServiceArea(e.target.value)} maxLength={2000} placeholder="Cities, counties, ZIP codes, or a plain-English service radius…" /></label>
