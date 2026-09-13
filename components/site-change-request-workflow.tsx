@@ -13,7 +13,10 @@ type ChangeRequest = {
   ai_generation_approved: boolean;
   ai_generation_approved_at: string | null;
   spec_version_id: string | null;
+  build_job_id: string | null;
+  source_control_run_id: string | null;
   preview_url: string | null;
+  published_at: string | null;
   created_at: string;
 };
 
@@ -25,6 +28,7 @@ type Props = {
   initialInstructions?: string;
   initialTitle?: string;
   aiGenerationEnabled: boolean;
+  buildExecutionEnabled: boolean;
 };
 
 export function SiteChangeRequestWorkflow({
@@ -34,7 +38,8 @@ export function SiteChangeRequestWorkflow({
   initialSourceReference = "",
   initialInstructions = "",
   initialTitle = "",
-  aiGenerationEnabled
+  aiGenerationEnabled,
+  buildExecutionEnabled
 }: Props) {
   const router = useRouter();
   const [title, setTitle] = useState(initialTitle);
@@ -109,6 +114,25 @@ export function SiteChangeRequestWorkflow({
     }
   }
 
+  async function queueBuild(requestId: string) {
+    setWorkingId(requestId);
+    setMessage(null);
+    try {
+      const response = await fetch(
+        `/api/projects/${projectId}/change-requests/${requestId}/queue-build`,
+        { method: "POST" }
+      );
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error ?? "Unable to queue build.");
+      setMessage("Proposal approved and build queued. Production publishing still requires a later approval.");
+      router.refresh();
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Unable to queue build.");
+    } finally {
+      setWorkingId(null);
+    }
+  }
+
   return (
     <section style={{ display: "grid", gap: 24 }}>
       <form className="project-card" onSubmit={createRequest} style={{ display: "grid", gap: 14 }}>
@@ -168,7 +192,10 @@ export function SiteChangeRequestWorkflow({
                   <h2>{row.title}</h2>
                   <p>{row.instructions}</p>
                 </div>
-                <small>Created {new Date(row.created_at).toLocaleString()}</small>
+                <small>
+                  Created {new Date(row.created_at).toLocaleString()}
+                  {row.published_at ? ` · Published ${new Date(row.published_at).toLocaleString()}` : ""}
+                </small>
                 <div className="inline-actions">
                   {!row.ai_generation_approved && row.status === "awaiting_ai_approval" ? (
                     <button
@@ -180,6 +207,7 @@ export function SiteChangeRequestWorkflow({
                       Approve AI generation
                     </button>
                   ) : null}
+
                   {row.status === "ready_for_ai" ? (
                     aiGenerationEnabled ? (
                       <button
@@ -191,14 +219,37 @@ export function SiteChangeRequestWorkflow({
                         Generate proposal
                       </button>
                     ) : (
-                      <span className="status-pill">Provider calls locked by owner</span>
+                      <span className="status-pill">AI provider calls locked by owner</span>
                     )
                   ) : null}
+
+                  {row.status === "proposal_ready" ? (
+                    buildExecutionEnabled ? (
+                      <button
+                        className="button primary"
+                        disabled={workingId === row.id}
+                        onClick={() => queueBuild(row.id)}
+                        type="button"
+                      >
+                        Approve proposal & build preview
+                      </button>
+                    ) : (
+                      <span className="status-pill">Build provider usage locked by owner</span>
+                    )
+                  ) : null}
+
                   {row.spec_version_id ? (
                     <a className="button" href={`/projects/${projectId}/studio`}>
                       Review proposal
                     </a>
                   ) : null}
+
+                  {row.build_job_id ? (
+                    <a className="button" href={`/projects/${projectId}/source-control`}>
+                      Build & QA status
+                    </a>
+                  ) : null}
+
                   {row.preview_url ? (
                     <a className="button" href={row.preview_url} target="_blank" rel="noreferrer">
                       Open preview

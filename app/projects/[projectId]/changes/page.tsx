@@ -41,13 +41,14 @@ export default async function ChangesPage({ params, searchParams }: Props) {
 
   const { data: rows, error: requestError } = await supabase
     .from("site_change_requests")
-    .select("id,source_type,source_reference,title,instructions,status,ai_generation_approved,ai_generation_approved_at,spec_version_id,preview_url,created_at")
+    .select("id,source_type,source_reference,title,instructions,status,ai_generation_approved,ai_generation_approved_at,spec_version_id,build_job_id,source_control_run_id,preview_url,published_at,created_at")
     .eq("project_id", projectId)
     .order("created_at", { ascending: false });
   if (requestError) throw requestError;
 
   const domain = project.primary_domain ?? project.source_domain;
   const aiGenerationEnabled = process.env.SITE_REFINER_PAID_AI_ENABLED === "true";
+  const buildExecutionEnabled = process.env.SITE_REFINER_PAID_BUILDS_ENABLED === "true";
 
   return (
     <main className="projects-page">
@@ -75,12 +76,22 @@ export default async function ChangesPage({ params, searchParams }: Props) {
           </p>
         </div>
 
-        <section className="project-card">
-          <p className="panel-label">Cost and publishing gate</p>
-          <h2>{aiGenerationEnabled ? "AI generation enabled" : "AI provider calls are locked"}</h2>
-          <p>
-            A customer can save a request and separately approve AI generation. Provider calls still require the owner-level SiteRefiner AI gate, and production publishing remains a separate approval-gated action.
-          </p>
+        <section className="project-grid" style={{ marginTop: 0 }}>
+          <article className="project-card">
+            <p className="panel-label">AI proposal gate</p>
+            <h2>{aiGenerationEnabled ? "Provider generation enabled" : "Provider calls locked"}</h2>
+            <p>Saving and approving a request never bypasses the owner-level AI provider switch.</p>
+          </article>
+          <article className="project-card">
+            <p className="panel-label">Build execution gate</p>
+            <h2>{buildExecutionEnabled ? "Build execution enabled" : "Build provider usage locked"}</h2>
+            <p>Even after a proposal exists, build execution has its own owner-level switch before credits or provider work can begin.</p>
+          </article>
+          <article className="project-card">
+            <p className="panel-label">Production gate</p>
+            <h2>Separate approval required</h2>
+            <p>Builds move through checks and preview first. Production release still uses the existing exact-SHA approval workflow.</p>
+          </article>
         </section>
 
         <SiteChangeRequestWorkflow
@@ -91,6 +102,7 @@ export default async function ChangesPage({ params, searchParams }: Props) {
           initialTitle={query.title?.slice(0, 160) ?? ""}
           initialInstructions={query.instructions?.slice(0, 12000) ?? ""}
           aiGenerationEnabled={aiGenerationEnabled}
+          buildExecutionEnabled={buildExecutionEnabled}
         />
       </section>
     </main>
