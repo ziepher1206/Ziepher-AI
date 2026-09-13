@@ -18,6 +18,11 @@ const inputSchema = z.discriminatedUnion("action", [
     userId: z.string().uuid()
   }),
   z.object({
+    action: z.literal("set_timezone"),
+    workspaceId: z.string().uuid(),
+    timezone: z.string().trim().min(1).max(100)
+  }),
+  z.object({
     action: z.literal("set_hours"),
     workspaceId: z.string().uuid(),
     crewId: z.string().uuid(),
@@ -30,12 +35,33 @@ const inputSchema = z.discriminatedUnion("action", [
   })
 ]);
 
+function isValidTimeZone(timezone: string) {
+  try {
+    new Intl.DateTimeFormat("en-US", { timeZone: timezone }).format(new Date());
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export async function POST(request: Request) {
   try {
     const input = inputSchema.parse(await request.json());
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error("Authentication required.");
+
+    if (input.action === "set_timezone") {
+      if (!isValidTimeZone(input.timezone)) throw new Error("Choose a valid timezone.");
+      const { data, error } = await supabase
+        .from("workspaces")
+        .update({ timezone: input.timezone })
+        .eq("id", input.workspaceId)
+        .select("id,timezone")
+        .single();
+      if (error) throw error;
+      return NextResponse.json({ workspace: data });
+    }
 
     if (input.action === "assign_member") {
       const { data, error } = await supabase
