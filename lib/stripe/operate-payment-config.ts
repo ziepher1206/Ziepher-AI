@@ -1,8 +1,10 @@
-export function operateStripeTestEnabled(env: NodeJS.ProcessEnv = process.env) {
+type PaymentEnv = Record<string, string | undefined>;
+
+export function operateStripeTestEnabled(env: PaymentEnv = process.env) {
   return env.ZIEPHER_OPERATE_STRIPE_TEST_ENABLED === "true";
 }
 
-export function requireOperateStripeTestKey(env: NodeJS.ProcessEnv = process.env) {
+export function requireOperateStripeTestKey(env: PaymentEnv = process.env) {
   if (!operateStripeTestEnabled(env)) {
     throw new Error("Ziepher Operate Stripe test mode is disabled.");
   }
@@ -14,7 +16,7 @@ export function requireOperateStripeTestKey(env: NodeJS.ProcessEnv = process.env
   return secretKey;
 }
 
-export function operatePlatformFeeBps(env: NodeJS.ProcessEnv = process.env) {
+export function operatePlatformFeeBps(env: PaymentEnv = process.env) {
   const raw = env.ZIEPHER_OPERATE_PLATFORM_FEE_BPS;
   if (!raw) return 0;
   const value = Number.parseInt(raw, 10);
@@ -24,6 +26,6 @@ export function operatePlatformFeeBps(env: NodeJS.ProcessEnv = process.env) {
   return value;
 }
 
-export function applicationFeeCents(amountCents: number, env: NodeJS.ProcessEnv = process.env) {
+export function applicationFeeCents(amountCents: number, env: PaymentEnv = process.env) {
   return Math.max(0, Math.round((amountCents * operatePlatformFeeBps(env)) / 10_000));
 }
