@@ -1,149 +1,150 @@
-# SiteRefiner Engine
+# Ziepher
 
 > Legacy repository name: `Ziepher-AI`
 
-This repository is now the active engineering foundation for **SiteRefiner — built by Ziepher Tech**.
+This repository is the active engineering foundation for **Ziepher**, the unified AI-powered platform built by Ziepher Tech.
 
-The former standalone Ziepher AI product direction has been consolidated into SiteRefiner. Existing internal identifiers such as repository names, environment-variable prefixes, migration names, and historical database objects may retain `Ziepher` naming where changing them would create compatibility risk.
+Ziepher is one customer-facing product. Former standalone directions—Ziepher AI, SiteRefiner, Ziepher Builder, SchedulePilot capabilities, and Ziepher Match—are being consolidated into modules inside one platform rather than developed as competing products.
 
-## Product purpose
+## Product mission
 
-SiteRefiner gives businesses an AI web team for websites they already own. It can audit an existing site, understand the business, recommend improvements, create safe proposed changes, generate previews, run QA, obtain customer approval, publish through supported integrations, track versions/rollback, manage promotions and approved marketing workflows, and meter AI/provider costs per business and website.
-
-The initial core loop is:
+Ziepher helps a business **create, operate, grow, and improve** from one account.
 
 ```text
-business workspace
-→ connect/enter website
-→ scan + business context
-→ prioritized recommendation or owner request
-→ AI plan/change
-→ isolated version/branch
-→ automated checks
-→ preview
-→ customer approval
-→ exact reviewed release
-→ production verification
-→ usage/cost recording
-→ continuous recommendations
+ZIEPHER
+├── Create
+│   ├── websites
+│   ├── web apps
+│   ├── hosting/deployment
+│   └── domains/database/storage management
+├── Operate
+│   ├── leads/customers
+│   ├── estimates
+│   ├── scheduling/crew
+│   ├── jobs
+│   ├── invoices
+│   └── payments
+├── Grow
+│   ├── website improvement
+│   ├── SEO/CRO
+│   ├── promotions
+│   ├── social marketing
+│   └── advertising
+├── Match
+│   └── customer-to-business marketplace opportunities
+└── Ziepher Assistant
+    └── orchestrates specialist AI agents across the platform
 ```
 
-## Active portfolio boundary
+The customer should not need to bounce between GitHub, Vercel, Supabase, AI providers, or secret-key setup for routine use. Ziepher acts as the control plane and presents one account, one assistant, one usage/billing view, and one operational workspace.
 
-- **SiteRefiner** — flagship website improvement/management/marketing platform. This repo supplies its AI/build/orchestration engine.
-- **Ziepher Match** — separate local-service marketplace with its own repository and business rules.
-- **Ziepher AI** — no longer a separate public product; its useful technology is absorbed here.
-- **Ziepher Builder** — retired standalone name; useful capability is absorbed here.
+## First commercial launch
 
-## Existing architecture being reused
+The first configured industry experience is **tree service**.
 
-The consolidation intentionally preserves mature infrastructure already built in this repo:
-
-1. **Web control plane** — authentication, workspaces, projects, context, review UI, provider connections, repository/deployment settings, and release actions.
-2. **AI/build worker** — durable build jobs, model routing, bounded repair, isolated validation, and immutable artifacts.
-3. **Source-control worker** — GitHub branches, changes, pull requests, checks, preview readiness, approval, and exact-SHA merge controls.
-4. **Deployment worker** — Vercel project binding, deployment reconciliation, release gates, and production verification.
-5. **Usage/cost ledger** — model token/cost telemetry now extended for SiteRefiner workspace/project customer usage.
-
-Generated package scripts never execute inside the public Next.js web process.
-
-## SiteRefiner-specific data foundation
-
-The existing `workspaces` table represents a business account. Existing `projects` become website/project records.
-
-New SiteRefiner foundation includes:
-
-- business/site domain and scan fields on projects;
-- customer-facing usage values on model usage;
-- `media_assets` for the business photo/media library;
-- `marketing_campaigns` for promotions, social/marketing campaign state, approvals, schedules, and channels;
-- `project_cost_events` for non-AI/provider cost attribution and customer-visible usage totals.
-
-Provider connections remain workspace-scoped and can later support authorized social/marketing providers in addition to GitHub/Vercel.
-
-## AI model routing
-
-OpenAI remains the primary configured AI provider. Keep model IDs explicit so behavior and costs do not change silently.
+Initial complete loop:
 
 ```text
-ZIEPHER_AI_PRIMARY_PROVIDER=openai
-ZIEPHER_AI_ALLOW_PAID_FALLBACK=false
-OPENAI_API_KEY=
-OPENAI_PLANNING_MODEL=gpt-5.6-luna
-OPENAI_BUILD_MODEL=gpt-5.6-terra
-OPENAI_ESCALATION_MODEL=gpt-5.6-sol
+business signup
+→ website/app build or connection
+→ lead
+→ customer/property
+→ estimate appointment
+→ estimate
+→ accepted estimate
+→ scheduled job + crew
+→ completion
+→ invoice
+→ Stripe payment
+→ review/follow-up
+→ marketing
+→ Ziepher Assistant recommends the next action
 ```
 
-These environment-variable names are legacy internal identifiers and should not be renamed casually.
+We are deliberately not waiting for every future Ziepher module before launch.
 
-## GitHub and Vercel safety
+## Existing infrastructure retained
 
-GitHub remains the durable source of truth for native SiteRefiner-managed code changes.
+This repository already contains reusable core infrastructure:
 
-- AI changes use isolated branches/pull requests where source control is available.
-- Preview approval is owner/admin controlled.
-- Merges are bound to the reviewed head SHA.
-- Production release remains a separate action/gate.
-- Provider credentials are workspace-scoped and encrypted.
-- Customer projects never implicitly use a global operator Vercel token.
-- Provider deployment attempts are durably recorded and reconciled rather than blindly retried.
+1. Authentication, workspaces, projects, provider connections and permissions.
+2. AI planning/build workers and model routing.
+3. Website scanning, media, promotions and change-request workflows.
+4. Versioned build artifacts and bounded QA/repair.
+5. GitHub branch/PR/check/preview/exact-SHA release controls.
+6. Vercel deployment orchestration and production verification.
+7. Usage/cost telemetry and customer-facing cost records.
+8. Supabase-backed control-plane state.
 
-Relevant existing release gates remain:
+Generated/untrusted code execution remains isolated from the public web process.
+
+## Legacy capability sources
+
+- `ziepher1206/schedulepilot` — scheduling, leads, estimates, jobs, crews, availability and overrides.
+- `ziepher1206/treepilot` — preserved tree-service workflow/domain reference including customers, properties, jobs, crews and invoices.
+- `ziepher1206/ziepher-match` — current Match marketplace implementation; temporarily remains a separate service/database boundary while it is integrated safely.
+- `ziepher1206/ziepher-tech-homepage` — company/public marketing site, not a separate SaaS product.
+
+Do not blindly concatenate old databases or migrations. Capabilities are ported into the unified Ziepher model with tenant-isolation/security tests.
+
+## Infrastructure philosophy
+
+Ziepher should feel like its own hosting/application platform even when provider infrastructure is used underneath.
+
+Current rails may include:
+
+- Supabase
+- Vercel
+- GitHub
+- Stripe
+- OpenAI/approved AI providers
+
+These are implementation suppliers. The customer's workflow is Ziepher.
+
+Provider credentials should be OAuth/scoped and encrypted where possible. AI agents receive only the task-specific capability they require. High-impact actions remain approval and budget gated.
+
+## Safety defaults
 
 ```text
 VERCEL_DEPLOYMENTS_ENABLED=false
 VERCEL_PRODUCTION_RELEASES_ENABLED=false
 STRIPE_ENABLED=false
+SITE_REFINER_PAID_AI_ENABLED=false
+SITE_REFINER_PAID_BUILDS_ENABLED=false
 ```
 
-Do not enable paid billing, real ad spend, or production automation silently.
+Legacy environment-variable names may remain during compatibility-safe migration. Do not enable paid usage, real charges, production releases, social posts, ad spend, or outbound campaigns silently.
 
-## Supabase
+## Environments
 
-Supabase provides authentication, business workspaces, website projects, project/version state, AI usage/cost telemetry, provider connections, media/campaign records, private artifacts, source-control orchestration, and deployment state.
+Ziepher is developed without stopping production:
 
-```text
-NEXT_PUBLIC_SUPABASE_URL=
-NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=
-SUPABASE_SERVICE_ROLE_KEY=
-ZIEPHER_PROVIDER_CREDENTIALS_KEY=
-```
+- production — stable customer release
+- preview/staging — release verification
+- development branches — active work
+- feature flags — incomplete modules hidden until ready
 
-Never expose `SUPABASE_SERVICE_ROLE_KEY` or `ZIEPHER_PROVIDER_CREDENTIALS_KEY` to the browser.
+Production changes use review, checks, preview, explicit approval, exact-SHA release and rollback/version history.
 
-## Workers
+## Immediate priority
 
-```bash
-npm run worker
-npm run source-control-worker
-npm run deploy-worker
-```
+1. Consolidate product language and architecture under Ziepher.
+2. Reuse existing auth/build/deploy/AI infrastructure.
+3. Build the tree-service operational data model.
+4. Port leads/customers/properties.
+5. Port estimate/scheduling/crew logic.
+6. Port jobs/invoices.
+7. Integrate Stripe in test mode.
+8. Connect website/growth capabilities to operational records.
+9. Integrate Match as an opportunity source.
+10. Pilot the end-to-end loop with a controlled tree-service business.
+11. Complete security/legal/billing launch review.
+12. Launch, collect revenue/feedback, then expand industries/modules.
 
-Workers remain separately scalable services and should keep generated/untrusted execution isolated from the public web process.
+## Canonical docs
 
-## Validation
+- `docs/ZIEPHER-MASTER-SOURCE.md`
+- `docs/ZIEPHER-TREE-SERVICE-LAUNCH.md`
+- `docs/ZIEPHER-LEGACY-MIGRATION-MAP.md`
 
-```bash
-npm run check
-npm run smoke:generated
-npm audit --audit-level=moderate
-```
-
-`npm run check` runs the existing TypeScript, lint, test, PWA, and production-build quality gates.
-
-## Security note
-
-The current Supabase project has pre-existing security-advisor warnings around intentionally server-mediated RLS tables and authenticated-callable `SECURITY DEFINER` RPCs. Do not blanket-change those functions without reviewing their authorization logic and call sites. New SiteRefiner tables use RLS and scoped authenticated policies; internal cost-event writes remain server-side.
-
-## Implementation priority
-
-1. Keep Ziepher Match separate and stabilize it without expanding scope.
-2. Convert the user-facing product experience in this repo from generic app building to SiteRefiner website onboarding/management.
-3. Reuse existing workspaces/projects, model usage, source-control, Vercel, approvals, versioning, and deployment safety.
-4. Build the core website loop: account → domain → scan → recommendation/request → change → QA → preview → approval → publish → rollback/history → usage tracking.
-5. Add media library, promotions, organic social workflows, and paid-ad recommendations on the same foundation.
-6. Preserve legacy technical identifiers until a dedicated compatibility-safe migration justifies renaming them.
-
-## Documentation
-
-The company-level canonical product scope is maintained in `docs/SITEREFINER-PRODUCT-SCOPE.md` in the Ziepher Tech company repository. Operational/security documents in this repo remain valid where they describe the underlying build, source-control, deployment, and trust architecture.
+The default rule going forward: **new ideas become Ziepher capabilities, not new standalone products, unless there is a strong architectural/business reason otherwise.**
