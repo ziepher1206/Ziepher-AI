@@ -35,7 +35,7 @@ export async function POST(_request: Request, context: Context) {
     const admin = createAdminClient();
     const { data: changeRequest, error: requestError } = await admin
       .from("site_change_requests")
-      .select("id,status,spec_version_id,build_job_id")
+      .select("id,status,spec_version_id,build_job_id,change_metadata")
       .eq("id", requestId)
       .eq("project_id", projectId)
       .single();
@@ -69,12 +69,18 @@ export async function POST(_request: Request, context: Context) {
     );
     if (buildError) throw buildError;
 
+    const existingMetadata =
+      changeRequest.change_metadata && typeof changeRequest.change_metadata === "object"
+        ? changeRequest.change_metadata
+        : {};
+
     const { data: updated, error: updateError } = await admin
       .from("site_change_requests")
       .update({
         status: "build_queued",
         build_job_id: buildJobId,
         change_metadata: {
+          ...existingMetadata,
           build_quality_mode: "balanced",
           build_approved_by: user.id,
           build_approved_at: new Date().toISOString()
