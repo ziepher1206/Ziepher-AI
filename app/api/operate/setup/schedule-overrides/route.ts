@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { createClient } from "@/lib/supabase/server";
 import { apiError } from "@/lib/http";
+import { recordOperateAuditEvent } from "@/lib/operate/audit";
+import { requireWorkspaceAdmin } from "@/lib/operate/workspace-auth";
 
 const createSchema = z.object({
   workspaceId: z.string().uuid(),
@@ -25,9 +26,7 @@ const deleteSchema = z.object({
 export async function POST(request: Request) {
   try {
     const input = createSchema.parse(await request.json());
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error("Authentication required.");
+    const { supabase, user } = await requireWorkspaceAdmin(input.workspaceId);
 
     const { data, error } = await supabase
       .from("schedule_overrides")
@@ -45,6 +44,21 @@ export async function POST(request: Request) {
       .select("id,resource_type,resource_crew_id,mode,starts_at,ends_at,note")
       .single();
     if (error) throw error;
+    await recordOperateAuditEvent({
+      supabase,
+      workspaceId: input.workspaceId,
+      actorUserId: user.id,
+      action: "schedule_override.created",
+      entityType: "schedule_override",
+      entityId: data.id,
+      metadata: {
+        resourceType: input.resourceType,
+        crewId: input.crewId ?? null,
+        mode: input.mode,
+        startsAt: input.startsAt,
+        endsAt: input.endsAt
+      }
+    });
     return NextResponse.json({ override: data }, { status: 201 });
   } catch (error) {
     return apiError(error, "Unable to save schedule exception.");
@@ -54,9 +68,15 @@ export async function POST(request: Request) {
 export async function DELETE(request: Request) {
   try {
     const input = deleteSchema.parse(await request.json());
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error("Authentication required.");
+    const { supabase, user } = await requireWorkspaceAdmin(input.workspaceId);
+
+    const { data: existing, error: existingError } = await supabase
+      .from("schedule_overrides")
+      .select("id,resource_type,resource_crew_id,mode,starts_at,ends_at")
+      .eq("workspace_id", input.workspaceId)
+      .eq("id", input.overrideId)
+      .maybeSingle();
+    if (existingError) throw existingError;
 
     const { error } = await supabase
       .from("schedule_overrides")
@@ -64,6 +84,15 @@ export async function DELETE(request: Request) {
       .eq("workspace_id", input.workspaceId)
       .eq("id", input.overrideId);
     if (error) throw error;
+    await recordOperateAuditEvent({
+      supabase,
+      workspaceId: input.workspaceId,
+      actorUserId: user.id,
+      action: "schedule_override.deleted",
+      entityType: "schedule_override",
+      entityId: input.overrideId,
+      metadata: existing ?? {}
+    });
     return NextResponse.json({ ok: true });
   } catch (error) {
     return apiError(error, "Unable to remove schedule exception.");
