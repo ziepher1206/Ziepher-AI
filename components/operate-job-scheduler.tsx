@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 
@@ -77,6 +78,11 @@ export function OperateJobScheduler({
       <p className="auth-copy" style={{ marginTop: 0 }}>
         Ziepher checks active user and crew appointments for overlaps before saving.
       </p>
+      {!crews.length ? (
+        <p className="auth-copy" style={{ margin: "0 0 14px" }}>
+          No crews are configured yet. <Link href="/operate/setup">Add a crew in Business setup</Link>, or schedule this job without a crew for now.
+        </p>
+      ) : null}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(210px,1fr))", gap: 14 }}>
         <label className="field">
           <span>Start date & time</span>
