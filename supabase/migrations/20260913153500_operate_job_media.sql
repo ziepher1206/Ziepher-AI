@@ -33,7 +33,7 @@ create table if not exists public.operate_job_media (
   constraint operate_job_media_property_workspace_fk
     foreign key (property_id, workspace_id)
     references public.properties(id, workspace_id)
-    on delete set null
+    on delete restrict
 );
 
 create index if not exists operate_job_media_job_created_idx
