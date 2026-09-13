@@ -1,7 +1,7 @@
-import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { apiError } from "@/lib/http";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 export const runtime = "nodejs";
 
@@ -40,13 +40,7 @@ export async function POST(request: Request, context: Context) {
   try {
     const token = z.string().uuid().parse((await context.params).token);
     const input = bodySchema.parse(await request.json());
-    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
-    if (!url || !key) throw new Error("Lead intake is not configured.");
-
-    const supabase = createClient(url, key, {
-      auth: { persistSession: false, autoRefreshToken: false }
-    });
+    const supabase = createAdminClient();
     const { data, error } = await supabase.rpc("submit_public_operate_lead", {
       p_token: token,
       p_submission_id: input.submissionId,
