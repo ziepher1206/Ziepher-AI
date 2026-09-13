@@ -5,6 +5,7 @@ import { OperateFieldReadiness } from "@/components/operate-field-readiness";
 import { OperateJobExecution } from "@/components/operate-job-execution";
 import { OperateJobPhotoUpload } from "@/components/operate-job-photo-upload";
 import { OperateJobScheduler } from "@/components/operate-job-scheduler";
+import { OperateReviewRequestDraft } from "@/components/operate-review-request-draft";
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/env";
 
@@ -40,13 +41,21 @@ export default async function OperateJobPage({ params }: Props) {
   if (error) throw error;
   if (!job) notFound();
 
-  const [{ data: crews }, { data: members }, { data: invoice }, { data: media, error: mediaError }] = await Promise.all([
+  const [
+    { data: crews },
+    { data: members },
+    { data: invoice },
+    { data: media, error: mediaError },
+    { data: reviewDraft, error: reviewDraftError }
+  ] = await Promise.all([
     supabase.from("crews").select("id,name").eq("workspace_id", job.workspace_id).eq("active", true).order("name"),
     supabase.from("workspace_members").select("user_id,role").eq("workspace_id", job.workspace_id).order("created_at"),
     supabase.from("invoices").select("id").eq("workspace_id", job.workspace_id).eq("job_id", job.id).order("created_at", { ascending: true }).limit(1).maybeSingle(),
-    supabase.from("operate_job_media").select("id,category,storage_bucket,storage_path,display_name,caption,created_at").eq("workspace_id", job.workspace_id).eq("job_id", job.id).order("created_at", { ascending: false }).limit(100)
+    supabase.from("operate_job_media").select("id,category,storage_bucket,storage_path,display_name,caption,created_at").eq("workspace_id", job.workspace_id).eq("job_id", job.id).order("created_at", { ascending: false }).limit(100),
+    supabase.from("operate_review_requests").select("id,status,subject,message,review_url").eq("workspace_id", job.workspace_id).eq("job_id", job.id).maybeSingle()
   ]);
   if (mediaError) throw mediaError;
+  if (reviewDraftError) throw reviewDraftError;
 
   const photoItems = await Promise.all((media ?? []).map(async (item) => {
     const { data } = await supabase.storage.from(item.storage_bucket).createSignedUrl(item.storage_path, 60 * 30);
@@ -137,6 +146,12 @@ export default async function OperateJobPage({ params }: Props) {
         estimatedValueCents={job.estimated_value_cents}
         finalValueCents={job.final_value_cents}
         invoiceId={invoice?.id ?? null}
+      />
+
+      <OperateReviewRequestDraft
+        jobId={job.id}
+        completed={job.status === "completed"}
+        initialDraft={reviewDraft ?? null}
       />
     </main>
   );
