@@ -86,7 +86,10 @@ export function OperateDailyPriorities({
           <h2 style={{ margin: "6px 0 6px" }}>What needs attention</h2>
           <p className="auth-copy" style={{ margin: 0 }}>Read-only priorities generated from your live business data. No paid AI call is used for this view.</p>
         </div>
-        <span className="status-pill">{priorities.filter((priority) => priority.level !== "clear").length} priorities</span>
+        <div className="inline-actions">
+          <Link className="button" href="/operate/setup">Business setup</Link>
+          <span className="status-pill">{priorities.filter((priority) => priority.level !== "clear").length} priorities</span>
+        </div>
       </div>
 
       <div style={{ display: "grid", gap: 10, marginTop: 18 }}>
