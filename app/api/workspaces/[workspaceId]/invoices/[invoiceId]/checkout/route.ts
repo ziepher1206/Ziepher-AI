@@ -93,7 +93,6 @@ export async function POST(request: Request, context: Context) {
     }
 
     const connectedAccount = await stripe.accounts.retrieve(paymentAccount.provider_account_id);
-    if (connectedAccount.livemode) throw new Error("Live Stripe accounts are not allowed in this stage.");
     if (!connectedAccount.charges_enabled) {
       throw new Error("Stripe test onboarding is not complete yet.");
     }
