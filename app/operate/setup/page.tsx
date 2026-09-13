@@ -14,12 +14,14 @@ export default async function OperateSetupPage() {
   if (workspaceError || !workspaceId) throw workspaceError ?? new Error("Workspace unavailable.");
 
   const [
+    { data: workspace, error: workspaceDetailsError },
     { data: services, error: servicesError },
     { data: crews, error: crewsError },
     { data: workspaceMembers, error: membersError },
     { data: crewMembers, error: crewMembersError },
     { data: availabilityRules, error: availabilityError }
   ] = await Promise.all([
+    supabase.from("workspaces").select("id,timezone").eq("id", workspaceId).single(),
     supabase
       .from("services")
       .select("id,name,description,default_duration_minutes,preparation_buffer_minutes,cleanup_buffer_minutes,base_price_cents,active")
@@ -49,6 +51,7 @@ export default async function OperateSetupPage() {
       .eq("resource_type", "crew")
       .order("day_of_week")
   ]);
+  if (workspaceDetailsError) throw workspaceDetailsError;
   if (servicesError) throw servicesError;
   if (crewsError) throw crewsError;
   if (membersError) throw membersError;
@@ -72,10 +75,11 @@ export default async function OperateSetupPage() {
         <div>
           <p className="panel-label">Tree Service</p>
           <h1 style={{ margin: "6px 0 8px" }}>Business setup</h1>
-          <p className="auth-copy" style={{ maxWidth: 760, margin: 0 }}>Configure services, crews, crew staffing, and normal working hours. These records feed estimates, jobs, and scheduling throughout Ziepher.</p>
+          <p className="auth-copy" style={{ maxWidth: 760, margin: 0 }}>Configure services, crews, crew staffing, timezone, and normal working hours. These records feed estimates, jobs, and scheduling throughout Ziepher.</p>
         </div>
         <OperateBusinessSetup
           workspaceId={workspaceId}
+          timezone={workspace?.timezone ?? null}
           services={services ?? []}
           crews={crews ?? []}
           workspaceMembers={workspaceMembers ?? []}
