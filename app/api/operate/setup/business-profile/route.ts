@@ -26,35 +26,25 @@ export async function POST(request: Request) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error("Authentication required.");
 
-    const values = {
-      workspace_id: input.workspaceId,
-      business_name: clean(input.businessName),
-      phone: clean(input.phone),
-      email: clean(input.email),
-      website_url: clean(input.websiteUrl),
-      service_area: clean(input.serviceArea),
-      about: clean(input.about),
-      owner_name: clean(input.ownerName),
-      years_in_business: input.yearsInBusiness ?? null,
-      emergency_service: input.emergencyService,
-      license_insurance_notes: clean(input.licenseInsuranceNotes),
-      updated_at: new Date().toISOString()
-    };
-
     const { data, error } = await supabase
       .from("workspace_business_profiles")
-      .upsert(values, { onConflict: "workspace_id" })
+      .upsert({
+        workspace_id: input.workspaceId,
+        business_name: clean(input.businessName),
+        phone: clean(input.phone),
+        email: clean(input.email),
+        website_url: clean(input.websiteUrl),
+        service_area: clean(input.serviceArea),
+        about: clean(input.about),
+        owner_name: clean(input.ownerName),
+        years_in_business: input.yearsInBusiness ?? null,
+        emergency_service: input.emergencyService,
+        license_insurance_notes: clean(input.licenseInsuranceNotes),
+        updated_at: new Date().toISOString()
+      }, { onConflict: "workspace_id" })
       .select("*")
       .single();
     if (error) throw error;
-
-    if (values.business_name) {
-      const { error: workspaceError } = await supabase
-        .from("workspaces")
-        .update({ name: values.business_name })
-        .eq("id", input.workspaceId);
-      if (workspaceError) throw workspaceError;
-    }
 
     return NextResponse.json({ profile: data });
   } catch (error) {
