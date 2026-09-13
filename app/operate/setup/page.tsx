@@ -13,7 +13,13 @@ export default async function OperateSetupPage() {
   const { data: workspaceId, error: workspaceError } = await supabase.rpc("ensure_personal_workspace");
   if (workspaceError || !workspaceId) throw workspaceError ?? new Error("Workspace unavailable.");
 
-  const [{ data: services, error: servicesError }, { data: crews, error: crewsError }] = await Promise.all([
+  const [
+    { data: services, error: servicesError },
+    { data: crews, error: crewsError },
+    { data: workspaceMembers, error: membersError },
+    { data: crewMembers, error: crewMembersError },
+    { data: availabilityRules, error: availabilityError }
+  ] = await Promise.all([
     supabase
       .from("services")
       .select("id,name,description,default_duration_minutes,preparation_buffer_minutes,cleanup_buffer_minutes,base_price_cents,active")
@@ -25,10 +31,29 @@ export default async function OperateSetupPage() {
       .select("id,name,active")
       .eq("workspace_id", workspaceId)
       .order("active", { ascending: false })
-      .order("name")
+      .order("name"),
+    supabase
+      .from("workspace_members")
+      .select("user_id,role")
+      .eq("workspace_id", workspaceId)
+      .order("created_at"),
+    supabase
+      .from("crew_members")
+      .select("id,crew_id,user_id,is_lead")
+      .eq("workspace_id", workspaceId)
+      .order("created_at"),
+    supabase
+      .from("availability_rules")
+      .select("id,resource_crew_id,day_of_week,starts_at_local,ends_at_local,active")
+      .eq("workspace_id", workspaceId)
+      .eq("resource_type", "crew")
+      .order("day_of_week")
   ]);
   if (servicesError) throw servicesError;
   if (crewsError) throw crewsError;
+  if (membersError) throw membersError;
+  if (crewMembersError) throw crewMembersError;
+  if (availabilityError) throw availabilityError;
 
   return (
     <main className="projects-page">
@@ -47,9 +72,16 @@ export default async function OperateSetupPage() {
         <div>
           <p className="panel-label">Tree Service</p>
           <h1 style={{ margin: "6px 0 8px" }}>Business setup</h1>
-          <p className="auth-copy" style={{ maxWidth: 760, margin: 0 }}>Configure the services you sell and the crews you schedule. These records feed estimates, jobs, and the calendar throughout Ziepher.</p>
+          <p className="auth-copy" style={{ maxWidth: 760, margin: 0 }}>Configure services, crews, crew staffing, and normal working hours. These records feed estimates, jobs, and scheduling throughout Ziepher.</p>
         </div>
-        <OperateBusinessSetup workspaceId={workspaceId} services={services ?? []} crews={crews ?? []} />
+        <OperateBusinessSetup
+          workspaceId={workspaceId}
+          services={services ?? []}
+          crews={crews ?? []}
+          workspaceMembers={workspaceMembers ?? []}
+          crewMembers={crewMembers ?? []}
+          availabilityRules={availabilityRules ?? []}
+        />
       </section>
     </main>
   );
