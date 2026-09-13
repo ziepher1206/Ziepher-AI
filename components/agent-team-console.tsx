@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { agentById, defaultAgentWorkflow, ziepherAgents } from "@/lib/agents/registry";
 
-type RunState = "idle" | "running" | "done";
+type RunState = "idle" | "running" | "done" | "error";
 
 type AgentResult = {
   agentId: string;
@@ -11,20 +11,34 @@ type AgentResult = {
   output: string;
 };
 
-function dryRunOutput(agentId: string, brief: string) {
-  const agent = agentById.get(agentId);
-  if (!agent) return "Agent unavailable.";
+export type SavedRun = {
+  id: string;
+  brief: string;
+  mode: "dry_run" | "live";
+  status: string;
+  agent_count: number;
+  completed_count: number;
+  blocked_count: number;
+  input_tokens: number;
+  output_tokens: number;
+  provider_cost_usd: number | string;
+  summary: string | null;
+  created_at: string;
+  completed_at: string | null;
+};
 
-  const focus = agent.responsibilities.slice(0, 3).join(", ");
-  return `${agent.name} reviewed the project through the lens of ${focus}. Recommended next step: ${agent.mission} Project context: ${brief.slice(0, 220)}${brief.length > 220 ? "…" : ""}`;
-}
+type Props = {
+  initialHistory: SavedRun[];
+};
 
-export function AgentTeamConsole() {
+export function AgentTeamConsole({ initialHistory }: Props) {
   const [brief, setBrief] = useState(
     "Build and improve Ziepher for Tree Service Businesses using the existing Ziepher platform, GitHub source of truth, Supabase, Vercel, and safe approval gates."
   );
   const [state, setState] = useState<RunState>("idle");
   const [results, setResults] = useState<AgentResult[]>([]);
+  const [history, setHistory] = useState<SavedRun[]>(initialHistory);
+  const [error, setError] = useState<string | null>(null);
   const [selectedAgent, setSelectedAgent] = useState<string>("atlas");
 
   const selected = useMemo(
@@ -38,31 +52,42 @@ export function AgentTeamConsole() {
 
     setState("running");
     setResults([]);
+    setError(null);
 
-    for (const agentId of defaultAgentWorkflow) {
-      setResults((current) => [
-        ...current,
-        { agentId, status: "queued", output: "Reviewing project context…" }
-      ]);
-      await new Promise((resolve) => window.setTimeout(resolve, 90));
-      setResults((current) =>
-        current.map((result) =>
-          result.agentId === agentId
-            ? {
-                ...result,
-                status: "complete",
-                output: dryRunOutput(agentId, normalized)
-              }
-            : result
-        )
-      );
+    const response = await fetch("/api/team/runs", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ brief: normalized })
+    });
+
+    const payload = (await response.json().catch(() => null)) as
+      | {
+          error?: string;
+          run?: SavedRun;
+          steps?: Array<{ agent_id: string; feedback: string | null }>;
+        }
+      | null;
+
+    if (!response.ok || !payload?.steps || !payload.run) {
+      setError(payload?.error ?? "The team run could not be saved.");
+      setState("error");
+      return;
     }
 
+    setResults(
+      payload.steps.map((step) => ({
+        agentId: step.agent_id,
+        status: "complete" as const,
+        output: step.feedback ?? "Review completed."
+      }))
+    );
+    setHistory((current) => [payload.run!, ...current].slice(0, 10));
     setState("done");
   }
 
   function resetRun() {
     setResults([]);
+    setError(null);
     setState("idle");
   }
 
@@ -72,7 +97,7 @@ export function AgentTeamConsole() {
         <p className="panel-label">Project handoff</p>
         <h1 style={{ margin: "6px 0 10px" }}>Run a project through the Ziepher Tech agent team</h1>
         <p className="auth-copy" style={{ maxWidth: 850 }}>
-          This first version is a zero-cost dry run. It exercises the full team order and role boundaries without calling a paid AI model or changing production. Live autonomous execution can be connected to the same registry behind explicit budget and approval gates.
+          Zero-cost team runs are now saved to Ziepher. Every run records the project brief, all 22 specialist handoffs, completion state, token usage, and provider cost. Live paid execution remains disabled until budget and approval controls are enabled.
         </p>
         <label style={{ display: "grid", gap: 8, marginTop: 18 }}>
           <strong>Project brief</strong>
@@ -80,6 +105,7 @@ export function AgentTeamConsole() {
             value={brief}
             onChange={(event) => setBrief(event.target.value)}
             rows={6}
+            maxLength={12000}
             style={{
               width: "100%",
               resize: "vertical",
@@ -94,13 +120,39 @@ export function AgentTeamConsole() {
         </label>
         <div className="inline-actions" style={{ marginTop: 16 }}>
           <button className="button primary" onClick={runTeam} disabled={state === "running" || !brief.trim()}>
-            {state === "running" ? "Team working…" : "Run full 22-agent team"}
+            {state === "running" ? "Team working…" : "Run and save full 22-agent team"}
           </button>
-          {results.length ? (
+          {results.length || error ? (
             <button className="button" onClick={resetRun} disabled={state === "running"}>
               Reset
             </button>
           ) : null}
+        </div>
+        {error ? <p style={{ marginTop: 12 }}>{error}</p> : null}
+      </section>
+
+      <section className="auth-card" style={{ maxWidth: "none" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "end", flexWrap: "wrap" }}>
+          <div>
+            <p className="panel-label">Run history</p>
+            <h2 style={{ margin: "6px 0" }}>Saved team reviews</h2>
+          </div>
+          <span className="status-pill">{history.length} recent</span>
+        </div>
+        <div style={{ display: "grid", gap: 10, marginTop: 16 }}>
+          {history.map((run) => (
+            <article key={run.id} style={{ padding: 14, borderRadius: 14, border: "1px solid rgba(255,255,255,.1)" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+                <strong>{run.completed_count}/{run.agent_count} agents completed</strong>
+                <span className="status-pill">{run.mode === "dry_run" ? "Zero-cost" : "Live"} · {run.status}</span>
+              </div>
+              <p className="auth-copy" style={{ margin: "8px 0 4px" }}>{run.brief}</p>
+              <small style={{ opacity: 0.68 }}>
+                {new Date(run.created_at).toLocaleString()} · ${Number(run.provider_cost_usd).toFixed(4)} provider cost · {run.input_tokens + run.output_tokens} tokens
+              </small>
+            </article>
+          ))}
+          {!history.length ? <p className="auth-copy">No saved team runs yet.</p> : null}
         </div>
       </section>
 
@@ -142,18 +194,9 @@ export function AgentTeamConsole() {
           <p className="auth-copy">{selected.personality}</p>
           <p>{selected.mission}</p>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))", gap: 14, marginTop: 14 }}>
-            <div>
-              <strong>Owns</strong>
-              <p className="auth-copy">{selected.responsibilities.join(" · ")}</p>
-            </div>
-            <div>
-              <strong>Can decide</strong>
-              <p className="auth-copy">{selected.canDecide.join(" · ")}</p>
-            </div>
-            <div>
-              <strong>Must escalate</strong>
-              <p className="auth-copy">{selected.mustEscalate.join(" · ")}</p>
-            </div>
+            <div><strong>Owns</strong><p className="auth-copy">{selected.responsibilities.join(" · ")}</p></div>
+            <div><strong>Can decide</strong><p className="auth-copy">{selected.canDecide.join(" · ")}</p></div>
+            <div><strong>Must escalate</strong><p className="auth-copy">{selected.mustEscalate.join(" · ")}</p></div>
           </div>
         </article>
       </section>
@@ -161,37 +204,20 @@ export function AgentTeamConsole() {
       <section className="auth-card" style={{ maxWidth: "none" }}>
         <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
           <div>
-            <p className="panel-label">Team run</p>
+            <p className="panel-label">Latest team run</p>
             <h2 style={{ margin: "6px 0" }}>Handoff sequence</h2>
           </div>
-          <span className="status-pill">{state === "done" ? "Dry run complete" : state === "running" ? "In progress" : "Ready"}</span>
+          <span className="status-pill">{state === "done" ? "Saved" : state === "running" ? "In progress" : state === "error" ? "Needs attention" : "Ready"}</span>
         </div>
         <div style={{ display: "grid", gap: 10, marginTop: 16 }}>
           {defaultAgentWorkflow.map((agentId, index) => {
             const agent = agentById.get(agentId)!;
             const result = results.find((item) => item.agentId === agentId);
             return (
-              <article
-                key={agentId}
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "44px minmax(160px,220px) 1fr",
-                  gap: 12,
-                  alignItems: "start",
-                  padding: 14,
-                  borderRadius: 14,
-                  border: "1px solid rgba(255,255,255,.1)",
-                  background: result?.status === "complete" ? "rgba(255,255,255,.035)" : "transparent"
-                }}
-              >
+              <article key={agentId} style={{ display: "grid", gridTemplateColumns: "44px minmax(160px,220px) 1fr", gap: 12, alignItems: "start", padding: 14, borderRadius: 14, border: "1px solid rgba(255,255,255,.1)", background: result?.status === "complete" ? "rgba(255,255,255,.035)" : "transparent" }}>
                 <strong>{String(index + 1).padStart(2, "0")}</strong>
-                <div>
-                  <strong>{agent.name}</strong>
-                  <small style={{ display: "block", opacity: 0.68, marginTop: 3 }}>{agent.title}</small>
-                </div>
-                <p className="auth-copy" style={{ margin: 0 }}>
-                  {result?.output ?? agent.mission}
-                </p>
+                <div><strong>{agent.name}</strong><small style={{ display: "block", opacity: 0.68, marginTop: 3 }}>{agent.title}</small></div>
+                <p className="auth-copy" style={{ margin: 0 }}>{result?.output ?? agent.mission}</p>
               </article>
             );
           })}
