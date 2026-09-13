@@ -68,6 +68,7 @@ export default async function ProjectPage({ params }: Props) {
         </div>
         <div className="inline-actions">
           <Link className="button" href="/projects">All websites</Link>
+          <Link className="button" href={`/projects/${projectId}/changes`}>Changes</Link>
           <Link className="button" href={`/projects/${projectId}/media`}>Photo library</Link>
           <Link className="button" href={`/projects/${projectId}/campaigns`}>Promotions</Link>
           <Link className="button" href={`/projects/${projectId}/usage`}>Usage & cost</Link>
@@ -88,6 +89,9 @@ export default async function ProjectPage({ params }: Props) {
           </div>
           <div className="inline-actions">
             {domain ? <SiteScanButton projectId={projectId} /> : null}
+            <Link className="button primary" href={`/projects/${projectId}/changes`}>
+              Request a change
+            </Link>
             <Link className="button" href={`/projects/${projectId}/campaigns`}>
               Create promotion
             </Link>
@@ -124,6 +128,15 @@ export default async function ProjectPage({ params }: Props) {
                 ? "Run the first scan to establish a baseline."
                 : "This first-pass score covers foundational homepage signals. Deeper SEO, accessibility, CRO, content, and performance analysis will build on it."}
             </p>
+          </article>
+
+          <article className="project-card">
+            <p className="panel-label">Change pipeline</p>
+            <h2>Request → preview → approval</h2>
+            <p>Turn a recommendation or business request into a tracked website change before any AI or production action is allowed.</p>
+            <Link className="button" href={`/projects/${projectId}/changes`} style={{ marginTop: 12 }}>
+              Open change requests
+            </Link>
           </article>
 
           <article className="project-card">
@@ -181,8 +194,30 @@ export default async function ProjectPage({ params }: Props) {
           <p className="panel-label">Recommended next changes</p>
           <h2>{recommendations.length ? "Prioritized from this scan" : "Recommendations appear after scanning"}</h2>
           {recommendations.length ? (
-            <ol style={{ display: "grid", gap: 10, paddingLeft: 22 }}>
-              {recommendations.map((recommendation) => <li key={recommendation}>{recommendation}</li>)}
+            <ol style={{ display: "grid", gap: 14, paddingLeft: 22 }}>
+              {recommendations.map((recommendation, index) => (
+                <li key={recommendation}>
+                  <div style={{ display: "grid", gap: 8 }}>
+                    <span>{recommendation}</span>
+                    <div>
+                      <Link
+                        className="button"
+                        href={{
+                          pathname: `/projects/${projectId}/changes`,
+                          query: {
+                            source: "scan_recommendation",
+                            reference: `scan-recommendation-${index + 1}`,
+                            title: "Improve website recommendation",
+                            instructions: recommendation
+                          }
+                        }}
+                      >
+                        Turn into change request
+                      </Link>
+                    </div>
+                  </div>
+                </li>
+              ))}
             </ol>
           ) : (
             <p>SiteRefiner will turn detected gaps into reviewable improvement work instead of publishing changes automatically.</p>
@@ -193,7 +228,8 @@ export default async function ProjectPage({ params }: Props) {
           <p className="panel-label">Advanced build rails</p>
           <h2>Existing safety infrastructure is still available</h2>
           <div className="inline-actions">
-            <Link className="button primary" href={`/projects/${projectId}/studio`}>Open AI workspace</Link>
+            <Link className="button primary" href={`/projects/${projectId}/changes`}>Open change pipeline</Link>
+            <Link className="button" href={`/projects/${projectId}/studio`}>AI workspace</Link>
             <Link className="button" href={`/projects/${projectId}/source-control`}>Build review</Link>
             <Link className="button" href={`/projects/${projectId}/settings/repository`}>GitHub repository</Link>
             <Link className="button" href={`/projects/${projectId}/settings/deployment`}>Vercel target</Link>
