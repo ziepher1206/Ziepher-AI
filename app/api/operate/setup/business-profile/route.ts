@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { createClient } from "@/lib/supabase/server";
 import { apiError } from "@/lib/http";
+import { recordOperateAuditEvent } from "@/lib/operate/audit";
+import { requireWorkspaceAdmin } from "@/lib/operate/workspace-auth";
 
 const schema = z.object({
   workspaceId: z.string().uuid(),
@@ -23,9 +24,7 @@ const clean = (value: string | null | undefined) => value?.trim() || null;
 export async function POST(request: Request) {
   try {
     const input = schema.parse(await request.json());
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error("Authentication required.");
+    const { supabase, user } = await requireWorkspaceAdmin(input.workspaceId);
 
     const { data, error } = await supabase
       .from("workspace_business_profiles")
@@ -47,6 +46,19 @@ export async function POST(request: Request) {
       .select("*")
       .single();
     if (error) throw error;
+
+    await recordOperateAuditEvent({
+      supabase,
+      workspaceId: input.workspaceId,
+      actorUserId: user.id,
+      action: "business_profile.updated",
+      entityType: "workspace_business_profile",
+      metadata: {
+        businessName: data.business_name,
+        hasServiceArea: Boolean(data.service_area),
+        emergencyService: Boolean(data.emergency_service)
+      }
+    });
 
     return NextResponse.json({ profile: data });
   } catch (error) {

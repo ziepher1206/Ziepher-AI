@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { createClient } from "@/lib/supabase/server";
 import { apiError } from "@/lib/http";
+import { recordOperateAuditEvent } from "@/lib/operate/audit";
+import { requireWorkspaceAdmin } from "@/lib/operate/workspace-auth";
 
 const inputSchema = z.discriminatedUnion("action", [
   z.object({
@@ -47,9 +48,7 @@ function isValidTimeZone(timezone: string) {
 export async function POST(request: Request) {
   try {
     const input = inputSchema.parse(await request.json());
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error("Authentication required.");
+    const { supabase, user } = await requireWorkspaceAdmin(input.workspaceId);
 
     if (input.action === "set_timezone") {
       if (!isValidTimeZone(input.timezone)) throw new Error("Choose a valid timezone.");
@@ -60,6 +59,15 @@ export async function POST(request: Request) {
         .select("id,timezone")
         .single();
       if (error) throw error;
+      await recordOperateAuditEvent({
+        supabase,
+        workspaceId: input.workspaceId,
+        actorUserId: user.id,
+        action: "workspace.timezone_updated",
+        entityType: "workspace",
+        entityId: data.id,
+        metadata: { timezone: data.timezone }
+      });
       return NextResponse.json({ workspace: data });
     }
 
@@ -76,10 +84,27 @@ export async function POST(request: Request) {
         .select("id,crew_id,user_id,is_lead")
         .single();
       if (error) throw error;
+      await recordOperateAuditEvent({
+        supabase,
+        workspaceId: input.workspaceId,
+        actorUserId: user.id,
+        action: "crew.member_assigned",
+        entityType: "crew_member",
+        entityId: data.id,
+        metadata: { crewId: input.crewId, userId: input.userId, isLead: input.isLead }
+      });
       return NextResponse.json({ membership: data });
     }
 
     if (input.action === "remove_member") {
+      const { data: membership, error: findError } = await supabase
+        .from("crew_members")
+        .select("id")
+        .eq("workspace_id", input.workspaceId)
+        .eq("crew_id", input.crewId)
+        .eq("user_id", input.userId)
+        .maybeSingle();
+      if (findError) throw findError;
       const { error } = await supabase
         .from("crew_members")
         .delete()
@@ -87,6 +112,15 @@ export async function POST(request: Request) {
         .eq("crew_id", input.crewId)
         .eq("user_id", input.userId);
       if (error) throw error;
+      await recordOperateAuditEvent({
+        supabase,
+        workspaceId: input.workspaceId,
+        actorUserId: user.id,
+        action: "crew.member_removed",
+        entityType: "crew_member",
+        entityId: membership?.id ?? null,
+        metadata: { crewId: input.crewId, userId: input.userId }
+      });
       return NextResponse.json({ ok: true });
     }
 
@@ -111,6 +145,15 @@ export async function POST(request: Request) {
           .eq("id", existing.id);
         if (error) throw error;
       }
+      await recordOperateAuditEvent({
+        supabase,
+        workspaceId: input.workspaceId,
+        actorUserId: user.id,
+        action: "crew.hours_updated",
+        entityType: "availability_rule",
+        entityId: existing?.id ?? null,
+        metadata: { crewId: input.crewId, dayOfWeek: input.dayOfWeek, active: false }
+      });
       return NextResponse.json({ ok: true });
     }
 
@@ -139,6 +182,15 @@ export async function POST(request: Request) {
         .select("id,day_of_week,starts_at_local,ends_at_local,active")
         .single();
       if (error) throw error;
+      await recordOperateAuditEvent({
+        supabase,
+        workspaceId: input.workspaceId,
+        actorUserId: user.id,
+        action: "crew.hours_updated",
+        entityType: "availability_rule",
+        entityId: data.id,
+        metadata: { crewId: input.crewId, dayOfWeek: input.dayOfWeek, startsAtLocal: input.startsAtLocal, endsAtLocal: input.endsAtLocal, active: true }
+      });
       return NextResponse.json({ rule: data });
     }
 
@@ -148,6 +200,15 @@ export async function POST(request: Request) {
       .select("id,day_of_week,starts_at_local,ends_at_local,active")
       .single();
     if (error) throw error;
+    await recordOperateAuditEvent({
+      supabase,
+      workspaceId: input.workspaceId,
+      actorUserId: user.id,
+      action: "crew.hours_created",
+      entityType: "availability_rule",
+      entityId: data.id,
+      metadata: { crewId: input.crewId, dayOfWeek: input.dayOfWeek, startsAtLocal: input.startsAtLocal, endsAtLocal: input.endsAtLocal, active: true }
+    });
     return NextResponse.json({ rule: data }, { status: 201 });
   } catch (error) {
     return apiError(error, "Unable to update crew staffing.");

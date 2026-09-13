@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { createClient } from "@/lib/supabase/server";
 import { apiError } from "@/lib/http";
+import { recordOperateAuditEvent } from "@/lib/operate/audit";
+import { requireWorkspaceAdmin } from "@/lib/operate/workspace-auth";
 
 const createSchema = z.discriminatedUnion("type", [
   z.object({
@@ -31,9 +32,7 @@ const updateSchema = z.object({
 export async function POST(request: Request) {
   try {
     const input = createSchema.parse(await request.json());
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error("Authentication required.");
+    const { supabase, user } = await requireWorkspaceAdmin(input.workspaceId);
 
     if (input.type === "crew") {
       const { data, error } = await supabase
@@ -42,6 +41,15 @@ export async function POST(request: Request) {
         .select("id,name,active")
         .single();
       if (error) throw error;
+      await recordOperateAuditEvent({
+        supabase,
+        workspaceId: input.workspaceId,
+        actorUserId: user.id,
+        action: "crew.created",
+        entityType: "crew",
+        entityId: data.id,
+        metadata: { name: data.name }
+      });
       return NextResponse.json({ crew: data }, { status: 201 });
     }
 
@@ -59,6 +67,15 @@ export async function POST(request: Request) {
       .select("id,name,active")
       .single();
     if (error) throw error;
+    await recordOperateAuditEvent({
+      supabase,
+      workspaceId: input.workspaceId,
+      actorUserId: user.id,
+      action: "service.created",
+      entityType: "service",
+      entityId: data.id,
+      metadata: { name: data.name }
+    });
     return NextResponse.json({ service: data }, { status: 201 });
   } catch (error) {
     return apiError(error, "Unable to save business setup.");
@@ -68,9 +85,7 @@ export async function POST(request: Request) {
 export async function PATCH(request: Request) {
   try {
     const input = updateSchema.parse(await request.json());
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error("Authentication required.");
+    const { supabase, user } = await requireWorkspaceAdmin(input.workspaceId);
 
     const table = input.entity === "service" ? "services" : "crews";
     const { data, error } = await supabase
@@ -81,6 +96,15 @@ export async function PATCH(request: Request) {
       .select("id,active")
       .single();
     if (error) throw error;
+    await recordOperateAuditEvent({
+      supabase,
+      workspaceId: input.workspaceId,
+      actorUserId: user.id,
+      action: `${input.entity}.active_changed`,
+      entityType: input.entity,
+      entityId: input.id,
+      metadata: { active: input.active }
+    });
     return NextResponse.json({ item: data });
   } catch (error) {
     return apiError(error, "Unable to update business setup.");
