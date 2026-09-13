@@ -2,6 +2,11 @@ import { NextResponse } from "next/server";
 import type Stripe from "stripe";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getOperateStripeTestClient } from "@/lib/stripe/operate";
+import {
+  assertOperateTestEvent,
+  assertPositivePaidAmount,
+  checkoutSessionRepresentsPayment
+} from "@/lib/stripe/operate-payment-events";
 
 export const runtime = "nodejs";
 
@@ -63,9 +68,11 @@ export async function POST(request: Request) {
       );
     }
 
-    if (event.livemode) {
+    try {
+      assertOperateTestEvent(event);
+    } catch (error) {
       return NextResponse.json(
-        { error: "Live Stripe events are disabled for Ziepher Operate." },
+        { error: error instanceof Error ? error.message : "Live Stripe events are disabled." },
         { status: 400 }
       );
     }
@@ -78,7 +85,7 @@ export async function POST(request: Request) {
 
     if (event.type === "checkout.session.completed") {
       const session = event.data.object as Stripe.Checkout.Session;
-      if (session.payment_status === "paid" || session.payment_status === "no_payment_required") {
+      if (checkoutSessionRepresentsPayment(session)) {
         const paymentIntentId = objectId(session.payment_intent);
         let chargeId: string | null = null;
         let amountCents = session.amount_total ?? 0;
@@ -91,7 +98,7 @@ export async function POST(request: Request) {
           chargeId = objectId(paymentIntent.latest_charge);
         }
 
-        if (amountCents <= 0) throw new Error("Completed Checkout Session has no paid amount.");
+        assertPositivePaidAmount(amountCents);
 
         const { error } = await admin.rpc("settle_operate_checkout_payment", {
           p_provider_event_id: event.id,
