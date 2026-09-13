@@ -39,7 +39,6 @@ export async function POST(request: Request, context: Context) {
         },
         metadata: { workspaceId }
       });
-      if (account.livemode) throw new Error("Live Stripe accounts are not allowed in this stage.");
       accountId = account.id;
 
       const { error } = await admin.from("workspace_payment_accounts").upsert(
