@@ -70,4 +70,11 @@ describe("Tree Service Phase 2 lead intake", () => {
     expect(lockMigration).toContain("from public, anon, authenticated");
     expect(lockMigration).toContain("to service_role");
   });
+
+  it("keeps website intake controls admin-only without blocking the lead inbox", () => {
+    expect(leadsPage).toContain("canManageIntake");
+    expect(leadsPage).toContain('["owner", "admin"].includes');
+    expect(leadsPage).toContain("canManageIntake ? <OperateLeadIntakeSettings");
+    expect(leadsPage).toContain("<OperateLeadInbox");
+  });
 });
