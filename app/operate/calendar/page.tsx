@@ -79,6 +79,10 @@ export default async function OperateCalendarPage() {
   const { data: workspaceId, error: workspaceError } = await supabase.rpc("ensure_personal_workspace");
   if (workspaceError || !workspaceId) throw workspaceError ?? new Error("Workspace unavailable.");
 
+  const recentCutoff = new Date();
+  recentCutoff.setUTCDate(recentCutoff.getUTCDate() - 1);
+  const recentCutoffIso = recentCutoff.toISOString();
+
   const [
     { data: workspace, error: workspaceDetailsError },
     { data: appointments, error: appointmentsError },
@@ -92,7 +96,7 @@ export default async function OperateCalendarPage() {
       .select("id,title,appointment_type,status,starts_at,ends_at,service_address:properties(address_line_1),crews(id,name),jobs(id),estimates(id),customers(display_name)")
       .eq("workspace_id", workspaceId)
       .in("status", ["tentative", "confirmed", "in_progress"])
-      .gte("ends_at", new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
+      .gte("ends_at", recentCutoffIso)
       .order("starts_at", { ascending: true })
       .limit(250),
     supabase
@@ -111,7 +115,7 @@ export default async function OperateCalendarPage() {
       .from("schedule_overrides")
       .select("id,resource_type,resource_crew_id,mode,starts_at,ends_at,note,crews(name)")
       .eq("workspace_id", workspaceId)
-      .gte("ends_at", new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
+      .gte("ends_at", recentCutoffIso)
       .order("starts_at", { ascending: true })
       .limit(200)
   ]);
