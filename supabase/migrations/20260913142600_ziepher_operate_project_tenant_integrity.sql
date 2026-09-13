@@ -1,8 +1,7 @@
 -- Ensure operational records cannot link a lead in one workspace to a project
 -- owned by another workspace.
-
-alter table public.projects
-  add constraint projects_id_workspace_unique unique (id, workspace_id);
+-- The (id, workspace_id) uniqueness constraint already exists from the earlier
+-- workspace/project integrity migration, so do not recreate it here.
 
 alter table public.leads
   drop constraint leads_project_id_fkey;
