@@ -1,7 +1,9 @@
+/* eslint-disable @next/next/no-img-element */
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { OperateFieldReadiness } from "@/components/operate-field-readiness";
 import { OperateJobExecution } from "@/components/operate-job-execution";
+import { OperateJobPhotoUpload } from "@/components/operate-job-photo-upload";
 import { OperateJobScheduler } from "@/components/operate-job-scheduler";
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/env";
@@ -38,11 +40,18 @@ export default async function OperateJobPage({ params }: Props) {
   if (error) throw error;
   if (!job) notFound();
 
-  const [{ data: crews }, { data: members }, { data: invoice }] = await Promise.all([
+  const [{ data: crews }, { data: members }, { data: invoice }, { data: media, error: mediaError }] = await Promise.all([
     supabase.from("crews").select("id,name").eq("workspace_id", job.workspace_id).eq("active", true).order("name"),
     supabase.from("workspace_members").select("user_id,role").eq("workspace_id", job.workspace_id).order("created_at"),
-    supabase.from("invoices").select("id").eq("workspace_id", job.workspace_id).eq("job_id", job.id).order("created_at", { ascending: true }).limit(1).maybeSingle()
+    supabase.from("invoices").select("id").eq("workspace_id", job.workspace_id).eq("job_id", job.id).order("created_at", { ascending: true }).limit(1).maybeSingle(),
+    supabase.from("operate_job_media").select("id,category,storage_bucket,storage_path,display_name,caption,created_at").eq("workspace_id", job.workspace_id).eq("job_id", job.id).order("created_at", { ascending: false }).limit(100)
   ]);
+  if (mediaError) throw mediaError;
+
+  const photoItems = await Promise.all((media ?? []).map(async (item) => {
+    const { data } = await supabase.storage.from(item.storage_bucket).createSignedUrl(item.storage_path, 60 * 30);
+    return { ...item, signedUrl: data?.signedUrl ?? null };
+  }));
 
   const customer = Array.isArray(job.customers) ? job.customers[0] : job.customers;
   const property = Array.isArray(job.properties) ? job.properties[0] : job.properties;
@@ -92,6 +101,25 @@ export default async function OperateJobPage({ params }: Props) {
         treeNotes={treeSummary(property?.tree_notes)}
         jobNotes={job.description ?? ""}
       />
+
+      <OperateJobPhotoUpload workspaceId={job.workspace_id} jobId={job.id} propertyId={job.property_id} />
+
+      <section className="auth-card" style={{ maxWidth: 900 }}>
+        <p className="panel-label">Private job gallery</p>
+        <h2 style={{ margin: "6px 0 8px" }}>Before / after photos</h2>
+        {photoItems.length ? (
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))", gap: 14, marginTop: 16 }}>
+            {photoItems.map((photo) => (
+              <article key={photo.id} className="project-card" style={{ minHeight: 0 }}>
+                {photo.signedUrl ? <img src={photo.signedUrl} alt={photo.caption || photo.display_name} style={{ width: "100%", aspectRatio: "4 / 3", objectFit: "cover", borderRadius: 10 }} /> : null}
+                <div style={{ marginTop: 10 }}><span className="status-pill">{photo.category}</span></div>
+                <strong style={{ display: "block", marginTop: 8 }}>{photo.caption || photo.display_name}</strong>
+                <small className="auth-copy">{dateTime(photo.created_at)}</small>
+              </article>
+            ))}
+          </div>
+        ) : <p className="auth-copy">No job photos yet.</p>}
+      </section>
 
       {job.status !== "completed" && job.status !== "canceled" ? (
         <OperateJobScheduler
