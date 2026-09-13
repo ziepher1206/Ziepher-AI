@@ -1,60 +1,69 @@
-# Ziepher AI
+# SiteRefiner Engine
 
-**Build Your Dreams**
+> Legacy repository name: `Ziepher-AI`
 
-Ziepher AI is a browser-first AI application builder and control plane. The current architecture turns an idea into a planned, generated, validated, reviewable application while keeping GitHub as the source of truth and Vercel as the deployment rail.
+This repository is now the active engineering foundation for **SiteRefiner — built by Ziepher Tech**.
 
-The active workflow is:
+The former standalone Ziepher AI product direction has been consolidated into SiteRefiner. Existing internal identifiers such as repository names, environment-variable prefixes, migration names, and historical database objects may retain `Ziepher` naming where changing them would create compatibility risk.
+
+## Product purpose
+
+SiteRefiner gives businesses an AI web team for websites they already own. It can audit an existing site, understand the business, recommend improvements, create safe proposed changes, generate previews, run QA, obtain customer approval, publish through supported integrations, track versions/rollback, manage promotions and approved marketing workflows, and meter AI/provider costs per business and website.
+
+The initial core loop is:
 
 ```text
-idea/project
-→ AI plan
-→ validated build
-→ durable source artifact
-→ isolated GitHub branch
-→ pull request
-→ GitHub checks
-→ Vercel preview
-→ owner/admin approval
-→ exact-SHA merge
-→ explicit production release
+business workspace
+→ connect/enter website
+→ scan + business context
+→ prioritized recommendation or owner request
+→ AI plan/change
+→ isolated version/branch
+→ automated checks
+→ preview
+→ customer approval
+→ exact reviewed release
 → production verification
+→ usage/cost recording
+→ continuous recommendations
 ```
 
-Ziepher does not merge a generated build before approval, and merge does not automatically deploy production.
+## Active portfolio boundary
 
-## Active architecture
+- **SiteRefiner** — flagship website improvement/management/marketing platform. This repo supplies its AI/build/orchestration engine.
+- **Ziepher Match** — separate local-service marketplace with its own repository and business rules.
+- **Ziepher AI** — no longer a separate public product; its useful technology is absorbed here.
+- **Ziepher Builder** — retired standalone name; useful capability is absorbed here.
 
-Ziepher runs four independent concerns:
+## Existing architecture being reused
 
-1. **Web control plane** — authentication, projects, planning, project context, review UI, provider connections, repository/deployment settings, and release actions.
-2. **Build worker** — claims build jobs, generates source, runs isolated quality gates, repairs bounded failures, and publishes immutable build artifacts.
-3. **Source-control worker** — creates isolated GitHub branches, publishes generated changes, opens PRs, waits for checks and a real preview, and merges only an explicitly approved exact head SHA.
-4. **Deployment worker** — deploys to an explicitly bound Vercel project using that workspace's encrypted Vercel credential and reconciles provider state without blindly duplicating a deployment after an ambiguous response.
+The consolidation intentionally preserves mature infrastructure already built in this repo:
+
+1. **Web control plane** — authentication, workspaces, projects, context, review UI, provider connections, repository/deployment settings, and release actions.
+2. **AI/build worker** — durable build jobs, model routing, bounded repair, isolated validation, and immutable artifacts.
+3. **Source-control worker** — GitHub branches, changes, pull requests, checks, preview readiness, approval, and exact-SHA merge controls.
+4. **Deployment worker** — Vercel project binding, deployment reconciliation, release gates, and production verification.
+5. **Usage/cost ledger** — model token/cost telemetry now extended for SiteRefiner workspace/project customer usage.
 
 Generated package scripts never execute inside the public Next.js web process.
 
-## Core safety model
+## SiteRefiner-specific data foundation
 
-- GitHub is the durable source of truth for generated code.
-- AI changes use isolated branches and pull requests.
-- GitHub PR identity and checks are verified before approval.
-- Preview approval is owner/admin only and records the approving user.
-- Merges are bound to the exact reviewed head SHA.
-- Production release is a separate owner/admin action.
-- Production releases are disabled by default with `VERCEL_PRODUCTION_RELEASES_ENABLED=false`.
-- Every Vercel deployment snapshots its canonical Vercel project/account identity when queued.
-- Every provider deployment attempt is durably recorded before the Vercel side effect.
-- If Vercel's response is ambiguous, Ziepher reconciles provider metadata and never automatically issues a second deployment for the same deployment row.
-- GitHub and Vercel credentials are workspace-scoped, encrypted at rest, and never returned to the browser after connection.
-- Customer projects never implicitly use a global Ziepher operator Vercel token.
-- Stripe remains disabled until separate financial release gates are deliberately enabled.
+The existing `workspaces` table represents a business account. Existing `projects` become website/project records.
 
-## Providers
+New SiteRefiner foundation includes:
 
-### OpenAI
+- business/site domain and scan fields on projects;
+- customer-facing usage values on model usage;
+- `media_assets` for the business photo/media library;
+- `marketing_campaigns` for promotions, social/marketing campaign state, approvals, schedules, and channels;
+- `project_cost_events` for non-AI/provider cost attribution and customer-visible usage totals.
 
-OpenAI is retained as Ziepher's primary configured paid AI provider. Model IDs are explicit so cost and behavior do not change silently.
+Provider connections remain workspace-scoped and can later support authorized social/marketing providers in addition to GitHub/Vercel.
+
+## AI model routing
+
+OpenAI remains the primary configured AI provider. Keep model IDs explicit so behavior and costs do not change silently.
 
 ```text
 ZIEPHER_AI_PRIMARY_PROVIDER=openai
@@ -65,44 +74,33 @@ OPENAI_BUILD_MODEL=gpt-5.6-terra
 OPENAI_ESCALATION_MODEL=gpt-5.6-sol
 ```
 
-Gemini remains optional. Deterministic generation remains the zero-cost fallback.
+These environment-variable names are legacy internal identifiers and should not be renamed casually.
 
-### GitHub
+## GitHub and Vercel safety
 
-GitHub OAuth credentials are encrypted before persistence. Projects bind to a verified writable repository and snapshot repository identity into source-control runs.
+GitHub remains the durable source of truth for native SiteRefiner-managed code changes.
 
-```text
-GITHUB_OAUTH_CLIENT_ID=
-GITHUB_OAUTH_CLIENT_SECRET=
-ZIEPHER_PROVIDER_CREDENTIALS_KEY=
-```
+- AI changes use isolated branches/pull requests where source control is available.
+- Preview approval is owner/admin controlled.
+- Merges are bound to the reviewed head SHA.
+- Production release remains a separate action/gate.
+- Provider credentials are workspace-scoped and encrypted.
+- Customer projects never implicitly use a global operator Vercel token.
+- Provider deployment attempts are durably recorded and reconciled rather than blindly retried.
 
-### Vercel
-
-Vercel is connected per workspace from **Settings → Connected rails**. A workspace owner supplies a Vercel access token and, when appropriate, a `team_...` ID. Ziepher validates the credential with Vercel and encrypts it before persistence.
-
-Each Ziepher project must then be explicitly bound to a Vercel project that the connected workspace credential can access.
+Relevant existing release gates remain:
 
 ```text
 VERCEL_DEPLOYMENTS_ENABLED=false
 VERCEL_PRODUCTION_RELEASES_ENABLED=false
-DEPLOYMENT_WORKER_ID=deployment-worker-1
-DEPLOYMENT_WORKER_POLL_MS=5000
+STRIPE_ENABLED=false
 ```
 
-The deployment worker resolves the encrypted workspace credential at runtime and targets only the immutable Vercel project/account snapshot stored on the deployment row. It does not infer a project from a temporary working directory and does not use a global `VERCEL_TOKEN` for customer deployments.
-
-## Web/PWA delivery
-
-The active end-user client is the HTTPS web application. It includes an installable PWA manifest, icons, service worker, offline status page, and install prompt.
-
-The old Tauri desktop and Capacitor mobile packaging projects are no longer part of the active product or release pipeline. Their history remains available in Git rather than being maintained as parallel clients.
+Do not enable paid billing, real ad spend, or production automation silently.
 
 ## Supabase
 
-Supabase provides authentication, projects/workspaces, project sync state, build/deployment ledgers, provider-connection records, private artifacts, source-control orchestration, and operational state.
-
-Apply migrations in `supabase/migrations` in order and configure:
+Supabase provides authentication, business workspaces, website projects, project/version state, AI usage/cost telemetry, provider connections, media/campaign records, private artifacts, source-control orchestration, and deployment state.
 
 ```text
 NEXT_PUBLIC_SUPABASE_URL=
@@ -111,72 +109,17 @@ SUPABASE_SERVICE_ROLE_KEY=
 ZIEPHER_PROVIDER_CREDENTIALS_KEY=
 ```
 
-Never expose `SUPABASE_SERVICE_ROLE_KEY` or `ZIEPHER_PROVIDER_CREDENTIALS_KEY` to a browser or generated application.
+Never expose `SUPABASE_SERVICE_ROLE_KEY` or `ZIEPHER_PROVIDER_CREDENTIALS_KEY` to the browser.
 
-## Build worker
-
-The default runner uses Docker and gives generated code no platform secrets:
+## Workers
 
 ```bash
 npm run worker
-```
-
-Relevant settings:
-
-```text
-BUILD_WORKER_ID=build-worker-1
-BUILD_WORKER_POLL_MS=3000
-BUILD_RUNNER_EXECUTION=docker
-BUILD_RUNNER_IMAGE=node:22-bookworm
-BUILD_RUNNER_MAX_SECONDS=600
-BUILD_MAX_REPAIRS=1
-ALLOW_UNSANDBOXED_RUNNER=false
-BUILD_WORK_ROOT=.ziepher-builds
-```
-
-Use a dedicated worker host. Do not mount the Docker socket into the public web container.
-
-## Source-control worker
-
-```bash
 npm run source-control-worker
-```
-
-The source-control worker consumes the durable `source_control_runs` ledger. It creates GitHub branches/changes/PRs, waits for checks and preview readiness, then waits for human approval before exact-SHA merge.
-
-## Deployment worker
-
-```bash
 npm run deploy-worker
 ```
 
-Vercel deployment is disabled until the operator deliberately sets `VERCEL_DEPLOYMENTS_ENABLED=true`. Production also requires the separate production-release gate. Each workspace must connect Vercel before its projects can bind or deploy Vercel targets.
-
-## Stripe
-
-Stripe remains off by default:
-
-```text
-STRIPE_ENABLED=false
-```
-
-Do not enable live billing until the core product, authorization/RLS, worker recovery, deployment checks, and financial release checklist have passed.
-
-## Local setup
-
-Requirements:
-
-- Node.js 22.16 or later
-- npm 10 or later
-- Supabase for saved/shared cloud projects
-- Docker on build-worker hosts
-- provider credentials only for the rails you intentionally enable
-
-```bash
-cp .env.example .env.local
-npm ci
-npm run dev
-```
+Workers remain separately scalable services and should keep generated/untrusted execution isolated from the public web process.
 
 ## Validation
 
@@ -186,25 +129,21 @@ npm run smoke:generated
 npm audit --audit-level=moderate
 ```
 
-`npm run check` runs TypeScript validation, ESLint, unit tests, the PWA check, and the optimized Next.js production build.
+`npm run check` runs the existing TypeScript, lint, test, PWA, and production-build quality gates.
 
-CI on pull requests and `main` independently runs typecheck, lint, tests, production build, and dependency audit.
+## Security note
 
-## Health endpoints
+The current Supabase project has pre-existing security-advisor warnings around intentionally server-mediated RLS tables and authenticated-callable `SECURITY DEFINER` RPCs. Do not blanket-change those functions without reviewing their authorization logic and call sites. New SiteRefiner tables use RLS and scoped authenticated policies; internal cost-event writes remain server-side.
 
-- `/api/health` — process liveness and configured capabilities
-- `/api/ready` — Supabase connectivity readiness
+## Implementation priority
 
-## Important repository setting
-
-The application enforces exact-head approval and merge rules internally, but GitHub branch protection/rulesets should also protect `main` so direct pushes cannot bypass the PR/CI process. This repository setting is external to the application code.
+1. Keep Ziepher Match separate and stabilize it without expanding scope.
+2. Convert the user-facing product experience in this repo from generic app building to SiteRefiner website onboarding/management.
+3. Reuse existing workspaces/projects, model usage, source-control, Vercel, approvals, versioning, and deployment safety.
+4. Build the core website loop: account → domain → scan → recommendation/request → change → QA → preview → approval → publish → rollback/history → usage tracking.
+5. Add media library, promotions, organic social workflows, and paid-ad recommendations on the same foundation.
+6. Preserve legacy technical identifiers until a dedicated compatibility-safe migration justifies renaming them.
 
 ## Documentation
 
-- `docs/SPEC-001-Ziepher-AI.md` — architecture specification
-- `docs/OPERATIONS.md` — deployment, monitoring, backup, and incident runbook
-- `docs/SECURITY.md` — trust boundaries and required controls
-- `docs/RELEASE-CHECKLIST.md` — production and financial activation gates
-- `docs/BUILD-MANIFEST.md` — delivered systems and external provisioning gaps
-- `docs/INSTALLATION-DELIVERY.md` — active web/PWA and cloud delivery model
-- `docs/PROJECT-SYNC-BRIDGE.md` — shared project-sync contract and legacy bridge notes
+The company-level canonical product scope is maintained in `docs/SITEREFINER-PRODUCT-SCOPE.md` in the Ziepher Tech company repository. Operational/security documents in this repo remain valid where they describe the underlying build, source-control, deployment, and trust architecture.
