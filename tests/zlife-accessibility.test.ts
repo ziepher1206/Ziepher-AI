@@ -13,6 +13,8 @@ describe("ZLife landing accessibility", () => {
     expect(page).toContain('href="#main-content"');
     expect(page).toContain("Skip to main content");
     expect(page).toContain('id="main-content"');
+    expect(page).toContain('id="home"');
+    expect(page).toContain('href="#home"');
     expect(styles).toContain(":focus-visible");
     expect(styles).toContain("outline: 3px solid");
   });
