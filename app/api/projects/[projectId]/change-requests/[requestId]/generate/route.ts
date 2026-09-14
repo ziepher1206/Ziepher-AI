@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createFreePlan } from "@/lib/ai/router";
+import {
+  assertAIProviderBudget,
+  currentUtcMonthStart
+} from "@/lib/ai/spend-guard";
 import { projectIdSchema } from "@/lib/domain/schemas";
 import { apiError } from "@/lib/http";
 import { parseProjectSyncState } from "@/lib/sync/project-state";
@@ -34,10 +38,23 @@ export async function POST(_request: Request, context: Context) {
 
     const { data: project, error: projectError } = await supabase
       .from("projects")
-      .select("id,business_name,name,primary_domain,source_domain")
+      .select("id,workspace_id,business_name,name,primary_domain,source_domain")
       .eq("id", projectId)
       .single();
     if (projectError || !project) throw new Error("Project not found.");
+
+    const { data: costEvents, error: costError } = await admin
+      .from("project_cost_events")
+      .select("provider_cost_usd")
+      .eq("workspace_id", project.workspace_id)
+      .eq("category", "ai")
+      .gte("created_at", currentUtcMonthStart());
+    if (costError) throw costError;
+    const spentThisMonth = (costEvents ?? []).reduce(
+      (sum, event) => sum + Number(event.provider_cost_usd ?? 0),
+      0
+    );
+    const budget = assertAIProviderBudget(spentThisMonth);
 
     const { data: changeRequest, error: requestError } = await admin
       .from("site_change_requests")
@@ -99,7 +116,9 @@ export async function POST(_request: Request, context: Context) {
         usage_metadata: {
           source: "site_change_request",
           change_request_id: requestId,
-          pricing_known: result.usage.pricingKnown
+          pricing_known: result.usage.pricingKnown,
+          monthly_budget_usd: budget.budgetUsd,
+          monthly_spend_before_call_usd: budget.spentUsd
         }
       });
       if (usageError) throw usageError;
@@ -117,7 +136,9 @@ export async function POST(_request: Request, context: Context) {
           input_tokens: result.usage?.inputTokens ?? 0,
           output_tokens: result.usage?.outputTokens ?? 0,
           cached_input_tokens: result.usage?.cachedInputTokens ?? 0,
-          pricing_known: result.usage?.pricingKnown ?? false
+          pricing_known: result.usage?.pricingKnown ?? false,
+          monthly_ai_budget_usd: budget.budgetUsd,
+          monthly_ai_spend_before_call_usd: budget.spentUsd
         }
       })
       .eq("id", requestId)
