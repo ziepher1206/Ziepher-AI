@@ -35,7 +35,25 @@ describe("Tree Service launch readiness command", () => {
       "app/operate/invoices/page.tsx",
       "app/operate/growth/page.tsx",
       "app/operate/assistant/page.tsx",
+      "docs/TREE-SERVICE-RECOVERY-RUNBOOK.md",
     ]) expect(checker).toContain(path);
+  });
+
+  it("requires a complete recovery procedure without claiming drills passed", () => {
+    const checker = read("scripts/tree-service-launch-readiness.ts");
+    const runbook = read("docs/TREE-SERVICE-RECOVERY-RUNBOOK.md");
+
+    for (const section of [
+      "Application rollback",
+      "Database backup and restore verification",
+      "Schema or data-integrity incident",
+      "Stripe/payment incident",
+      "External provider outage",
+      "Recovery verification checklist",
+    ]) expect(runbook).toContain(section);
+
+    expect(checker).toContain("Tree Service recovery procedure covers rollback, restore, data, payment, and provider incidents");
+    expect(runbook).toContain("does not claim those drills have already been completed");
   });
 
   it("does not let static success erase the real production launch gates", () => {
