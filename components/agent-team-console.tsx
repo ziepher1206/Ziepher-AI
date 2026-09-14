@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo, useState } from "react";
 import { agentById, defaultAgentWorkflow, ziepherAgents } from "@/lib/agents/registry";
 
@@ -232,6 +233,7 @@ export function AgentTeamConsole({
           </div>
           <span className="status-pill">{history.length} recent</span>
         </div>
+        <p className="auth-copy" style={{ margin: "10px 0 0" }}>Open any saved run to inspect the exact persisted specialist results. Viewing history never reruns the team or consumes provider credits.</p>
         <div style={{ display: "grid", gap: 10, marginTop: 16 }}>
           {history.map((run) => (
             <article key={run.id} style={{ padding: 14, borderRadius: 14, border: "1px solid rgba(255,255,255,.1)" }}>
@@ -243,6 +245,9 @@ export function AgentTeamConsole({
               <small style={{ opacity: 0.68 }}>
                 {new Date(run.created_at).toLocaleString()} · ${Number(run.provider_cost_usd).toFixed(4)} provider cost · {run.input_tokens + run.output_tokens} tokens
               </small>
+              <div className="inline-actions" style={{ marginTop: 10 }}>
+                <Link className="button" href={`/team/runs/${run.id}`}>Open saved results</Link>
+              </div>
             </article>
           ))}
           {!history.length ? <p className="auth-copy">No saved team runs yet.</p> : null}
