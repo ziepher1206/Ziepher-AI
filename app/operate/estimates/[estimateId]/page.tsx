@@ -3,10 +3,17 @@ import { notFound, redirect } from "next/navigation";
 import { OperateEstimateEditor } from "@/components/operate-estimate-editor";
 import { OperateEstimatePhotoUpload } from "@/components/operate-estimate-photo-upload";
 import { OperateEstimateShareLink } from "@/components/operate-estimate-share-link";
+import { OperateEstimateSiteContext } from "@/components/operate-estimate-site-context";
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/env";
 
 type Props = { params: Promise<{ estimateId: string }> };
+
+function treeSummary(value: unknown) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return "";
+  const summary = (value as Record<string, unknown>).summary;
+  return typeof summary === "string" ? summary : "";
+}
 
 export default async function OperateEstimatePage({ params }: Props) {
   if (!isSupabaseConfigured()) redirect("/auth/sign-in");
@@ -17,7 +24,7 @@ export default async function OperateEstimatePage({ params }: Props) {
 
   const { data: estimate, error } = await supabase
     .from("estimates")
-    .select("id,workspace_id,property_id,title,notes,status,tax_cents,discount_cents,subtotal_cents,total_cents,valid_until,scheduled_at,customers(display_name,email,phone),properties(address_line_1,city,region,postal_code)")
+    .select("id,workspace_id,property_id,title,notes,status,tax_cents,discount_cents,subtotal_cents,total_cents,valid_until,scheduled_at,customers(display_name,email,phone),properties(id,address_line_1,city,region,postal_code,access_notes,hazard_notes,tree_notes)")
     .eq("id", estimateId)
     .maybeSingle();
   if (error) throw error;
@@ -81,6 +88,14 @@ export default async function OperateEstimatePage({ params }: Props) {
           discountCents={estimate.discount_cents ?? 0}
           validUntil={estimate.valid_until}
           items={estimateItems}
+        />
+        <OperateEstimateSiteContext
+          estimateId={estimate.id}
+          hasProperty={Boolean(property?.id)}
+          accessNotes={property?.access_notes ?? ""}
+          hazardNotes={property?.hazard_notes ?? ""}
+          treeNotes={treeSummary(property?.tree_notes)}
+          disabled={shareClosed}
         />
         <OperateEstimatePhotoUpload
           workspaceId={estimate.workspace_id}
