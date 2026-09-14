@@ -11,6 +11,7 @@ const createSchema = z.discriminatedUnion("type", [
     name: z.string().trim().min(1).max(160),
     description: z.string().trim().max(1000).optional().or(z.literal("")),
     defaultDurationMinutes: z.number().int().min(15).max(1440).nullable().optional(),
+    travelBufferMinutes: z.number().int().min(0).max(240).default(0),
     preparationBufferMinutes: z.number().int().min(0).max(240).default(0),
     cleanupBufferMinutes: z.number().int().min(0).max(240).default(0),
     basePriceCents: z.number().int().min(0).max(100_000_000).nullable().optional()
@@ -60,11 +61,12 @@ export async function POST(request: Request) {
         name: input.name,
         description: input.description || null,
         default_duration_minutes: input.defaultDurationMinutes ?? null,
+        travel_buffer_minutes: input.travelBufferMinutes,
         preparation_buffer_minutes: input.preparationBufferMinutes,
         cleanup_buffer_minutes: input.cleanupBufferMinutes,
         base_price_cents: input.basePriceCents ?? null
       })
-      .select("id,name,active")
+      .select("id,name,active,travel_buffer_minutes,preparation_buffer_minutes,cleanup_buffer_minutes")
       .single();
     if (error) throw error;
     await recordOperateAuditEvent({
@@ -74,7 +76,12 @@ export async function POST(request: Request) {
       action: "service.created",
       entityType: "service",
       entityId: data.id,
-      metadata: { name: data.name }
+      metadata: {
+        name: data.name,
+        travelBufferMinutes: data.travel_buffer_minutes,
+        preparationBufferMinutes: data.preparation_buffer_minutes,
+        cleanupBufferMinutes: data.cleanup_buffer_minutes
+      }
     });
     return NextResponse.json({ service: data }, { status: 201 });
   } catch (error) {
