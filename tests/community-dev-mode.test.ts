@@ -18,7 +18,7 @@ describe("ZLife community dev mode", () => {
       ZLIFE_MOCK_AI: "true",
       ZLIFE_MOCK_EMAIL: "false",
       ZLIFE_MOCK_SMS: "true",
-    } as NodeJS.ProcessEnv;
+    };
 
     expect(shouldUseZLifeMock("ai", env)).toBe(true);
     expect(shouldUseZLifeMock("email", env)).toBe(false);
@@ -33,7 +33,7 @@ describe("ZLife community dev mode", () => {
       ZLIFE_MOCK_SMS: "true",
       ZLIFE_MOCK_PAYMENTS: "true",
       ZLIFE_MOCK_NOTIFICATIONS: "true",
-    } as NodeJS.ProcessEnv);
+    });
 
     expect(state.enabled).toBe(true);
     expect(Object.values(state.mocks).every(Boolean)).toBe(true);
