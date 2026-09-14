@@ -34,6 +34,14 @@ No community contributor may deploy directly to production. Production promotion
 
 If the smoke test fails, correct the local contributor configuration rather than adding production credentials. Contributors may configure their own development-only provider accounts for work that genuinely requires them, but that is outside the default zero-cost path.
 
+## Help shape the roadmap
+
+You do not need to write code to influence ZLife. Community members can report reproducible problems, propose features or module ideas, contribute real-world workflow evidence, help test changes, and explain which problems matter most.
+
+Read `docs/COMMUNITY-ROADMAP.md` for the proposal lifecycle and governance rules. Public ideas move through submission, triage, evidence gathering, roadmap decision, scoped build work, review, and release/closure. Votes and reactions can show interest, but roadmap priority and Contribution Ledger value are based on verified value and evidence rather than popularity alone.
+
+Tree Service remains the first active business module while ZLife Core, security, permissions, tenant isolation, CI, accessibility, contributor governance, and reliability remain launch-critical priorities.
+
 ## Contribution quality
 
 Meaningful contributions can include code, architecture, modules, security, UI/UX, documentation, tests, reviews, maintenance, product design, infrastructure, community support, and other verified work that materially improves ZLife.
