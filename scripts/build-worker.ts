@@ -7,6 +7,7 @@ import {
   createApplicationBuild,
   repairApplicationBuild
 } from "@/lib/ai/build-router";
+import type { AIUsage } from "@/lib/ai/usage";
 import type { QualityMode } from "@/lib/domain/schemas";
 import { validateGeneratedArtifact } from "@/lib/runner/security";
 import {
@@ -111,6 +112,34 @@ function finalCredits(mode: QualityMode, provider: string) {
   return 70;
 }
 
+async function recordAIUsage(
+  job: BuildJob,
+  operation: string,
+  result: { provider: string; model: string; usage?: AIUsage }
+) {
+  if (!result.usage) return 0;
+
+  const { error } = await supabase.from("model_usage").insert({
+    project_id: job.project_id,
+    build_job_id: job.id,
+    operation,
+    billable_to_user: false,
+    provider: result.provider,
+    model: result.model,
+    input_tokens: result.usage.inputTokens,
+    output_tokens: result.usage.outputTokens,
+    cached_input_tokens: result.usage.cachedInputTokens,
+    provider_cost_usd: result.usage.providerCostUsd,
+    customer_usage_usd: 0,
+    usage_metadata: {
+      source: "build_worker",
+      pricing_known: result.usage.pricingKnown
+    }
+  });
+  if (error) throw error;
+  return result.usage.providerCostUsd;
+}
+
 async function processJob(job: BuildJob) {
   let activeStepId: string | null = null;
   let provider = "unknown";
@@ -180,6 +209,11 @@ async function processJob(job: BuildJob) {
     );
     provider = generated.provider;
     model = generated.model;
+    let totalProviderCostUsd = await recordAIUsage(
+      job,
+      "application_build_generate",
+      generated
+    );
     validateGeneratedArtifact(generated.artifact);
     let previewPath = await writeArtifact(workdir, generated.artifact);
     await finishStep(
@@ -187,7 +221,8 @@ async function processJob(job: BuildJob) {
       {
         files: generated.artifact.files.length,
         summary: generated.artifact.summary,
-        knownLimitations: generated.artifact.knownLimitations
+        knownLimitations: generated.artifact.knownLimitations,
+        providerCostUsd: generated.usage?.providerCostUsd ?? 0
       },
       provider,
       model
@@ -305,6 +340,11 @@ async function processJob(job: BuildJob) {
           throw validationError;
         }
 
+        totalProviderCostUsd += await recordAIUsage(
+          job,
+          `application_build_repair:${repairCount + 1}`,
+          repaired
+        );
         generated = repaired;
         provider = repaired.provider;
         model = repaired.model;
@@ -317,7 +357,8 @@ async function processJob(job: BuildJob) {
           {
             repaired: true,
             nextAttempt: repairCount + 1,
-            files: generated.artifact.files.length
+            files: generated.artifact.files.length,
+            providerCostUsd: repaired.usage?.providerCostUsd ?? 0
           },
           provider,
           model
@@ -405,16 +446,6 @@ async function processJob(job: BuildJob) {
     activeStepId = null;
 
     const credits = finalCredits(job.quality_mode, provider);
-    const { error: usageError } = await supabase.from("model_usage").insert({
-      project_id: job.project_id,
-      build_job_id: job.id,
-      operation: "application_build",
-      billable_to_user: true,
-      provider,
-      model,
-      provider_cost_usd: 0
-    });
-    if (usageError) throw usageError;
 
     const { error: experienceError } = await supabase
       .from("build_experiences")
@@ -430,7 +461,7 @@ async function processJob(job: BuildJob) {
         security_passed: true,
         visual_score: 85,
         repair_count: repairCount,
-        provider_cost_usd: 0,
+        provider_cost_usd: totalProviderCostUsd,
         anonymized_for_learning: false
       });
     if (experienceError) throw experienceError;
