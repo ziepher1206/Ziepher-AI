@@ -15,6 +15,11 @@ const scoringMigration = readFileSync(
   "utf8",
 ).toLowerCase();
 
+const verificationService = readFileSync(
+  join(process.cwd(), "lib/community/verification.ts"),
+  "utf8",
+);
+
 describe("community contribution verification", () => {
   it("keeps a single verified event bounded and records its factors", () => {
     const result = calculateVerifiedContributionScore({
@@ -86,5 +91,12 @@ describe("community contribution verification", () => {
     expect(verificationMigration).toContain("create table if not exists public.contribution_review_events");
     expect(verificationMigration).toContain("revoke all on table public.contribution_review_events from anon, authenticated;");
     expect(scoringMigration).toContain("p_scoring_breakdown = '{}'::jsonb");
+  });
+
+  it("prevents contributors from verifying or rejecting their own events", () => {
+    expect(verificationService).toContain('.select("id, contributor_id, status, impact_score, difficulty_score, scope_score, maintenance_score")');
+    expect(verificationService).toContain("event.contributor_id === input.verifierContributorId");
+    expect(verificationService).toContain("Contributors cannot review their own contribution events.");
+    expect(verificationService).toContain("await assertIndependentReviewer(input.eventId, input.verifierContributorId)");
   });
 });
