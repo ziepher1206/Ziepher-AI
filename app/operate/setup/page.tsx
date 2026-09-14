@@ -28,7 +28,7 @@ export default async function OperateSetupPage() {
     { data: scheduleOverrides, error: overridesError }
   ] = await Promise.all([
     supabase.from("workspaces").select("id,timezone").eq("id", workspaceId).single(),
-    supabase.from("workspace_business_profiles").select("business_name,phone,email,website_url,review_url,service_area,about,owner_name,years_in_business,emergency_service,license_insurance_notes").eq("workspace_id", workspaceId).maybeSingle(),
+    supabase.from("workspace_business_profiles").select("business_name,phone,email,website_url,review_url,service_area,about,owner_name,years_in_business,emergency_service,insurance_status,license_insurance_notes").eq("workspace_id", workspaceId).maybeSingle(),
     supabase.from("services").select("id,name,description,default_duration_minutes,travel_buffer_minutes,preparation_buffer_minutes,cleanup_buffer_minutes,base_price_cents,active").eq("workspace_id", workspaceId).order("active", { ascending: false }).order("name"),
     supabase.from("crews").select("id,name,active").eq("workspace_id", workspaceId).order("active", { ascending: false }).order("name"),
     supabase.from("workspace_members").select("user_id,role").eq("workspace_id", workspaceId).order("created_at"),
