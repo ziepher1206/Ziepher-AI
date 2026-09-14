@@ -13,6 +13,8 @@ describe("public contributor safety", () => {
     expect(workflow).toContain("pull_request:");
     expect(workflow).not.toContain("pull_request_target:");
     expect(workflow).toContain("permissions:\n  contents: read");
+    expect(workflow).toContain("Contributor smoke test");
+    expect(workflow).toContain("npm run smoke:contributor");
   });
 
   it("keeps public contributor production boundaries documented", () => {
