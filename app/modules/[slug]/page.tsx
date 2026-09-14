@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { ZLifeModuleBackLink } from "@/components/zlife-module-back-link";
 import { zlifeModuleBySlug, zlifeModules } from "@/lib/zlife/modules";
 
 export function generateStaticParams() {
@@ -16,14 +17,14 @@ export default async function ZLifeModulePage({ params }: { params: Promise<{ sl
   return (
     <main className="zlife-landing">
       <header className="zlife-nav">
-        <Link href="/#modules" className="zlife-brand" aria-label="Back to Z-Life modules">
+        <ZLifeModuleBackLink className="zlife-brand">
           <span className="zlife-mark" aria-hidden="true">
             <span className="zlife-z">Z</span><span className="zlife-pulse">⌁</span><span className="zlife-life">LIFE</span>
           </span>
           <small>by Ziepher Tech</small>
-        </Link>
+        </ZLifeModuleBackLink>
         <nav aria-label="Module navigation">
-          <Link href="/#modules">← Back to modules</Link>
+          <ZLifeModuleBackLink>← Back to modules</ZLifeModuleBackLink>
           <Link href="/">Home</Link>
         </nav>
       </header>
@@ -57,7 +58,7 @@ export default async function ZLifeModulePage({ params }: { params: Promise<{ sl
 
         <div className="zlife-hero-actions" style={{ marginTop: "32px" }}>
           {selectedModule.launchHref ? <Link className="zlife-primary" href={selectedModule.launchHref}>Open {selectedModule.shortName} <span>→</span></Link> : null}
-          <Link className="zlife-secondary" href="/#modules">Back to modules</Link>
+          <ZLifeModuleBackLink className="zlife-secondary">Back to modules</ZLifeModuleBackLink>
         </div>
       </section>
     </main>
