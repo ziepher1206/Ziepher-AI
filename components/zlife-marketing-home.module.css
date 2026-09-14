@@ -1,0 +1,31 @@
+.skipLink {
+  position: fixed;
+  top: 12px;
+  left: 12px;
+  z-index: 100;
+  transform: translateY(-160%);
+  padding: 10px 14px;
+  border: 2px solid #38f0e3;
+  border-radius: 8px;
+  background: #031012;
+  color: #f5fffd;
+  font-weight: 800;
+}
+
+.skipLink:focus-visible {
+  transform: translateY(0);
+  outline: 3px solid #f5fffd;
+  outline-offset: 3px;
+}
+
+:global(.zlife-landing a:focus-visible),
+:global(.zlife-landing button:focus-visible) {
+  outline: 3px solid #83ffef;
+  outline-offset: 4px;
+  box-shadow: 0 0 0 5px rgba(3, 16, 18, 0.96);
+}
+
+:global(.zlife-module-card:focus-visible) {
+  transform: translateY(-2px);
+  border-color: #83ffef;
+}
