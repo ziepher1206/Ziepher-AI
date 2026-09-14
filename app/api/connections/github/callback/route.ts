@@ -2,6 +2,7 @@ import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { requireServerEnv } from "@/lib/env";
+import { linkVerifiedMaintainerGitHubIdentity } from "@/lib/community/identity-link";
 import { connectGitHubFromAuthorizationCode } from "@/lib/provider-connections/github-oauth";
 import { oauthStateMatches } from "@/lib/provider-connections/oauth-state";
 
@@ -55,10 +56,15 @@ export async function GET(request: Request) {
       throw workspaceError ?? new Error("Workspace could not be resolved.");
     }
 
-    await connectGitHubFromAuthorizationCode({
+    const { githubUser } = await connectGitHubFromAuthorizationCode({
       workspaceId,
       code,
       redirectUri: callbackUrl()
+    });
+
+    await linkVerifiedMaintainerGitHubIdentity({
+      userId: user.id,
+      githubLogin: githubUser.login,
     });
 
     return connectionRedirect("connected");
