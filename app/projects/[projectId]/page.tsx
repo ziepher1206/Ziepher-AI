@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
+import { SiteAnalysisControls } from "@/components/site-analysis-controls";
 import { SiteScanButton } from "@/components/site-scan-button";
+import type { SiteAnalysis } from "@/lib/ai/site-analysis";
 import { isSupabaseConfigured } from "@/lib/env";
 import { createClient } from "@/lib/supabase/server";
 
@@ -20,6 +22,10 @@ type WebsiteHealth = {
   description?: string | null;
   checks?: HealthCheck[];
   recommendations?: string[];
+  deepAnalysis?: SiteAnalysis;
+  deepAnalysisProvider?: string | null;
+  deepAnalysisModel?: string | null;
+  deepAnalyzedAt?: string | null;
 };
 
 function scanLabel(status: string | null) {
@@ -30,6 +36,12 @@ function scanLabel(status: string | null) {
     case "failed": return "Scan needs attention";
     default: return "Not scanned";
   }
+}
+
+function impactLabel(impact: "high" | "medium" | "low") {
+  if (impact === "high") return "High impact";
+  if (impact === "medium") return "Medium impact";
+  return "Lower impact";
 }
 
 export default async function ProjectPage({ params }: Props) {
@@ -55,6 +67,15 @@ export default async function ProjectPage({ params }: Props) {
   const checks = Array.isArray(health.checks) ? health.checks : [];
   const recommendations = Array.isArray(health.recommendations) ? health.recommendations : [];
   const score = typeof health.score === "number" ? health.score : null;
+  const deepAnalysis = health.deepAnalysis;
+  const budgetUsd = Number(process.env.ZLIFE_AI_MONTHLY_PROVIDER_BUDGET_USD ?? "0");
+  const liveAIAvailable =
+    process.env.SITE_REFINER_PAID_AI_ENABLED === "true" &&
+    Boolean(process.env.OPENAI_API_KEY?.trim()) &&
+    Boolean(process.env.OPENAI_PLANNING_MODEL?.trim()) &&
+    Boolean(process.env.OPENAI_PLANNING_MAX_OUTPUT_TOKENS?.trim()) &&
+    Number.isFinite(budgetUsd) &&
+    budgetUsd > 0;
 
   return (
     <main className="projects-page">
@@ -119,64 +140,26 @@ export default async function ProjectPage({ params }: Props) {
           )}
         </section>
 
-        <section className="project-grid" style={{ marginTop: 0 }}>
-          <article className="project-card">
+        <section className="project-card" style={{ display: "grid", gap: 18 }}>
+          <div>
             <p className="panel-label">Website health</p>
-            <h2>{score === null ? "Not scored yet" : `${score}/100`}</h2>
-            <p>
+            <h2 style={{ fontSize: 44, margin: "8px 0" }}>{score === null ? "Not scored yet" : `${score}/100`}</h2>
+            <p className="auth-copy" style={{ maxWidth: 820 }}>
               {score === null
                 ? "Run the first scan to establish a baseline."
-                : "This first-pass score covers foundational homepage signals. Deeper SEO, accessibility, CRO, content, and performance analysis will build on it."}
+                : "Your scan results are shown immediately below. Build a detailed zero-cost report from the same evidence, or use guarded live AI later when the provider is connected and explicitly approved."}
             </p>
-          </article>
-
-          <article className="project-card">
-            <p className="panel-label">Change pipeline</p>
-            <h2>Request → preview → approval</h2>
-            <p>Turn a recommendation or business request into a tracked website change before any AI or production action is allowed.</p>
-            <Link className="button" href={`/projects/${projectId}/changes`} style={{ marginTop: 12 }}>
-              Open change requests
-            </Link>
-          </article>
-
-          <article className="project-card">
-            <p className="panel-label">Promotions</p>
-            <h2>Campaign drafts</h2>
-            <p>Capture offers, dates, and intended channels before AI generation or publishing is authorized.</p>
-            <Link className="button" href={`/projects/${projectId}/campaigns`} style={{ marginTop: 12 }}>
-              Open promotions
-            </Link>
-          </article>
-
-          <article className="project-card">
-            <p className="panel-label">Business media</p>
-            <h2>Private photo library</h2>
-            <p>Keep business-owned website photos separated by client and project before they are used in an approved build.</p>
-            <Link className="button" href={`/projects/${projectId}/media`} style={{ marginTop: 12 }}>
-              Open photo library
-            </Link>
-          </article>
-
-          <article className="project-card">
-            <p className="panel-label">Publishing safety</p>
-            <h2>Approval required</h2>
-            <p>Scanning is read-only. Proposed changes still go through versioning, checks, preview, and approval before production.</p>
-          </article>
-
-          <article className="project-card">
-            <p className="panel-label">AI usage</p>
-            <h2>Tracked by website</h2>
-            <p>Model usage and provider cost records remain attached to this website project so customer usage can be reported separately.</p>
-            <Link className="button" href={`/projects/${projectId}/usage`} style={{ marginTop: 12 }}>
-              Open usage & cost
-            </Link>
-          </article>
+          </div>
+          {project.scan_status === "complete" ? (
+            <SiteAnalysisControls projectId={projectId} liveAIAvailable={liveAIAvailable} />
+          ) : null}
         </section>
 
         {checks.length ? (
           <section>
             <p className="panel-label">Scan checks</p>
-            <div className="project-grid" style={{ marginTop: 12 }}>
+            <h2 style={{ margin: "6px 0 12px" }}>What the scanner found</h2>
+            <div className="project-grid" style={{ marginTop: 0 }}>
               {checks.map((check, index) => (
                 <article className="project-card" key={check.key ?? `${check.label}-${index}`}>
                   <div className="project-card-top">
@@ -222,6 +205,122 @@ export default async function ProjectPage({ params }: Props) {
           ) : (
             <p>SiteRefiner will turn detected gaps into reviewable improvement work instead of publishing changes automatically.</p>
           )}
+        </section>
+
+        {deepAnalysis ? (
+          <section className="auth-card" style={{ maxWidth: "none" }}>
+            <div className="project-card-top">
+              <div>
+                <p className="panel-label">Detailed website analysis</p>
+                <h2 style={{ margin: "6px 0" }}>What to improve next</h2>
+              </div>
+              <span className="status-pill">
+                {health.deepAnalysisProvider === "openai" ? "Live AI analysis" : "Zero-cost detailed report"}
+              </span>
+            </div>
+            <p className="auth-copy" style={{ maxWidth: 900 }}>{deepAnalysis.summary}</p>
+            {health.deepAnalyzedAt ? (
+              <small>
+                Analyzed {new Date(health.deepAnalyzedAt).toLocaleString()} · {health.deepAnalysisProvider ?? "deterministic"} · {health.deepAnalysisModel ?? "rules"}
+              </small>
+            ) : null}
+
+            <div className="project-grid" style={{ marginTop: 18 }}>
+              <article className="project-card">
+                <p className="panel-label">Strengths</p>
+                <ul style={{ paddingLeft: 20 }}>
+                  {deepAnalysis.strengths.length ? deepAnalysis.strengths.map((item) => <li key={item}>{item}</li>) : <li>No foundational strengths were recorded yet.</li>}
+                </ul>
+              </article>
+              <article className="project-card">
+                <p className="panel-label">Risks</p>
+                <ul style={{ paddingLeft: 20 }}>
+                  {deepAnalysis.risks.length ? deepAnalysis.risks.map((item) => <li key={item}>{item}</li>) : <li>No first-pass risk flags remain.</li>}
+                </ul>
+              </article>
+            </div>
+
+            <div style={{ display: "grid", gap: 12, marginTop: 18 }}>
+              {deepAnalysis.priorities.map((priority, index) => (
+                <article className="project-card" key={`${priority.title}-${index}`}>
+                  <div className="project-card-top">
+                    <span className="status-pill">{impactLabel(priority.impact)}</span>
+                    <span className="project-version">{priority.category}</span>
+                  </div>
+                  <h3>{priority.title}</h3>
+                  <p>{priority.reason}</p>
+                  <p><strong>Recommended change:</strong> {priority.recommendedChange}</p>
+                  <Link
+                    className="button"
+                    href={{
+                      pathname: `/projects/${projectId}/changes`,
+                      query: {
+                        source: "site_analysis",
+                        reference: `site-analysis-${index + 1}`,
+                        title: priority.title,
+                        instructions: priority.recommendedChange
+                      }
+                    }}
+                  >
+                    Turn into change request
+                  </Link>
+                </article>
+              ))}
+            </div>
+          </section>
+        ) : null}
+
+        <section className="project-grid" style={{ marginTop: 0 }}>
+          <article className="project-card">
+            <p className="panel-label">Change pipeline</p>
+            <h2>Request → preview → approval</h2>
+            <p>Turn a recommendation or business request into a tracked website change before any AI or production action is allowed.</p>
+            <Link className="button" href={`/projects/${projectId}/changes`} style={{ marginTop: 12 }}>
+              Open change requests
+            </Link>
+          </article>
+
+          <article className="project-card">
+            <p className="panel-label">Promotions</p>
+            <h2>Campaign drafts</h2>
+            <p>Capture offers, dates, and intended channels before AI generation or publishing is authorized.</p>
+            <Link className="button" href={`/projects/${projectId}/campaigns`} style={{ marginTop: 12 }}>
+              Open promotions
+            </Link>
+          </article>
+
+          <article className="project-card">
+            <p className="panel-label">Business media</p>
+            <h2>Private photo library</h2>
+            <p>Keep business-owned website photos separated by client and project before they are used in an approved build.</p>
+            <Link className="button" href={`/projects/${projectId}/media`} style={{ marginTop: 12 }}>
+              Open photo library
+            </Link>
+          </article>
+
+          <article className="project-card">
+            <p className="panel-label">Publishing safety</p>
+            <h2>Approval required</h2>
+            <p>Scanning and analysis are read-only. Proposed changes still go through versioning, checks, preview, and approval before production.</p>
+          </article>
+
+          <article className="project-card">
+            <p className="panel-label">AI usage</p>
+            <h2>Tracked by website</h2>
+            <p>Model usage and provider cost records remain attached to this website project so underlying provider cost is visible separately from customer billing.</p>
+            <Link className="button" href={`/projects/${projectId}/usage`} style={{ marginTop: 12 }}>
+              Open usage & cost
+            </Link>
+          </article>
+
+          <article className="project-card">
+            <p className="panel-label">AI safety</p>
+            <h2>Provider status</h2>
+            <p>See whether OpenAI, model limits, and the monthly budget are configured before approving any live provider request.</p>
+            <Link className="button" href={`/projects/${projectId}/ai-status`} style={{ marginTop: 12 }}>
+              Open AI status
+            </Link>
+          </article>
         </section>
 
         <section className="project-card">
