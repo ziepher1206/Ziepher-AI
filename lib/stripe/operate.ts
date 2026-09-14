@@ -6,7 +6,7 @@ import {
   operateStripeTestEnabled,
   requireOperateStripeTestKey
 } from "@/lib/stripe/operate-payment-config";
-import { assertZLifeLiveProviderAllowed } from "@/lib/community/provider-adapters";
+import { assertZLifeLiveProviderAllowed } from "../community/provider-adapters";
 
 export { applicationFeeCents, operatePlatformFeeBps, operateStripeTestEnabled };
 
