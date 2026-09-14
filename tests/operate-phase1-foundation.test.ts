@@ -14,6 +14,18 @@ describe("Tree Service Phase 1 foundation", () => {
     expect(sql).not.toMatch(/for\s+(update|delete)\s+to\s+authenticated/i);
   });
 
+  it("prevents leads from referencing projects in another workspace", () => {
+    const sql = read(
+      "supabase/migrations/20260913142600_ziepher_operate_project_tenant_integrity.sql",
+    );
+
+    expect(sql).toContain("drop constraint if exists leads_project_id_fkey");
+    expect(sql).toContain("add constraint leads_project_workspace_fk");
+    expect(sql).toContain("foreign key (project_id, workspace_id)");
+    expect(sql).toContain("references public.projects(id, workspace_id)");
+    expect(sql).toContain("on delete restrict");
+  });
+
   it("requires explicit workspace admin authorization for every setup mutation route", () => {
     const routes = [
       "app/api/operate/setup/route.ts",
