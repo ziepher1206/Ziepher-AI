@@ -1,13 +1,8 @@
 import "server-only";
 
+import { isAuthorizedCommunityReviewer } from "@/lib/community/review-access";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
-
-const REVIEWER_STATUSES = new Set([
-  "module_maintainer",
-  "core_contributor",
-  "core_team",
-]);
 
 export type CommunityReviewAccess =
   | { state: "signed_out" }
@@ -84,11 +79,7 @@ export async function getCommunityReviewWorkspace(): Promise<CommunityReviewWork
 
   if (reviewerError) throw reviewerError;
 
-  if (
-    !reviewer ||
-    !reviewer.is_verified ||
-    !REVIEWER_STATUSES.has(reviewer.status)
-  ) {
+  if (!isAuthorizedCommunityReviewer(reviewer, user.id)) {
     return {
       access: { state: "identity_unverified", userId: user.id },
       pending: [],
