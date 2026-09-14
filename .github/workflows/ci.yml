@@ -30,6 +30,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Contributor smoke test
+        run: npm run smoke:contributor
+
       - name: Typecheck
         run: npm run typecheck
 
