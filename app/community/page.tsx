@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { getPublicContributorSummaries } from "@/lib/community/public-summary";
+import "./community.css";
 
 const roles: Array<[string, string]> = [
   ["Community Member", "Discover, discuss, learn, and help shape useful work."],
