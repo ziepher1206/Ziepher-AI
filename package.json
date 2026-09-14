@@ -19,6 +19,7 @@
     "smoke:contributor": "tsx scripts/contributor-smoke.ts",
     "check:public-launch": "tsx scripts/public-launch-readiness.ts",
     "check:tree-launch": "tsx scripts/tree-service-launch-readiness.ts",
+    "check:db-readiness": "tsx scripts/check-database-readiness.ts",
     "smoke:generated": "tsx scripts/smoke-generated-build.ts",
     "check:full": "npm run smoke:contributor && npm run check && npm run smoke:generated && npm audit --audit-level=moderate",
     "check:pwa": "node scripts/check-pwa.mjs"
