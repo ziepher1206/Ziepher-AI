@@ -20,6 +20,7 @@ export type BuildRouteResult = {
 
 type BuildRouteOptions = {
   allowPaidProvider?: boolean;
+  allowUnmeteredProvider?: boolean;
 };
 
 function googleModelFor(mode: QualityMode) {
@@ -98,6 +99,10 @@ export async function createApplicationBuild(
       continue;
     }
 
+    // A paid provider that does not yet return measurable token/cost telemetry
+    // stays blocked by default. This prevents a fallback from consuming credits
+    // outside the monthly spend ledger.
+    if (!options.allowUnmeteredProvider) continue;
     if (!process.env.GOOGLE_AI_API_KEY) continue;
     const model = googleModelFor(mode);
     try {
@@ -156,6 +161,7 @@ export async function repairApplicationBuild(
       continue;
     }
 
+    if (!options.allowUnmeteredProvider) continue;
     if (!process.env.GOOGLE_AI_API_KEY) continue;
     const model =
       mode === "economy"
