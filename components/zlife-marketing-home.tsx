@@ -34,7 +34,7 @@ export function ZLifeMarketingHome() {
     <main className="zlife-landing">
       <header className="zlife-nav">
         <Link href="/" className="zlife-brand" aria-label="Z-Life home"><ZMark /><small>by Ziepher Tech</small></Link>
-        <nav aria-label="Primary navigation"><a href="#home">Home</a><a href="#team">AI Team</a><a href="#modules">Modules</a><a href="#vision">Our Vision</a></nav>
+        <nav aria-label="Primary navigation"><a href="#home">Home</a><a href="#team">AI Team</a><a href="#modules">Modules</a><a href="#vision">Our Vision</a><Link href="/community">Community</Link></nav>
         <Link className="zlife-nav-cta" href="/auth/sign-in">Open Z-Life</Link>
       </header>
 
@@ -86,7 +86,7 @@ export function ZLifeMarketingHome() {
         <div className="zlife-founder-image-shell"><Image src={founderCardImage} alt="Brian Lehmann, founder and builder of Ziepher Tech and Z-Life" width={180} height={316} unoptimized /><div className="zlife-founder-tint" /></div>
       </section>
 
-      <footer className="zlife-footer"><div className="zlife-footer-brand"><ZMark /><small>by Ziepher Tech</small><p>Technology for a more human tomorrow.</p></div><div className="zlife-footer-links"><a href="#home">Home</a><a href="#team">AI Team</a><a href="#modules">Modules</a><a href="#vision">Our Vision</a></div><div className="zlife-footer-mantra"><strong>PEOPLE</strong><strong>TOOLS</strong><strong>PROGRESS</strong><span>A BRIGHTER TOMORROW</span></div></footer>
+      <footer className="zlife-footer"><div className="zlife-footer-brand"><ZMark /><small>by Ziepher Tech</small><p>Technology for a more human tomorrow.</p></div><div className="zlife-footer-links"><a href="#home">Home</a><a href="#team">AI Team</a><a href="#modules">Modules</a><a href="#vision">Our Vision</a><Link href="/community">Community</Link></div><div className="zlife-footer-mantra"><strong>PEOPLE</strong><strong>TOOLS</strong><strong>PROGRESS</strong><span>A BRIGHTER TOMORROW</span></div></footer>
     </main>
   );
 }
