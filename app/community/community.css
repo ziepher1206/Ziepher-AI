@@ -1,0 +1,55 @@
+.zlife-community-page { min-height: 100vh; }
+
+.zlife-community-hero {
+  padding: clamp(56px, 8vw, 110px) clamp(24px, 6vw, 90px) 52px;
+  border-bottom: 1px solid rgba(80,245,229,.16);
+  background:
+    radial-gradient(circle at 78% 12%, rgba(56,240,227,.14), transparent 26%),
+    radial-gradient(circle at 18% 58%, rgba(20,220,200,.09), transparent 28%);
+}
+.zlife-community-hero h1 { margin: 0; max-width: 900px; font-size: clamp(46px, 7vw, 88px); line-height: .95; letter-spacing: -.055em; }
+.zlife-community-hero .zlife-lede { max-width: 760px; }
+
+.zlife-community-stats { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 12px; margin-top: 42px; }
+.zlife-community-stats article { padding: 20px; border: 1px solid rgba(128,255,239,.18); border-radius: 14px; background: rgba(5,28,31,.74); }
+.zlife-community-stats strong { display: block; color: #67f7e8; font-size: clamp(28px,3vw,42px); }
+.zlife-community-stats span { color: #9db9b8; font-size: 12px; line-height: 1.45; }
+
+.zlife-community-contributors { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 14px; }
+.zlife-community-contributor,.zlife-community-empty-card { padding: 20px; border: 1px solid rgba(128,255,239,.18); border-radius: 14px; background: linear-gradient(145deg,rgba(8,35,38,.92),rgba(3,20,22,.96)); }
+.zlife-community-contributor-head { display: flex; align-items: start; justify-content: space-between; gap: 16px; }
+.zlife-community-contributor-head h3 { margin: 0; font-size: 20px; }
+.zlife-community-contributor-head p { margin: 4px 0 0; color: #8eaaa7; font-size: 12px; }
+.zlife-community-contributor-head > span { padding: 7px 10px; border: 1px solid rgba(56,240,227,.35); border-radius: 999px; color: #55f5e5; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; }
+.zlife-community-contributor dl { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 8px; margin: 18px 0 0; }
+.zlife-community-contributor dl div { padding: 12px; border-radius: 10px; background: rgba(255,255,255,.025); }
+.zlife-community-contributor dt { color: #91adaa; font-size: 10px; text-transform: uppercase; letter-spacing: .08em; }
+.zlife-community-contributor dd { margin: 5px 0 0; color: #edfffc; font-size: 19px; font-weight: 850; }
+.zlife-community-module-list { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 14px; }
+.zlife-community-module-list span { padding: 7px 9px; border: 1px solid rgba(128,255,239,.14); border-radius: 999px; color: #b8d1ce; font-size: 10px; }
+.zlife-community-empty,.zlife-community-empty-card p { color: #91adaa; line-height: 1.55; }
+.zlife-community-empty-card { grid-column: 1/-1; }
+.zlife-community-empty-card h3 { margin: 0; }
+
+.zlife-community-role-grid { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 10px; }
+.zlife-community-role-grid article { min-height: 155px; padding: 18px; border: 1px solid rgba(128,255,239,.15); border-radius: 12px; background: rgba(5,27,30,.78); }
+.zlife-community-role-grid span { color: #40e9d7; font-size: 11px; font-weight: 900; letter-spacing: .1em; }
+.zlife-community-role-grid h3 { margin: 14px 0 5px; font-size: 17px; }
+.zlife-community-role-grid p { margin: 0; color: #96b1ae; font-size: 12px; line-height: 1.5; }
+
+.zlife-community-build { background: radial-gradient(circle at 72% 50%,rgba(20,220,200,.08),transparent 30%); }
+.zlife-community-build h2 { margin: 0; font-size: clamp(30px,4vw,48px); }
+.zlife-community-build > div:first-child > p:last-child { max-width: 800px; color: #9eb8b6; line-height: 1.6; }
+.zlife-community-flow { display: flex; align-items: center; flex-wrap: wrap; gap: 9px; margin-top: 28px; }
+.zlife-community-flow span { padding: 12px 15px; border: 1px solid rgba(56,240,227,.25); border-radius: 10px; background: rgba(5,31,34,.8); font-weight: 800; font-size: 12px; }
+.zlife-community-flow b { color: #36e7d6; }
+
+@media (max-width: 900px) {
+  .zlife-community-stats,.zlife-community-role-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .zlife-community-contributors { grid-template-columns: 1fr; }
+}
+@media (max-width: 680px) {
+  .zlife-community-stats,.zlife-community-role-grid { grid-template-columns: 1fr; }
+  .zlife-community-hero { padding-top: 42px; }
+  .zlife-community-contributor dl { grid-template-columns: 1fr; }
+}
