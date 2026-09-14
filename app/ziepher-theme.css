@@ -1,0 +1,299 @@
+/* Canonical Ziepher application theme.
+   Business Setup is the reference surface for the entire app. */
+
+:root {
+  --ziepher-bg: #090b12;
+  --ziepher-bg-soft: #0d101a;
+  --ziepher-surface: rgba(18, 21, 33, 0.94);
+  --ziepher-surface-strong: #111521;
+  --ziepher-surface-soft: rgba(255, 255, 255, 0.035);
+  --ziepher-border: rgba(255, 255, 255, 0.10);
+  --ziepher-border-strong: rgba(158, 125, 255, 0.28);
+  --ziepher-text: #f7f8fc;
+  --ziepher-muted: #9ba4ba;
+  --ziepher-accent: #9e7dff;
+  --ziepher-accent-2: #5ce1c6;
+  --ziepher-shadow: 0 24px 80px rgba(0, 0, 0, 0.38);
+  --ziepher-radius: 18px;
+  --ziepher-content: 1240px;
+}
+
+html,
+body {
+  background:
+    radial-gradient(circle at 8% -5%, rgba(117, 84, 255, 0.18), transparent 34%),
+    radial-gradient(circle at 95% 4%, rgba(37, 218, 190, 0.11), transparent 30%),
+    linear-gradient(180deg, #090b12 0%, #0a0d16 100%);
+  color: var(--ziepher-text);
+}
+
+/* Shared page canvas */
+.projects-page,
+.settings-page,
+.history-page,
+.auth-page,
+.system-page {
+  min-height: 100vh;
+  color: var(--ziepher-text);
+}
+
+.projects-page,
+.settings-page,
+.history-page {
+  padding: clamp(12px, 2vw, 22px);
+}
+
+.projects-page > section,
+.projects-page > div:not(.projects-header),
+.settings-intro,
+.billing-shell,
+.history-section {
+  width: min(var(--ziepher-content), 100%);
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Canonical Business Setup-style header */
+.projects-header {
+  width: min(var(--ziepher-content), 100%);
+  margin: 0 auto 24px;
+  padding: 12px 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.brand-mark {
+  flex: 0 0 auto;
+  border: 1px solid rgba(255,255,255,.10);
+  background: linear-gradient(140deg, var(--ziepher-accent), var(--ziepher-accent-2));
+  box-shadow: 0 10px 34px rgba(128, 98, 255, .28);
+}
+
+.brand-title {
+  letter-spacing: .055em;
+}
+
+.brand-subtitle,
+.panel-label,
+.auth-copy,
+.empty,
+.project-card p,
+.project-card small {
+  color: var(--ziepher-muted);
+}
+
+/* Buttons and navigation */
+.button,
+a.button,
+.auth-submit,
+.text-button {
+  transition: border-color 160ms ease, background 160ms ease, transform 160ms ease, color 160ms ease;
+}
+
+.button {
+  min-height: 38px;
+  border: 1px solid var(--ziepher-border);
+  border-radius: 11px;
+  background: rgba(255,255,255,.055);
+}
+
+.button:hover {
+  transform: translateY(-1px);
+  border-color: rgba(158,125,255,.34);
+  background: rgba(255,255,255,.09);
+}
+
+.button.primary,
+.auth-submit {
+  border-color: transparent;
+  color: #0a0d14;
+  background: linear-gradient(135deg, var(--ziepher-accent), var(--ziepher-accent-2));
+  box-shadow: 0 10px 30px rgba(121, 91, 240, .18);
+}
+
+.inline-actions {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+/* Make every app panel use the same Business Setup surface language */
+.panel,
+.project-card,
+.history-section,
+.billing-summary > div,
+.billing-disabled,
+.pricing-grid article,
+.auth-card,
+.system-card,
+.concept-card,
+.feature-card,
+.phase-card,
+.history-row,
+.screen-map article,
+[class*="setup-card"],
+[class*="dashboard-card"],
+[class*="metric-card"],
+[class*="stat-card"] {
+  border: 1px solid var(--ziepher-border);
+  background: var(--ziepher-surface);
+  box-shadow: var(--ziepher-shadow);
+}
+
+.panel,
+.project-card,
+.history-section,
+.auth-card,
+.system-card,
+.pricing-grid article {
+  border-radius: var(--ziepher-radius);
+}
+
+.project-card,
+.concept-card,
+.feature-card,
+.phase-card,
+.history-row,
+.screen-map article {
+  transition: transform 160ms ease, border-color 160ms ease, background 160ms ease;
+}
+
+.project-card:hover,
+.concept-card:hover,
+.feature-card:hover,
+.phase-card:hover,
+.history-row:hover,
+.screen-map article:hover {
+  transform: translateY(-2px);
+  border-color: rgba(158,125,255,.32);
+  background: rgba(22,26,41,.96);
+}
+
+/* Form controls */
+input,
+textarea,
+select,
+.quality-select {
+  border: 1px solid var(--ziepher-border);
+  border-radius: 12px;
+  background: #0b0e17;
+  color: var(--ziepher-text);
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+  border-color: rgba(92,225,198,.48);
+}
+
+/* Strong, consistent page hierarchy */
+.projects-page h1,
+.settings-page h1,
+.history-page h1,
+.auth-card h1,
+.system-card h1 {
+  color: var(--ziepher-text);
+  letter-spacing: -.035em;
+}
+
+.projects-page h1 {
+  font-size: clamp(30px, 5vw, 48px);
+  line-height: 1.04;
+}
+
+.projects-page h2,
+.settings-page h2,
+.history-page h2 {
+  letter-spacing: -.02em;
+}
+
+.panel-label {
+  color: var(--ziepher-accent-2);
+  font-weight: 800;
+  letter-spacing: .13em;
+}
+
+/* Tables/list-like rows inherit the same shell even when modules use local classes. */
+.projects-page table,
+.settings-page table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  overflow: hidden;
+  border: 1px solid var(--ziepher-border);
+  border-radius: 14px;
+  background: var(--ziepher-surface);
+}
+
+.projects-page th,
+.projects-page td,
+.settings-page th,
+.settings-page td {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--ziepher-border);
+  text-align: left;
+}
+
+.projects-page th,
+.settings-page th {
+  color: var(--ziepher-muted);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+}
+
+/* Auth is intentionally the same product, not a separate visual system. */
+.auth-page {
+  padding: 22px;
+}
+
+.auth-card {
+  background:
+    linear-gradient(145deg, rgba(158,125,255,.06), rgba(92,225,198,.025)),
+    var(--ziepher-surface);
+}
+
+.auth-card input {
+  background: #0b0e17;
+}
+
+/* Mobile: same hierarchy, tighter spacing, full-width actions. */
+@media (max-width: 760px) {
+  .projects-page,
+  .settings-page,
+  .history-page {
+    padding: 10px;
+  }
+
+  .projects-header {
+    align-items: flex-start;
+    flex-direction: column;
+    margin-bottom: 18px;
+    padding: 8px 2px;
+  }
+
+  .projects-header .inline-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .projects-header .inline-actions .button {
+    flex: 1 1 auto;
+  }
+
+  .projects-page > section {
+    gap: 14px !important;
+  }
+
+  .project-card,
+  .history-section,
+  .auth-card,
+  .panel {
+    border-radius: 16px;
+  }
+
+  .auth-card {
+    padding: 22px 18px;
+  }
+}
