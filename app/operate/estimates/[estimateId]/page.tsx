@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
+import { OperateDurationEstimator } from "@/components/operate-duration-estimator";
 import { OperateEstimateEditor } from "@/components/operate-estimate-editor";
 import { OperateEstimatePhotoUpload } from "@/components/operate-estimate-photo-upload";
 import { OperateEstimateShareLink } from "@/components/operate-estimate-share-link";
@@ -56,6 +57,8 @@ export default async function OperateEstimatePage({ params }: Props) {
   const customer = Array.isArray(estimate.customers) ? estimate.customers[0] : estimate.customers;
   const property = Array.isArray(estimate.properties) ? estimate.properties[0] : estimate.properties;
   const shareClosed = ["accepted", "declined", "expired", "canceled"].includes(estimate.status);
+  const estimateItems = (items ?? []).map((item) => ({ description: item.description, quantity: Number(item.quantity), unitPriceCents: item.unit_price_cents }));
+  const serviceText = estimateItems.map((item) => item.description).filter(Boolean).join(" · ") || estimate.title;
 
   return (
     <main className="projects-page">
@@ -79,8 +82,9 @@ export default async function OperateEstimatePage({ params }: Props) {
           taxCents={estimate.tax_cents ?? 0}
           discountCents={estimate.discount_cents ?? 0}
           validUntil={estimate.valid_until}
-          items={(items ?? []).map((item) => ({ description: item.description, quantity: Number(item.quantity), unitPriceCents: item.unit_price_cents }))}
+          items={estimateItems}
         />
+        <OperateDurationEstimator serviceText={serviceText} />
         <OperateEstimatePhotoUpload
           workspaceId={estimate.workspace_id}
           estimateId={estimate.id}

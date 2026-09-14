@@ -16,6 +16,7 @@ const schema = z.object({
   ownerName: z.string().trim().max(160).nullable().optional(),
   yearsInBusiness: z.number().int().min(0).max(250).nullable().optional(),
   emergencyService: z.boolean().default(false),
+  insuranceStatus: z.enum(["insured", "not_insured", "not_provided"]).default("not_provided"),
   licenseInsuranceNotes: z.string().trim().max(3000).nullable().optional()
 });
 
@@ -40,6 +41,7 @@ export async function POST(request: Request) {
         owner_name: clean(input.ownerName),
         years_in_business: input.yearsInBusiness ?? null,
         emergency_service: input.emergencyService,
+        insurance_status: input.insuranceStatus,
         license_insurance_notes: clean(input.licenseInsuranceNotes),
         updated_at: new Date().toISOString()
       }, { onConflict: "workspace_id" })
@@ -56,7 +58,8 @@ export async function POST(request: Request) {
       metadata: {
         businessName: data.business_name,
         hasServiceArea: Boolean(data.service_area),
-        emergencyService: Boolean(data.emergency_service)
+        emergencyService: Boolean(data.emergency_service),
+        insuranceStatus: data.insurance_status
       }
     });
 

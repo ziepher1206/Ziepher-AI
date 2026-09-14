@@ -3,6 +3,8 @@
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 
+type InsuranceStatus = "insured" | "not_insured" | "not_provided";
+
 type Profile = {
   business_name: string | null;
   phone: string | null;
@@ -13,6 +15,7 @@ type Profile = {
   owner_name: string | null;
   years_in_business: number | null;
   emergency_service: boolean;
+  insurance_status?: InsuranceStatus | null;
   license_insurance_notes: string | null;
   review_url?: string | null;
 } | null;
@@ -29,7 +32,8 @@ export function OperateBusinessProfile({ workspaceId, profile }: { workspaceId: 
   const [ownerName, setOwnerName] = useState(profile?.owner_name ?? "");
   const [years, setYears] = useState(profile?.years_in_business?.toString() ?? "");
   const [emergency, setEmergency] = useState(profile?.emergency_service ?? false);
-  const [insurance, setInsurance] = useState(profile?.license_insurance_notes ?? "");
+  const [insuranceStatus, setInsuranceStatus] = useState<InsuranceStatus>(profile?.insurance_status ?? "not_provided");
+  const [insuranceNotes, setInsuranceNotes] = useState(profile?.license_insurance_notes ?? "");
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
@@ -52,7 +56,8 @@ export function OperateBusinessProfile({ workspaceId, profile }: { workspaceId: 
         ownerName,
         yearsInBusiness: years ? Number(years) : null,
         emergencyService: emergency,
-        licenseInsuranceNotes: insurance
+        insuranceStatus,
+        licenseInsuranceNotes: insuranceNotes
       })
     });
     const payload = await response.json().catch(() => ({}));
@@ -61,6 +66,12 @@ export function OperateBusinessProfile({ workspaceId, profile }: { workspaceId: 
     setMessage("Business profile saved.");
     router.refresh();
   }
+
+  const insuranceLabel = insuranceStatus === "insured"
+    ? "INSURED — self-reported"
+    : insuranceStatus === "not_insured"
+      ? "NOT INSURED"
+      : "INSURANCE NOT PROVIDED";
 
   return (
     <section className="auth-card" style={{ maxWidth: "none" }}>
@@ -77,9 +88,27 @@ export function OperateBusinessProfile({ workspaceId, profile }: { workspaceId: 
           <label className="field"><span>Verified review link</span><input type="url" value={reviewUrl} onChange={(e) => setReviewUrl(e.target.value)} maxLength={1000} placeholder="Google review link or another verified review destination" /></label>
           <label className="field"><span>Years in business</span><input type="number" min={0} max={250} value={years} onChange={(e) => setYears(e.target.value)} /></label>
         </div>
+
         <label className="field"><span>Service area</span><textarea rows={3} value={serviceArea} onChange={(e) => setServiceArea(e.target.value)} maxLength={2000} placeholder="Cities, counties, ZIP codes, or a plain-English service radius…" /></label>
         <label className="field"><span>About the company</span><textarea rows={4} value={about} onChange={(e) => setAbout(e.target.value)} maxLength={6000} placeholder="What the company does, what makes it different, typical customers…" /></label>
-        <label className="field"><span>Licensing / insurance / credential notes</span><textarea rows={3} value={insurance} onChange={(e) => setInsurance(e.target.value)} maxLength={3000} placeholder="Only enter verified credentials or insurance facts." /></label>
+
+        <div className="project-card" style={{ minHeight: 0, display: "grid", gap: 12 }}>
+          <div>
+            <p className="panel-label" style={{ marginBottom: 6 }}>Insurance status</p>
+            <strong style={{ display: "block", fontSize: 18 }}>{insuranceLabel}</strong>
+            <p className="auth-copy" style={{ margin: "6px 0 0" }}>Insurance is not required to use Ziepher. This status will be shown clearly to customers. “Insured” is self-reported unless Ziepher later verifies documentation.</p>
+          </div>
+          <label className="field">
+            <span>Does this company currently carry business liability insurance?</span>
+            <select value={insuranceStatus} onChange={(e) => setInsuranceStatus(e.target.value as InsuranceStatus)}>
+              <option value="not_provided">Not provided yet</option>
+              <option value="insured">Yes — insured</option>
+              <option value="not_insured">No — not insured</option>
+            </select>
+          </label>
+          <label className="field"><span>Optional insurance / license details</span><textarea rows={2} value={insuranceNotes} onChange={(e) => setInsuranceNotes(e.target.value)} maxLength={3000} placeholder="Optional: carrier, policy details, license number, or other verified credential notes." /></label>
+        </div>
+
         <label style={{ display: "flex", gap: 10, alignItems: "center" }}><input type="checkbox" checked={emergency} onChange={(e) => setEmergency(e.target.checked)} /> <span>Offers emergency / after-hours tree service</span></label>
         <div className="inline-actions"><button className="button primary" disabled={busy} type="submit">{busy ? "Saving…" : "Save company profile"}</button>{message ? <span className="auth-copy">{message}</span> : null}</div>
       </form>
