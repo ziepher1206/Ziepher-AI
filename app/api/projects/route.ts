@@ -36,6 +36,29 @@ export async function POST(request: Request) {
     const input = createProjectSchema.parse(await request.json());
     const { supabase } = await authenticatedClient();
 
+    if (input.domain || input.businessName) {
+      if (!input.domain) {
+        throw new Error("A website domain is required for website onboarding.");
+      }
+
+      const { data: createdWebsiteProject, error: websiteError } = await supabase.rpc(
+        "create_website_project_with_workspace",
+        {
+          p_name: input.name,
+          p_idea: input.idea,
+          p_business_name: input.businessName ?? input.name,
+          p_domain: input.domain
+        }
+      );
+
+      if (websiteError) throw websiteError;
+      if (!createdWebsiteProject?.id) {
+        throw new Error("Website creation returned no id.");
+      }
+
+      return NextResponse.json({ project: createdWebsiteProject }, { status: 201 });
+    }
+
     const { data: createdProject, error } = await supabase.rpc(
       "create_project_with_workspace",
       {
@@ -46,24 +69,6 @@ export async function POST(request: Request) {
 
     if (error) throw error;
     if (!createdProject?.id) throw new Error("Project creation returned no id.");
-
-    if (input.domain || input.businessName) {
-      const { data: updatedProject, error: updateError } = await supabase
-        .from("projects")
-        .update({
-          business_name: input.businessName ?? input.name,
-          source_domain: input.domain ?? null,
-          primary_domain: input.domain ?? null,
-          website_connection_mode: input.domain ? "public_import" : null,
-          scan_status: input.domain ? "pending" : "not_scanned"
-        })
-        .eq("id", createdProject.id)
-        .select()
-        .single();
-
-      if (updateError) throw updateError;
-      return NextResponse.json({ project: updatedProject }, { status: 201 });
-    }
 
     return NextResponse.json({ project: createdProject }, { status: 201 });
   } catch (error) {
