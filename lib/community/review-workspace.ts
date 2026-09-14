@@ -135,7 +135,9 @@ export async function getCommunityReviewWorkspace(): Promise<CommunityReviewWork
       .in("id", moduleIds);
     if (moduleError) throw moduleError;
 
-    for (const module of modules ?? []) moduleMap.set(module.id, module.name);
+    for (const communityModule of modules ?? []) {
+      moduleMap.set(communityModule.id, communityModule.name);
+    }
   }
 
   const pending: PendingContributionReview[] = (events ?? []).map((event) => {
