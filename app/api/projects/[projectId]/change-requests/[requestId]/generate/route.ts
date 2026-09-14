@@ -84,6 +84,27 @@ export async function POST(_request: Request, context: Context) {
     );
     if (saveError) throw saveError;
 
+    if (result.usage) {
+      const { error: usageError } = await admin.from("model_usage").insert({
+        project_id: projectId,
+        operation: "site_change_planning",
+        billable_to_user: false,
+        provider: result.provider,
+        model: result.model,
+        input_tokens: result.usage.inputTokens,
+        output_tokens: result.usage.outputTokens,
+        cached_input_tokens: result.usage.cachedInputTokens,
+        provider_cost_usd: result.usage.providerCostUsd,
+        customer_usage_usd: 0,
+        usage_metadata: {
+          source: "site_change_request",
+          change_request_id: requestId,
+          pricing_known: result.usage.pricingKnown
+        }
+      });
+      if (usageError) throw usageError;
+    }
+
     const { data: updated, error: updateError } = await admin
       .from("site_change_requests")
       .update({
@@ -92,7 +113,11 @@ export async function POST(_request: Request, context: Context) {
         change_metadata: {
           planning_provider: result.provider,
           planning_model: result.model,
-          estimated_provider_cost_usd: result.estimatedProviderCostUsd ?? 0
+          estimated_provider_cost_usd: result.estimatedProviderCostUsd ?? 0,
+          input_tokens: result.usage?.inputTokens ?? 0,
+          output_tokens: result.usage?.outputTokens ?? 0,
+          cached_input_tokens: result.usage?.cachedInputTokens ?? 0,
+          pricing_known: result.usage?.pricingKnown ?? false
         }
       })
       .eq("id", requestId)
