@@ -12,7 +12,7 @@ describe("Tree Service Phase 7 Ziepher Assistant guards", () => {
       expect(page).toContain(`from(\"${table}\")`);
     }
     expect(page).toContain("Prepared next actions");
-    expect(page).toContain("Unassigned").not;
+    expect(page).toContain("scheduled job");
   });
 
   it("covers the launch examples without requiring paid AI", () => {
