@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { MouseEvent, ReactNode } from "react";
 
@@ -12,13 +13,12 @@ export function ZLifeModuleBackLink({ className, children }: ZLifeModuleBackLink
   const router = useRouter();
 
   function handleClick(event: MouseEvent<HTMLAnchorElement>) {
-    event.preventDefault();
-
     const referrer = document.referrer;
     if (referrer) {
       try {
         const previousUrl = new URL(referrer);
         if (previousUrl.origin === window.location.origin) {
+          event.preventDefault();
           router.back();
           return;
         }
@@ -26,13 +26,11 @@ export function ZLifeModuleBackLink({ className, children }: ZLifeModuleBackLink
         // Fall through to the stable modules anchor.
       }
     }
-
-    router.push("/#modules");
   }
 
   return (
-    <a href="/#modules" className={className} onClick={handleClick}>
+    <Link href="/#modules" className={className} onClick={handleClick}>
       {children}
-    </a>
+    </Link>
   );
 }
