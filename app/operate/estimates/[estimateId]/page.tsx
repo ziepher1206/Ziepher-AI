@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { OperateEstimateEditor } from "@/components/operate-estimate-editor";
+import { OperateEstimatePhotoUpload } from "@/components/operate-estimate-photo-upload";
 import { OperateEstimateShareLink } from "@/components/operate-estimate-share-link";
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/env";
@@ -16,18 +17,41 @@ export default async function OperateEstimatePage({ params }: Props) {
 
   const { data: estimate, error } = await supabase
     .from("estimates")
-    .select("id,title,notes,status,tax_cents,discount_cents,subtotal_cents,total_cents,valid_until,scheduled_at,customers(display_name,email,phone),properties(address_line_1,city,region,postal_code)")
+    .select("id,workspace_id,property_id,title,notes,status,tax_cents,discount_cents,subtotal_cents,total_cents,valid_until,scheduled_at,customers(display_name,email,phone),properties(address_line_1,city,region,postal_code)")
     .eq("id", estimateId)
     .maybeSingle();
   if (error) throw error;
   if (!estimate) notFound();
 
-  const { data: items, error: itemsError } = await supabase
-    .from("estimate_line_items")
-    .select("description,quantity,unit_price_cents,position")
-    .eq("estimate_id", estimateId)
-    .order("position", { ascending: true });
+  const [
+    { data: items, error: itemsError },
+    { data: media, error: mediaError }
+  ] = await Promise.all([
+    supabase
+      .from("estimate_line_items")
+      .select("description,quantity,unit_price_cents,position")
+      .eq("estimate_id", estimateId)
+      .order("position", { ascending: true }),
+    supabase
+      .from("operate_estimate_media")
+      .select("id,category,caption,display_name,storage_bucket,storage_path,created_at")
+      .eq("workspace_id", estimate.workspace_id)
+      .eq("estimate_id", estimateId)
+      .order("created_at", { ascending: true })
+  ]);
   if (itemsError) throw itemsError;
+  if (mediaError) throw mediaError;
+
+  const photos = await Promise.all((media ?? []).map(async (photo) => {
+    const { data: signed } = await supabase.storage.from(photo.storage_bucket).createSignedUrl(photo.storage_path, 60 * 15);
+    return signed?.signedUrl ? {
+      id: photo.id,
+      url: signed.signedUrl,
+      category: photo.category,
+      caption: photo.caption,
+      displayName: photo.display_name
+    } : null;
+  }));
 
   const customer = Array.isArray(estimate.customers) ? estimate.customers[0] : estimate.customers;
   const property = Array.isArray(estimate.properties) ? estimate.properties[0] : estimate.properties;
@@ -56,6 +80,12 @@ export default async function OperateEstimatePage({ params }: Props) {
           discountCents={estimate.discount_cents ?? 0}
           validUntil={estimate.valid_until}
           items={(items ?? []).map((item) => ({ description: item.description, quantity: Number(item.quantity), unitPriceCents: item.unit_price_cents }))}
+        />
+        <OperateEstimatePhotoUpload
+          workspaceId={estimate.workspace_id}
+          estimateId={estimate.id}
+          propertyId={estimate.property_id}
+          photos={photos.filter((photo): photo is NonNullable<typeof photo> => photo !== null)}
         />
         <OperateEstimateShareLink estimateId={estimate.id} disabled={shareClosed || (estimate.total_cents ?? 0) <= 0} />
       </section>

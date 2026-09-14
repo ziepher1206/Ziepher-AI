@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { OperateBusinessProfile } from "@/components/operate-business-profile";
 import { OperateBusinessSetup } from "@/components/operate-business-setup";
 import { OperateScheduleExceptions } from "@/components/operate-schedule-exceptions";
+import { OperateServiceTiming } from "@/components/operate-service-timing";
 import { OperateTimezoneSetup } from "@/components/operate-timezone-setup";
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/env";
@@ -28,7 +29,7 @@ export default async function OperateSetupPage() {
   ] = await Promise.all([
     supabase.from("workspaces").select("id,timezone").eq("id", workspaceId).single(),
     supabase.from("workspace_business_profiles").select("business_name,phone,email,website_url,review_url,service_area,about,owner_name,years_in_business,emergency_service,license_insurance_notes").eq("workspace_id", workspaceId).maybeSingle(),
-    supabase.from("services").select("id,name,description,default_duration_minutes,preparation_buffer_minutes,cleanup_buffer_minutes,base_price_cents,active").eq("workspace_id", workspaceId).order("active", { ascending: false }).order("name"),
+    supabase.from("services").select("id,name,description,default_duration_minutes,travel_buffer_minutes,preparation_buffer_minutes,cleanup_buffer_minutes,base_price_cents,active").eq("workspace_id", workspaceId).order("active", { ascending: false }).order("name"),
     supabase.from("crews").select("id,name,active").eq("workspace_id", workspaceId).order("active", { ascending: false }).order("name"),
     supabase.from("workspace_members").select("user_id,role").eq("workspace_id", workspaceId).order("created_at"),
     supabase.from("crew_members").select("id,crew_id,user_id,is_lead").eq("workspace_id", workspaceId).order("created_at"),
@@ -66,6 +67,7 @@ export default async function OperateSetupPage() {
         <OperateBusinessProfile workspaceId={workspaceId} profile={businessProfile ?? null} />
         <OperateTimezoneSetup workspaceId={workspaceId} timezone={workspace?.timezone ?? null} />
         <OperateBusinessSetup workspaceId={workspaceId} services={services ?? []} crews={crews ?? []} workspaceMembers={workspaceMembers ?? []} crewMembers={crewMembers ?? []} availabilityRules={availabilityRules ?? []} />
+        <OperateServiceTiming workspaceId={workspaceId} services={services ?? []} />
         <OperateScheduleExceptions workspaceId={workspaceId} timezone={workspace?.timezone ?? null} crews={crews ?? []} overrides={(scheduleOverrides ?? []) as never[]} />
       </section>
     </main>
