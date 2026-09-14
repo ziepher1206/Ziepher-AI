@@ -24,6 +24,18 @@ describe("ZLife public SEO boundaries", () => {
     expect(source).not.toContain("/projects");
   });
 
+  it("keeps authenticated application surfaces out of the crawl boundary", () => {
+    const source = read("app/robots.ts");
+
+    expect(source).toContain('allow: ["/", "/community", "/modules/"]');
+    expect(source).toContain('"/api/"');
+    expect(source).toContain('"/auth/"');
+    expect(source).toContain('"/operate/"');
+    expect(source).toContain('"/projects/"');
+    expect(source).toContain('"/team"');
+    expect(source).toContain('sitemap: `${ZLIFE_PUBLIC_ORIGIN}/sitemap.xml`');
+  });
+
   it("generates canonical metadata for public module pages", () => {
     const source = read("app/modules/[slug]/page.tsx");
 
