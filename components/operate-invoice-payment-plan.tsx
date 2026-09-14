@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import { OperateInvoiceCheckout } from "@/components/operate-invoice-checkout";
 
@@ -64,10 +64,9 @@ export function OperateInvoicePaymentPlan({
   const remainingPlanCents = active
     .filter((item) => item.status === "unpaid")
     .reduce((sum, item) => sum + item.amountCents, 0);
-  const nextMilestone = useMemo(
-    () => active.filter((item) => item.status === "unpaid").sort((a, b) => (a.position - b.position))[0] ?? null,
-    [active]
-  );
+  const nextMilestone = active
+    .filter((item) => item.status === "unpaid")
+    .sort((a, b) => a.position - b.position)[0] ?? null;
   const canCancel = active.length > 0 && active.every((item) => item.status === "unpaid");
 
   async function createPlan(event: FormEvent<HTMLFormElement>) {
