@@ -21,6 +21,7 @@ function requireFile(path: string) {
 
 for (const path of [
   "docs/TREE-SERVICE-LAUNCH-READINESS.md",
+  "docs/TREE-SERVICE-RECOVERY-RUNBOOK.md",
   "docs/ZIEPHER-TREE-SERVICE-LAUNCH.md",
   "tests/tree-service-launch-readiness.test.ts",
   "tests/operate-phase1-foundation.test.ts",
@@ -82,12 +83,29 @@ if (pathExists("docs/TREE-SERVICE-LAUNCH-READINESS.md")) {
   }
 }
 
+if (pathExists("docs/TREE-SERVICE-RECOVERY-RUNBOOK.md")) {
+  const recovery = read("docs/TREE-SERVICE-RECOVERY-RUNBOOK.md");
+  const recoveryChecks = [
+    "Application rollback",
+    "Database backup and restore verification",
+    "Schema or data-integrity incident",
+    "Stripe/payment incident",
+    "Recovery verification checklist",
+  ];
+  for (const phrase of recoveryChecks) {
+    if (!recovery.includes(phrase)) failures.push(`recovery runbook missing section: ${phrase}`);
+  }
+  if (!failures.some((item) => item.startsWith("recovery runbook missing section:"))) {
+    passes.push("recovery runbook covers rollback, restore, data integrity, payment, and verification paths");
+  }
+}
+
 manual.push(
   "complete an authenticated end-to-end run from lead through Stripe test payment and growth follow-up",
   "complete a two-user/two-workspace tenant-isolation exercise including attempted cross-workspace reads/writes",
   "deliver actual Stripe test webhooks for successful, partial/stage, repeated, refunded, and canceled paths",
-  "verify Supabase backup/restore against an approved restore target",
-  "perform a production rollback drill for the current Vercel app",
+  "verify Supabase backup/restore against an approved restore target using the recovery runbook",
+  "perform a production rollback drill for the current Vercel app using the recovery runbook",
   "complete a human review of RLS, privileged RPCs, secrets, public endpoints, and payment/webhook boundaries",
   "obtain appropriate review of privacy, terms, billing, refund, and other customer-facing legal language",
   "complete a controlled tree-service pilot before broad customer launch",
