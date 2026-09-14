@@ -5,6 +5,7 @@ import type { WebsiteHealth } from "../lib/site-scan";
 
 const route = readFileSync("app/api/projects/[projectId]/site-analysis/route.ts", "utf8");
 const page = readFileSync("app/projects/[projectId]/page.tsx", "utf8");
+const controls = readFileSync("components/site-analysis-controls.tsx", "utf8");
 const migration = readFileSync("supabase/migrations/20260914202500_project_site_analysis_state.sql", "utf8");
 
 describe("detailed website analysis", () => {
@@ -53,10 +54,12 @@ describe("detailed website analysis", () => {
     expect(migration).toContain("grant execute on function public.set_project_site_analysis");
   });
 
-  it("surfaces scan checks before unrelated workspace cards", () => {
+  it("surfaces scan checks before unrelated workspace cards and exposes analysis controls", () => {
     expect(page.indexOf("What the scanner found")).toBeGreaterThan(-1);
     expect(page.indexOf("What the scanner found")).toBeLessThan(page.indexOf("Change pipeline"));
-    expect(page).toContain("Build detailed report — free");
     expect(page).toContain("Detailed website analysis");
+    expect(page).toContain("SiteAnalysisControls");
+    expect(controls).toContain("Build detailed report — free");
+    expect(controls).toContain("Run deep AI analysis");
   });
 });
