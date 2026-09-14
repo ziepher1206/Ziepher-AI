@@ -29,7 +29,7 @@ export default async function OperateGrowthPage() {
     supabase.from("jobs").select("id,lead_id,title,status").eq("workspace_id", workspaceId),
     supabase.from("invoices").select("id,job_id,total_cents,paid_cents,status").eq("workspace_id", workspaceId),
     supabase.from("marketing_source_spend").select("source,amount_cents").eq("workspace_id", workspaceId),
-    supabase.from("operate_review_requests").select("id,job_id,status,subject,message,review_url,created_at").eq("workspace_id", workspaceId).order("created_at", { ascending: false }).limit(20),
+    supabase.from("operate_review_requests").select("id,job_id,status,subject,message,review_url,created_at").eq("workspace_id", workspaceId).order("created_at", { ascending: false }),
     supabase.from("projects").select("id,name,business_name,primary_domain,source_domain,status").eq("workspace_id", workspaceId).order("updated_at", { ascending: false }).limit(20),
     supabase.from("workspace_business_profiles").select("business_name,review_url,website_url").eq("workspace_id", workspaceId).maybeSingle()
   ]);
@@ -60,7 +60,7 @@ export default async function OperateGrowthPage() {
   for (const entry of spend ?? []) get(entry.source?.trim() || "Unknown").spend += entry.amount_cents ?? 0;
 
   const rankedSources = Array.from(stats.entries())
-    .map(([source, row]) => ({ source, ...row, roi: row.spend > 0 ? ((row.collected - row.spend) / row.spend) * 100 : null }))
+    .map(([source, row]) => ({ source, ...row }))
     .sort((a, b) => b.collected - a.collected || b.jobs - a.jobs || b.leads - a.leads);
   const bestSource = rankedSources.find((row) => row.collected > 0) ?? rankedSources[0] ?? null;
   const completedJobs = (jobs ?? []).filter((job) => job.status === "completed");
