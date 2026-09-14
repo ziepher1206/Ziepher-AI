@@ -3,6 +3,7 @@ import { agentById } from "./registry";
 import { buildAgentSystemPrompt } from "./prompt";
 import { shouldUseZLifeMock } from "../community/dev-mode";
 import { assertZLifeLiveProviderAllowed } from "../community/provider-adapters";
+import { openAIMaxOutputTokens } from "../ai/provider-limits";
 import { openAIUsageFromResponse, type AIUsage } from "../ai/usage";
 
 export type AgentExecutionInput = {
@@ -70,6 +71,7 @@ export async function executeLiveAgent(
   const client = new OpenAI({ apiKey });
   const response = await client.responses.create({
     model,
+    max_output_tokens: openAIMaxOutputTokens("agent"),
     input: [
       { role: "system", content: buildAgentSystemPrompt(agent) },
       {
