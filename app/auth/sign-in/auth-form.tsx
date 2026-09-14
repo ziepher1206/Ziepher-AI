@@ -1,11 +1,13 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
 const REMEMBERED_EMAIL_KEY = "z-life.remembered-email";
 
 export function AuthForm() {
+  const router = useRouter();
   const [mode, setMode] = useState<"sign-in" | "sign-up">("sign-in");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -16,10 +18,12 @@ export function AuthForm() {
 
   useEffect(() => {
     const remembered = window.localStorage.getItem(REMEMBERED_EMAIL_KEY) ?? window.localStorage.getItem("ziepher.remembered-email");
-    if (remembered) {
+    if (!remembered) return;
+
+    queueMicrotask(() => {
       setEmail(remembered);
       setRememberEmail(true);
-    }
+    });
   }, []);
 
   function persistRememberedEmail() {
@@ -59,7 +63,8 @@ export function AuthForm() {
         });
         if (error) throw error;
         persistRememberedEmail();
-        window.location.assign("/");
+        router.push("/operate");
+        router.refresh();
       }
     } catch (error) {
       setMessage(
