@@ -68,7 +68,7 @@ export function OperateLeadInbox({ initialLeads }: { initialLeads: Lead[] }) {
       body: JSON.stringify({
         title: String(form.get("title") ?? `Estimate — ${lead.contact_name}`),
         startsAt: parsed.toISOString(),
-        durationMinutes: Number(form.get("durationMinutes") ?? 60)
+        durationMinutes: 60
       })
     });
     const payload = await response.json().catch(() => ({}));
@@ -137,18 +137,9 @@ export function OperateLeadInbox({ initialLeads }: { initialLeads: Lead[] }) {
                     <span>Date & time</span>
                     <input name="startsAt" type="datetime-local" required />
                   </label>
-                  <label className="field">
-                    <span>Duration</span>
-                    <select name="durationMinutes" defaultValue="60">
-                      <option value="30">30 minutes</option>
-                      <option value="60">1 hour</option>
-                      <option value="90">1.5 hours</option>
-                      <option value="120">2 hours</option>
-                    </select>
-                  </label>
                 </div>
                 <div className="auth-copy" style={{ fontSize: 13 }}>
-                  Ziepher will create or reuse the customer, create the service property when an address is available, create the estimate, and add the confirmed appointment to your schedule in one transaction.
+                  Pick the appointment time. Ziepher handles the rest without asking you to guess how long the estimate will take.
                 </div>
                 <div><button className="button primary" type="submit">Confirm estimate appointment</button></div>
               </form>
