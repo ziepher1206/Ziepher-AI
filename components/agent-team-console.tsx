@@ -108,7 +108,9 @@ export function AgentTeamConsole({
         return {
           agentId: step.agent_id,
           status: blocked ? ("blocked" as const) : ("complete" as const),
-          output: step.feedback ?? blockerText || (blocked ? "Agent blocked by a safety or budget gate." : "Review completed.")
+          output:
+            (step.feedback ?? blockerText) ||
+            (blocked ? "Agent blocked by a safety or budget gate." : "Review completed.")
         };
       })
     );
