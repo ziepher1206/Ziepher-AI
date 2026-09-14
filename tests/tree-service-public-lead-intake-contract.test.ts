@@ -7,6 +7,8 @@ function read(path: string) {
 }
 
 const intake = read("supabase/migrations/20260913235500_tree_service_phase2_public_lead_intake.sql");
+const publicLock = read("supabase/migrations/20260913235700_tree_service_phase2_lock_public_lead_rpc.sql");
+const route = read("app/api/public/operate/leads/[token]/route.ts");
 
 describe("Tree Service public lead intake contract", () => {
   it("requires a valid active intake token and enforces allowed origin when configured", () => {
@@ -15,6 +17,12 @@ describe("Tree Service public lead intake contract", () => {
     expect(intake).toContain("expires_at is null or expires_at > now()");
     expect(intake).toContain("v_token.allowed_origin is not null");
     expect(intake).toContain("This website is not allowed to submit through this intake link.");
+  });
+
+  it("derives origin from the request header rather than request JSON", () => {
+    expect(route).toContain('const origin = request.headers.get("origin")');
+    expect(route).toContain("p_origin: origin");
+    expect(route).not.toContain("p_origin: input.");
   });
 
   it("requires a stable submission id and returns the existing lead on retries", () => {
@@ -45,11 +53,12 @@ describe("Tree Service public lead intake contract", () => {
     expect(intake).toContain("p_submission_id, v_token.id");
   });
 
-  it("keeps token creation and revocation admin-only while allowing bounded public submission", () => {
+  it("keeps token management admin-only and forces public lead submission through the server", () => {
     expect(intake).toContain("Workspace administrator access required.");
     expect(intake).toContain("grant execute on function public.create_operate_lead_intake_token");
-    expect(intake).toContain("to authenticated");
-    expect(intake).toContain("grant execute on function public.submit_public_operate_lead");
-    expect(intake).toContain("to anon, authenticated");
+    expect(publicLock).toContain("submit_public_operate_lead(uuid,uuid,text,text,text,text,text,text,text,text,boolean) from public, anon, authenticated");
+    expect(publicLock).toContain("submit_public_operate_lead(uuid,uuid,text,text,text,text,text,text,text,text,boolean) to service_role");
+    expect(route).toContain("createAdminClient");
+    expect(route).toContain('supabase.rpc("submit_public_operate_lead"');
   });
 });
