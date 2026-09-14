@@ -79,7 +79,7 @@ export async function getCommunityReviewWorkspace(): Promise<CommunityReviewWork
 
   if (reviewerError) throw reviewerError;
 
-  if (!isAuthorizedCommunityReviewer(reviewer, user.id)) {
+  if (!reviewer || !isAuthorizedCommunityReviewer(reviewer, user.id)) {
     return {
       access: { state: "identity_unverified", userId: user.id },
       pending: [],
