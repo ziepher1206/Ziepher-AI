@@ -25,11 +25,11 @@ describe("OpenAI usage cost metering", () => {
     expect(
       estimateOpenAIProviderCostUsd("gpt-5.6-terra", 1_000_000, 1_000_000)
         .costUsd
-    ).toBe(14);
+    ).toBe(22);
     expect(
       estimateOpenAIProviderCostUsd("gpt-5.6-sol", 1_000_000, 1_000_000)
         .costUsd
-    ).toBe(24);
+    ).toBe(38);
   });
 
   it("applies GPT-5.6 long-context multipliers above 272K input tokens", () => {
