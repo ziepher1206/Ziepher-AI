@@ -3,6 +3,8 @@ import Link from "next/link";
 import { getPublicContributorSummaries } from "@/lib/community/public-summary";
 import "./community.css";
 
+export const dynamic = "force-dynamic";
+
 const roles: Array<[string, string]> = [
   ["Community Member", "Discover, discuss, learn, and help shape useful work."],
   ["Contributor", "Submit useful code, documentation, design, testing, or other verified work."],
@@ -52,7 +54,7 @@ export default async function CommunityPage() {
           <article><strong>{contributors.length}</strong><span>Verified team identities</span></article>
           <article><strong>{verifiedPoints.toLocaleString()}</strong><span>Verified contribution points</span></article>
           <article><strong>5</strong><span>Tracked Z-Life modules</span></article>
-          <article><strong>$0</strong><span>Required Ziepher Tech dev spend per contributor</span></article>
+          <article><strong>$0 target</strong><span>Added Ziepher Tech platform cost per contributor</span></article>
         </div>
       </section>
 
