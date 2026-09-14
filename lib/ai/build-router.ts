@@ -18,6 +18,10 @@ export type BuildRouteResult = {
   developmentData?: boolean;
 };
 
+type BuildRouteOptions = {
+  allowPaidProvider?: boolean;
+};
+
 function googleModelFor(mode: QualityMode) {
   if (mode === "best") {
     return (
@@ -48,14 +52,30 @@ function createMockBuild(
   };
 }
 
+function createDeterministicBuildResult(
+  plan: AppPlan,
+  visualConceptId: string
+): BuildRouteResult {
+  return {
+    artifact: createDeterministicBuild(plan, visualConceptId),
+    provider: "deterministic",
+    model: "ziepher-scaffold-v2"
+  };
+}
+
 export async function createApplicationBuild(
   plan: AppPlan,
   visualConceptId: string,
   mode: QualityMode,
-  projectContext?: unknown
+  projectContext?: unknown,
+  options: BuildRouteOptions = {}
 ): Promise<BuildRouteResult> {
   if (shouldUseZLifeMock("ai")) {
     return createMockBuild(plan, visualConceptId);
+  }
+
+  if (!options.allowPaidProvider) {
+    return createDeterministicBuildResult(plan, visualConceptId);
   }
 
   const prompt = createBuildPrompt(plan, visualConceptId, projectContext);
@@ -92,11 +112,7 @@ export async function createApplicationBuild(
     }
   }
 
-  return {
-    artifact: createDeterministicBuild(plan, visualConceptId),
-    provider: "deterministic",
-    model: "ziepher-scaffold-v2"
-  };
+  return createDeterministicBuildResult(plan, visualConceptId);
 }
 
 export async function repairApplicationBuild(
@@ -105,11 +121,14 @@ export async function repairApplicationBuild(
   currentArtifact: BuildArtifact,
   failureOutput: string,
   mode: QualityMode,
-  projectContext?: unknown
+  projectContext?: unknown,
+  options: BuildRouteOptions = {}
 ): Promise<BuildRouteResult | null> {
   if (shouldUseZLifeMock("ai")) {
     return createMockBuild(plan, visualConceptId);
   }
+
+  if (!options.allowPaidProvider) return null;
 
   const prompt = createRepairPrompt(
     plan,
