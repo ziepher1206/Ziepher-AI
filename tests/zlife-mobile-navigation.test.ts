@@ -6,15 +6,19 @@ function source(path: string) {
 }
 
 describe("ZLife mobile navigation", () => {
-  it("keeps core landing destinations reachable when desktop navigation is hidden", () => {
-    const page = source("components/zlife-marketing-home.tsx");
+  it("keeps the same multi-page destinations reachable when desktop navigation is hidden", () => {
+    const shell = source("components/zlife-public-shell.tsx");
+    const navigation = source("lib/zlife/public-navigation.ts");
     const styles = source("components/zlife-marketing-home.module.css");
 
-    expect(page).toContain('aria-label="Mobile navigation"');
-    expect(page).toContain('href="#team"');
-    expect(page).toContain('href="#modules"');
-    expect(page).toContain('href="#vision"');
-    expect(page).toContain('href="/community"');
+    expect(shell).toContain('aria-label="Mobile navigation"');
+    expect(shell).toContain("zlifePublicNavigation.filter");
+    expect(navigation).toContain('{ label: "AI Teams", href: "/ai-teams" }');
+    expect(navigation).toContain('{ label: "Modules", href: "/modules" }');
+    expect(navigation).toContain('{ label: "About", href: "/about" }');
+    expect(navigation).toContain('{ label: "Our Vision", href: "/vision" }');
+    expect(navigation).toContain('{ label: "Community", href: "/community" }');
+    expect(navigation).not.toContain('href: "#');
     expect(styles).toContain("@media (max-width: 820px)");
     expect(styles).toContain(".mobileNav");
     expect(styles).toContain("overflow-x: auto");
