@@ -147,4 +147,29 @@ describe("SECURITY DEFINER authorization source", () => {
     expect(sql).toContain("created_by");
     expect(sql).toContain("auth.uid()");
   });
+
+  it("keeps workspace and project membership helpers bound to the authenticated caller", () => {
+    const sql = readRepoFile("supabase/migrations/0001_core.sql");
+
+    expect(sql).toContain("create or replace function public.is_workspace_member");
+    expect(sql).toContain("create or replace function public.is_project_member");
+    expect(sql).toContain("and wm.user_id = auth.uid()");
+    expect(sql).toContain("w.owner_id = auth.uid()");
+    expect(sql).toContain("p.owner_id = auth.uid()");
+    expect(sql).toContain("or wm.user_id is not null");
+  });
+
+  it("keeps personal workspace and project creation authenticated and caller-owned", () => {
+    const sql = readRepoFile("supabase/migrations/0003_orchestration.sql");
+
+    expect(sql).toContain("create or replace function public.ensure_personal_workspace");
+    expect(sql).toContain("if v_user_id is null then");
+    expect(sql).toContain("raise exception 'Authentication required'");
+    expect(sql).toContain("where w.owner_id = v_user_id");
+    expect(sql).toContain("values (v_workspace_id, v_user_id, 'owner')");
+    expect(sql).toContain("create or replace function public.create_project_with_workspace");
+    expect(sql).toContain("if auth.uid() is null then");
+    expect(sql).toContain("v_workspace_id := public.ensure_personal_workspace()");
+    expect(sql).toContain("auth.uid(),");
+  });
 });
