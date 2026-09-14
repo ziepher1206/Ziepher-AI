@@ -18,8 +18,21 @@ No community contributor may deploy directly to production. Production promotion
 6. Use your own Supabase project and your own provider credentials only when a feature genuinely requires them.
 7. Prefer mock/dev-mode providers for UI, forms, dashboards, navigation, workflows, tests, and module development.
 8. Run `npm ci`.
-9. Run `npm run check` before opening a PR.
-10. Open a focused Pull Request against `main`.
+9. Run `npm run smoke:contributor` to verify the default zero-cost contributor environment before development.
+10. Run `npm run check` before opening a PR.
+11. Open a focused Pull Request against `main`.
+
+### Zero-cost contributor smoke test
+
+`npm run smoke:contributor` is intentionally local and deterministic. It does not call OpenAI, Google AI, Stripe, Supabase, email, SMS, notification, or other paid provider APIs. It verifies that:
+
+- the supported Node version is in use;
+- `ZLIFE_DEV_MODE` is enabled in `.env.example`;
+- AI, email, SMS, payment, and notification mocks are enabled;
+- production/provider secret values are blank in the default contributor environment; and
+- the repository exposes the required typecheck, lint, test, and build scripts.
+
+If the smoke test fails, correct the local contributor configuration rather than adding production credentials. Contributors may configure their own development-only provider accounts for work that genuinely requires them, but that is outside the default zero-cost path.
 
 ## Contribution quality
 
