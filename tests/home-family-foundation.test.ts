@@ -10,7 +10,7 @@ const page = readFileSync("app/home/page.tsx", "utf8");
 const modules = readFileSync("lib/zlife/modules.ts", "utf8");
 
 describe("Z-Life Home & Family foundation", () => {
-  it("creates tenant-scoped task and maintenance storage with RLS", () => {
+  it("creates tenant-scoped task and maintenance storage with RLS and explicit Data API grants", () => {
     expect(migration).toContain("create table if not exists public.home_tasks");
     expect(migration).toContain("create table if not exists public.home_maintenance_items");
     expect(migration).toContain("references public.workspaces(id) on delete cascade");
@@ -18,6 +18,8 @@ describe("Z-Life Home & Family foundation", () => {
     expect(migration).toContain("alter table public.home_maintenance_items enable row level security");
     expect(migration).toContain("public.is_workspace_member(workspace_id)");
     expect(migration).toContain("created_by = (select auth.uid())");
+    expect(migration).toContain("grant select, insert, update, delete on public.home_tasks to authenticated");
+    expect(migration).toContain("grant select, insert, update, delete on public.home_maintenance_items to authenticated");
   });
 
   it("derives the workspace and user on the server rather than trusting form input", () => {
@@ -28,7 +30,7 @@ describe("Z-Life Home & Family foundation", () => {
     expect(actions).toContain('.eq("workspace_id", workspaceId)');
   });
 
-  it("ships a working signed-in dashboard for tasks and maintenance", () => {
+  it("ships a working signed-in dashboard for tasks and maintenance when schema is ready", () => {
     expect(page).toContain('redirect("/auth/sign-in")');
     expect(page).toContain('from("home_tasks")');
     expect(page).toContain('from("home_maintenance_items")');
@@ -37,7 +39,15 @@ describe("Z-Life Home & Family foundation", () => {
     expect(page).toContain("addHomeMaintenanceAction");
   });
 
-  it("connects the public Home & Family module card to the working foundation", () => {
+  it("fails safely when the Home and Family migration has not reached an environment", () => {
+    expect(page).toContain('error.code === "42P01"');
+    expect(page).toContain('error.code === "PGRST205"');
+    expect(page).toContain("Home & Family is waiting for its database migration");
+    expect(page).toContain("20260914232000_home_family_foundation.sql");
+    expect(page).toContain("Applying production database migrations remains a controlled release action");
+  });
+
+  it("connects the public Home & Family module card to the working foundation while keeping development status", () => {
     expect(modules).toContain('slug: "home"');
     expect(modules).toContain('launchHref: "/home"');
     expect(modules).toContain('nestedLabel: "Working foundation · Tasks + maintenance"');
