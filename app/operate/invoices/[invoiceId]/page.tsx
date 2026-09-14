@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { OperateInvoiceCheckout } from "@/components/operate-invoice-checkout";
+import { OperateInvoicePaymentPlan } from "@/components/operate-invoice-payment-plan";
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/env";
 
@@ -13,6 +14,11 @@ function money(cents: number | null) {
 function date(value: string | null) {
   if (!value) return "—";
   return new Intl.DateTimeFormat("en-US", { dateStyle: "medium" }).format(new Date(`${value}T12:00:00`));
+}
+
+function dateTime(value: string | null) {
+  if (!value) return "—";
+  return new Intl.DateTimeFormat("en-US", { dateStyle: "medium", timeStyle: "short" }).format(new Date(value));
 }
 
 export default async function OperateInvoicePage({ params }: Props) {
@@ -30,16 +36,29 @@ export default async function OperateInvoicePage({ params }: Props) {
   if (error) throw error;
   if (!invoice) notFound();
 
-  const [{ data: items, error: itemsError }, { data: paymentAccount }] = await Promise.all([
+  const [
+    { data: items, error: itemsError },
+    { data: paymentAccount },
+    { data: membership },
+    { data: milestones, error: milestonesError },
+    { data: payments, error: paymentsError }
+  ] = await Promise.all([
     supabase.from("invoice_line_items").select("id,position,description,quantity,unit_price_cents,line_total_cents").eq("invoice_id", invoice.id).eq("workspace_id", invoice.workspace_id).order("position"),
-    supabase.from("workspace_payment_accounts").select("provider,charges_enabled,details_submitted").eq("workspace_id", invoice.workspace_id).eq("provider", "stripe").maybeSingle()
+    supabase.from("workspace_payment_accounts").select("provider,charges_enabled,details_submitted").eq("workspace_id", invoice.workspace_id).eq("provider", "stripe").maybeSingle(),
+    supabase.from("workspace_members").select("role").eq("workspace_id", invoice.workspace_id).eq("user_id", user.id).maybeSingle(),
+    supabase.from("invoice_milestones").select("id,position,label,amount_cents,status,due_date,paid_at,refunded_at,provider_checkout_session_id").eq("invoice_id", invoice.id).eq("workspace_id", invoice.workspace_id).order("position"),
+    supabase.from("payment_transactions").select("id,milestone_id,status,amount_cents,refunded_cents,currency,succeeded_at,failed_at,refunded_at,created_at,provider_checkout_session_id").eq("invoice_id", invoice.id).eq("workspace_id", invoice.workspace_id).order("created_at", { ascending: false }).limit(100)
   ]);
   if (itemsError) throw itemsError;
+  if (milestonesError) throw milestonesError;
+  if (paymentsError) throw paymentsError;
 
   const customer = Array.isArray(invoice.customers) ? invoice.customers[0] : invoice.customers;
   const job = Array.isArray(invoice.jobs) ? invoice.jobs[0] : invoice.jobs;
+  const activeMilestones = (milestones ?? []).filter((item) => item.status !== "canceled");
   const payable = !["paid", "void"].includes(invoice.status) && (invoice.balance_due_cents ?? 0) >= 50;
   const stripeReady = !!paymentAccount?.charges_enabled;
+  const isAdmin = membership?.role === "owner" || membership?.role === "admin";
 
   return (
     <main className="projects-page">
@@ -91,11 +110,55 @@ export default async function OperateInvoicePage({ params }: Props) {
         <div style={{ marginTop: 24 }}>
           <p className="panel-label">Payment</p>
           {stripeReady ? (
-            <OperateInvoiceCheckout workspaceId={invoice.workspace_id} invoiceId={invoice.id} disabled={!payable} />
+            activeMilestones.length === 0 ? <OperateInvoiceCheckout workspaceId={invoice.workspace_id} invoiceId={invoice.id} disabled={!payable} /> : <p className="auth-copy">This invoice uses stage billing. Use the individual milestone payment buttons below.</p>
           ) : (
             <p className="auth-copy">Stripe test payments are not connected or enabled for this workspace yet. The invoice itself is ready and remains safe in draft/test workflow.</p>
           )}
         </div>
+      </section>
+
+      <OperateInvoicePaymentPlan
+        workspaceId={invoice.workspace_id}
+        invoiceId={invoice.id}
+        invoiceTotalCents={invoice.total_cents}
+        invoicePaidCents={invoice.paid_cents}
+        stripeReady={stripeReady}
+        isAdmin={isAdmin}
+        milestones={(milestones ?? []).map((item) => ({
+          id: item.id,
+          position: item.position,
+          label: item.label,
+          amountCents: item.amount_cents,
+          status: item.status,
+          dueDate: item.due_date,
+          paidAt: item.paid_at,
+          refundedAt: item.refunded_at
+        }))}
+      />
+
+      <section className="auth-card" style={{ maxWidth: 940 }}>
+        <p className="panel-label">Payment history</p>
+        <h2 style={{ margin: "6px 0 8px" }}>Stripe test ledger</h2>
+        <p className="auth-copy" style={{ marginTop: 0 }}>Successful payments, refunds, expirations, and pending Checkout attempts remain visible here for reconciliation.</p>
+        {(payments ?? []).length ? (
+          <div style={{ display: "grid", gap: 10, marginTop: 16 }}>
+            {(payments ?? []).map((payment) => (
+              <div key={payment.id} style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 14, paddingBottom: 10, borderBottom: "1px solid var(--border)" }}>
+                <div>
+                  <strong>{payment.status.replaceAll("_", " ")}</strong>
+                  <div className="auth-copy">
+                    {dateTime(payment.succeeded_at ?? payment.refunded_at ?? payment.failed_at ?? payment.created_at)}
+                    {payment.milestone_id ? " · milestone payment" : " · invoice payment"}
+                  </div>
+                </div>
+                <div style={{ textAlign: "right" }}>
+                  <strong>{money(payment.amount_cents)}</strong>
+                  {payment.refunded_cents > 0 ? <div className="auth-copy">Refunded {money(payment.refunded_cents)}</div> : null}
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : <p className="auth-copy">No payment activity yet.</p>}
       </section>
     </main>
   );
