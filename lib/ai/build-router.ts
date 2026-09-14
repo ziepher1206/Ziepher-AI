@@ -8,11 +8,13 @@ import { parseJsonObject } from "./json";
 import { paidAIProviderOrder } from "./provider-policy";
 import type { QualityMode } from "@/lib/domain/schemas";
 import { shouldUseZLifeMock } from "../community/dev-mode";
+import type { AIUsage } from "./usage";
 
 export type BuildRouteResult = {
   artifact: BuildArtifact;
   provider: "gemini" | "openai" | "deterministic" | "mock";
   model: string;
+  usage?: AIUsage;
   developmentData?: boolean;
 };
 
@@ -67,7 +69,8 @@ export async function createApplicationBuild(
         return {
           artifact: buildArtifactSchema.parse(parseJsonObject(result.text)),
           provider: "openai",
-          model
+          model,
+          usage: result.usage
         };
       } catch (error) {
         console.error("OpenAI build route failed:", error);
@@ -125,7 +128,8 @@ export async function repairApplicationBuild(
         return {
           artifact: buildArtifactSchema.parse(parseJsonObject(result.text)),
           provider: "openai",
-          model
+          model,
+          usage: result.usage
         };
       } catch (error) {
         console.error("OpenAI repair route failed:", error);
