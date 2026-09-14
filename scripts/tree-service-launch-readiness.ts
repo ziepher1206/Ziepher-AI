@@ -22,6 +22,7 @@ function requireFile(path: string) {
 for (const path of [
   "docs/TREE-SERVICE-LAUNCH-READINESS.md",
   "docs/ZIEPHER-TREE-SERVICE-LAUNCH.md",
+  "docs/TREE-SERVICE-RECOVERY-RUNBOOK.md",
   "tests/tree-service-launch-readiness.test.ts",
   "tests/operate-phase1-foundation.test.ts",
   "tests/tree-service-phase2-lead-intake.test.ts",
@@ -79,6 +80,23 @@ if (pathExists("docs/TREE-SERVICE-LAUNCH-READINESS.md")) {
     passes.push("launch document still blocks broad production-customer launch");
   } else {
     failures.push("launch document no longer contains the explicit broad-launch block");
+  }
+}
+
+if (pathExists("docs/TREE-SERVICE-RECOVERY-RUNBOOK.md")) {
+  const recovery = read("docs/TREE-SERVICE-RECOVERY-RUNBOOK.md");
+  const requiredRecoverySections = [
+    "## 1. Application rollback",
+    "## 2. Database backup and restore verification",
+    "## 3. Schema or data-integrity incident",
+    "## 4. Stripe/payment incident",
+    "## 5. External provider outage",
+    "## 6. Recovery verification checklist",
+  ];
+  if (requiredRecoverySections.every((section) => recovery.includes(section))) {
+    passes.push("Tree Service recovery procedure covers rollback, restore, data, payment, and provider incidents");
+  } else {
+    failures.push("Tree Service recovery runbook is incomplete or missing a required incident section");
   }
 }
 
