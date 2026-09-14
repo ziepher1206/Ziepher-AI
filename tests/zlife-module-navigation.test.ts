@@ -6,12 +6,13 @@ function source(path: string) {
 }
 
 describe("ZLife module navigation", () => {
-  it("returns to same-origin history and falls back to the modules section", () => {
+  it("returns to same-origin history and falls back to the modules directory", () => {
     const backLink = source("components/zlife-module-back-link.tsx");
 
     expect(backLink).toContain("previousUrl.origin === window.location.origin");
     expect(backLink).toContain("router.back()");
-    expect(backLink).toContain('href="/#modules"');
+    expect(backLink).toContain('href="/modules"');
+    expect(backLink).not.toContain('href="/#modules"');
   });
 
   it("uses the history-aware control throughout module detail pages", () => {
