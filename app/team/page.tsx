@@ -26,6 +26,21 @@ export default async function AgentTeamPage() {
     .order("created_at", { ascending: false })
     .limit(10);
 
+  const budgetUsd = Number(process.env.ZLIFE_AI_MONTHLY_PROVIDER_BUDGET_USD ?? "0");
+  const outputLimitsConfigured = [
+    process.env.OPENAI_PLANNING_MAX_OUTPUT_TOKENS,
+    process.env.OPENAI_BUILD_MAX_OUTPUT_TOKENS,
+    process.env.OPENAI_AGENT_MAX_OUTPUT_TOKENS
+  ].every((value) => Boolean(value?.trim()));
+  const liveAIAvailable =
+    process.env.SITE_REFINER_PAID_AI_ENABLED === "true" &&
+    process.env.ZIEPHER_AGENT_LIVE_ENABLED === "true" &&
+    Boolean(process.env.OPENAI_API_KEY?.trim()) &&
+    Boolean((process.env.OPENAI_AGENT_MODEL ?? process.env.OPENAI_PLANNING_MODEL)?.trim()) &&
+    Number.isFinite(budgetUsd) &&
+    budgetUsd > 0 &&
+    outputLimitsConfigured;
+
   return (
     <main className="projects-page">
       <header className="projects-header">
@@ -43,7 +58,11 @@ export default async function AgentTeamPage() {
         </div>
       </header>
 
-      <AgentTeamConsole initialHistory={runs ?? []} />
+      <AgentTeamConsole
+        initialHistory={runs ?? []}
+        liveAIAvailable={liveAIAvailable}
+        monthlyBudgetUsd={Number.isFinite(budgetUsd) && budgetUsd > 0 ? budgetUsd : null}
+      />
     </main>
   );
 }

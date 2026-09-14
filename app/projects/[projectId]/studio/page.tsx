@@ -32,6 +32,9 @@ export default async function ProjectStudioPage({ params }: Props) {
         <Link className="button" href={`/projects/${projectId}`} style={{ textDecoration: "none" }}>
           Website overview
         </Link>
+        <Link className="button" href={`/projects/${projectId}/ai-status`} style={{ textDecoration: "none" }}>
+          AI status
+        </Link>
         <Link className="button" href={`/projects/${projectId}/source-control`} style={{ textDecoration: "none" }}>
           Build review
         </Link>
