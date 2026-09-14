@@ -43,6 +43,6 @@ describe("Contribution Ledger idempotency guards", () => {
     expect(verification).toContain(
       "Contribution verification fields must be changed through an audited verification function.",
     );
-    expect(verification).toContain("contribution_review_history");
+    expect(verification).toContain("contribution_review_events");
   });
 });
