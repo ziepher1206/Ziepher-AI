@@ -23,13 +23,13 @@ export function ZLifeModuleBackLink({ className, children }: ZLifeModuleBackLink
           return;
         }
       } catch {
-        // Fall through to the stable modules anchor.
+        // Fall through to the stable modules directory.
       }
     }
   }
 
   return (
-    <Link href="/#modules" className={className} onClick={handleClick}>
+    <Link href="/modules" className={className} onClick={handleClick}>
       {children}
     </Link>
   );
