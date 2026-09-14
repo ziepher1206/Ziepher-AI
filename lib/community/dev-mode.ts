@@ -5,6 +5,8 @@ export type ZLifeMockCapability =
   | "payments"
   | "notifications";
 
+type EnvLike = Readonly<Record<string, string | undefined>>;
+
 const MOCK_ENV: Record<ZLifeMockCapability, string> = {
   ai: "ZLIFE_MOCK_AI",
   email: "ZLIFE_MOCK_EMAIL",
@@ -23,7 +25,7 @@ function isTrue(value: string | undefined) {
  * Never infer this from NODE_ENV: preview and test processes can run with
  * production-like settings. The operator/contributor must opt into dev mode.
  */
-export function isZLifeDevMode(env: NodeJS.ProcessEnv = process.env) {
+export function isZLifeDevMode(env: EnvLike = process.env) {
   return isTrue(env.ZLIFE_DEV_MODE);
 }
 
@@ -33,12 +35,12 @@ export function isZLifeDevMode(env: NodeJS.ProcessEnv = process.env) {
  */
 export function shouldUseZLifeMock(
   capability: ZLifeMockCapability,
-  env: NodeJS.ProcessEnv = process.env,
+  env: EnvLike = process.env,
 ) {
   return isZLifeDevMode(env) && isTrue(env[MOCK_ENV[capability]]);
 }
 
-export function getZLifeDevModeState(env: NodeJS.ProcessEnv = process.env) {
+export function getZLifeDevModeState(env: EnvLike = process.env) {
   return {
     enabled: isZLifeDevMode(env),
     mocks: {
