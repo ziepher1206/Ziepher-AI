@@ -5,10 +5,12 @@ import { useState } from "react";
 type Props = {
   workspaceId: string;
   invoiceId: string;
+  milestoneId?: string | null;
   disabled?: boolean;
+  label?: string;
 };
 
-export function OperateInvoiceCheckout({ workspaceId, invoiceId, disabled = false }: Props) {
+export function OperateInvoiceCheckout({ workspaceId, invoiceId, milestoneId = null, disabled = false, label }: Props) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -18,7 +20,7 @@ export function OperateInvoiceCheckout({ workspaceId, invoiceId, disabled = fals
     const response = await fetch(`/api/workspaces/${workspaceId}/invoices/${invoiceId}/checkout`, {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ origin: window.location.origin })
+      body: JSON.stringify({ origin: window.location.origin, ...(milestoneId ? { milestoneId } : {}) })
     });
     const payload = await response.json().catch(() => ({}));
     if (!response.ok || !payload?.url) {
@@ -32,7 +34,7 @@ export function OperateInvoiceCheckout({ workspaceId, invoiceId, disabled = fals
   return (
     <div>
       <button className="button primary" type="button" disabled={disabled || busy} onClick={createCheckout}>
-        {busy ? "Creating test checkout…" : "Open Stripe test checkout"}
+        {busy ? "Creating test checkout…" : (label ?? "Open Stripe test checkout")}
       </button>
       <p className="auth-copy" style={{ margin: "8px 0 0" }}>Test mode only. No live customer charge is enabled by this screen.</p>
       {error ? <p className="form-error" style={{ marginTop: 10 }}>{error}</p> : null}
