@@ -1,5 +1,6 @@
 import OpenAI from "openai";
 import { assertZLifeLiveProviderAllowed } from "../../community/provider-adapters";
+import { openAIUsageFromResponse } from "../usage";
 
 export async function planWithOpenAI(prompt: string) {
   assertZLifeLiveProviderAllowed("ai");
@@ -26,5 +27,9 @@ export async function planWithOpenAI(prompt: string) {
     throw new Error("OpenAI returned an empty planning response.");
   }
 
-  return { text: response.output_text, model };
+  return {
+    text: response.output_text,
+    model,
+    usage: openAIUsageFromResponse(model, response.usage)
+  };
 }
