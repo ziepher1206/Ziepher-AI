@@ -42,11 +42,14 @@ export default async function OperateJobPage({ params }: Props) {
   if (error) throw error;
   if (!job) notFound();
 
+  const estimate = Array.isArray(job.estimates) ? job.estimates[0] : job.estimates;
+
   const [
     { data: crews },
     { data: members },
     { data: invoice },
     { data: media, error: mediaError },
+    { data: estimateMedia, error: estimateMediaError },
     { data: reviewDraft, error: reviewDraftError },
     { data: changeOrders, error: changeOrdersError }
   ] = await Promise.all([
@@ -54,21 +57,30 @@ export default async function OperateJobPage({ params }: Props) {
     supabase.from("workspace_members").select("user_id,role").eq("workspace_id", job.workspace_id).order("created_at"),
     supabase.from("invoices").select("id").eq("workspace_id", job.workspace_id).eq("job_id", job.id).order("created_at", { ascending: true }).limit(1).maybeSingle(),
     supabase.from("operate_job_media").select("id,category,storage_bucket,storage_path,display_name,caption,created_at").eq("workspace_id", job.workspace_id).eq("job_id", job.id).order("created_at", { ascending: false }).limit(100),
+    estimate?.id
+      ? supabase.from("operate_estimate_media").select("id,category,storage_bucket,storage_path,display_name,caption,created_at").eq("workspace_id", job.workspace_id).eq("estimate_id", estimate.id).order("created_at", { ascending: true }).limit(100)
+      : Promise.resolve({ data: [], error: null }),
     supabase.from("operate_review_requests").select("id,status,subject,message,review_url").eq("workspace_id", job.workspace_id).eq("job_id", job.id).maybeSingle(),
     supabase.from("operate_job_change_orders").select("id,description,amount_cents,status,approval_method,approved_at,created_at").eq("workspace_id", job.workspace_id).eq("job_id", job.id).order("created_at", { ascending: true })
   ]);
   if (mediaError) throw mediaError;
+  if (estimateMediaError) throw estimateMediaError;
   if (reviewDraftError) throw reviewDraftError;
   if (changeOrdersError) throw changeOrdersError;
 
-  const photoItems = await Promise.all((media ?? []).map(async (item) => {
-    const { data } = await supabase.storage.from(item.storage_bucket).createSignedUrl(item.storage_path, 60 * 30);
-    return { ...item, signedUrl: data?.signedUrl ?? null };
-  }));
+  const [photoItems, estimatePhotoItems] = await Promise.all([
+    Promise.all((media ?? []).map(async (item) => {
+      const { data } = await supabase.storage.from(item.storage_bucket).createSignedUrl(item.storage_path, 60 * 30);
+      return { ...item, signedUrl: data?.signedUrl ?? null };
+    })),
+    Promise.all((estimateMedia ?? []).map(async (item) => {
+      const { data } = await supabase.storage.from(item.storage_bucket).createSignedUrl(item.storage_path, 60 * 30);
+      return { ...item, signedUrl: data?.signedUrl ?? null };
+    }))
+  ]);
 
   const customer = Array.isArray(job.customers) ? job.customers[0] : job.customers;
   const property = Array.isArray(job.properties) ? job.properties[0] : job.properties;
-  const estimate = Array.isArray(job.estimates) ? job.estimates[0] : job.estimates;
   const crew = Array.isArray(job.crews) ? job.crews[0] : job.crews;
   const address = job.service_address ?? [property?.address_line_1, property?.city, property?.region, property?.postal_code].filter(Boolean).join(", ");
   const navigationUrl = address ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}` : null;
@@ -127,6 +139,24 @@ export default async function OperateJobPage({ params }: Props) {
         completionCleanupVerified={job.completion_cleanup_verified}
         completionNotes={job.completion_notes ?? ""}
       />
+
+      {estimatePhotoItems.length ? (
+        <section className="auth-card" style={{ maxWidth: 900 }}>
+          <p className="panel-label">Estimate handoff</p>
+          <h2 style={{ margin: "6px 0 8px" }}>Estimator field photos</h2>
+          <p className="auth-copy" style={{ marginTop: 0 }}>Photos captured during the estimate stay attached to the field job so the crew can review scope, access, and hazards before work starts.</p>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))", gap: 14, marginTop: 16 }}>
+            {estimatePhotoItems.map((photo) => (
+              <article key={photo.id} className="project-card" style={{ minHeight: 0 }}>
+                {photo.signedUrl ? <img src={photo.signedUrl} alt={photo.caption || photo.display_name} style={{ width: "100%", aspectRatio: "4 / 3", objectFit: "cover", borderRadius: 10 }} /> : null}
+                <div style={{ marginTop: 10 }}><span className="status-pill">{photo.category}</span></div>
+                <strong style={{ display: "block", marginTop: 8 }}>{photo.caption || photo.display_name}</strong>
+                <small className="auth-copy">Captured {dateTime(photo.created_at)}</small>
+              </article>
+            ))}
+          </div>
+        </section>
+      ) : null}
 
       <OperateJobPhotoUpload workspaceId={job.workspace_id} jobId={job.id} propertyId={job.property_id} />
 
