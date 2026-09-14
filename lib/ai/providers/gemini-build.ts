@@ -1,6 +1,9 @@
 import { GoogleGenAI } from "@google/genai";
+import { assertZLifeLiveProviderAllowed } from "../../community/provider-adapters";
 
 export async function buildWithGemini(prompt: string, model: string) {
+  assertZLifeLiveProviderAllowed("ai");
+
   const apiKey = process.env.GOOGLE_AI_API_KEY;
   if (!apiKey) throw new Error("GOOGLE_AI_API_KEY is not configured.");
 
