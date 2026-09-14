@@ -1,5 +1,6 @@
 import OpenAI from "openai";
 import { assertZLifeLiveProviderAllowed } from "../../community/provider-adapters";
+import { openAIMaxOutputTokens } from "../provider-limits";
 import { openAIUsageFromResponse } from "../usage";
 
 export async function planWithOpenAI(prompt: string) {
@@ -13,6 +14,7 @@ export async function planWithOpenAI(prompt: string) {
   const client = new OpenAI({ apiKey });
   const response = await client.responses.create({
     model,
+    max_output_tokens: openAIMaxOutputTokens("planning"),
     input: [
       {
         role: "system",
