@@ -18,6 +18,11 @@ export type BuildRouteResult = {
   developmentData?: boolean;
 };
 
+type BuildRouteOptions = {
+  allowPaidProvider?: boolean;
+  allowUnmeteredProvider?: boolean;
+};
+
 function googleModelFor(mode: QualityMode) {
   if (mode === "best") {
     return (
@@ -48,14 +53,30 @@ function createMockBuild(
   };
 }
 
+function createDeterministicBuildResult(
+  plan: AppPlan,
+  visualConceptId: string
+): BuildRouteResult {
+  return {
+    artifact: createDeterministicBuild(plan, visualConceptId),
+    provider: "deterministic",
+    model: "ziepher-scaffold-v2"
+  };
+}
+
 export async function createApplicationBuild(
   plan: AppPlan,
   visualConceptId: string,
   mode: QualityMode,
-  projectContext?: unknown
+  projectContext?: unknown,
+  options: BuildRouteOptions = {}
 ): Promise<BuildRouteResult> {
   if (shouldUseZLifeMock("ai")) {
     return createMockBuild(plan, visualConceptId);
+  }
+
+  if (!options.allowPaidProvider) {
+    return createDeterministicBuildResult(plan, visualConceptId);
   }
 
   const prompt = createBuildPrompt(plan, visualConceptId, projectContext);
@@ -78,6 +99,10 @@ export async function createApplicationBuild(
       continue;
     }
 
+    // A paid provider that does not yet return measurable token/cost telemetry
+    // stays blocked by default. This prevents a fallback from consuming credits
+    // outside the monthly spend ledger.
+    if (!options.allowUnmeteredProvider) continue;
     if (!process.env.GOOGLE_AI_API_KEY) continue;
     const model = googleModelFor(mode);
     try {
@@ -92,11 +117,7 @@ export async function createApplicationBuild(
     }
   }
 
-  return {
-    artifact: createDeterministicBuild(plan, visualConceptId),
-    provider: "deterministic",
-    model: "ziepher-scaffold-v2"
-  };
+  return createDeterministicBuildResult(plan, visualConceptId);
 }
 
 export async function repairApplicationBuild(
@@ -105,11 +126,14 @@ export async function repairApplicationBuild(
   currentArtifact: BuildArtifact,
   failureOutput: string,
   mode: QualityMode,
-  projectContext?: unknown
+  projectContext?: unknown,
+  options: BuildRouteOptions = {}
 ): Promise<BuildRouteResult | null> {
   if (shouldUseZLifeMock("ai")) {
     return createMockBuild(plan, visualConceptId);
   }
+
+  if (!options.allowPaidProvider) return null;
 
   const prompt = createRepairPrompt(
     plan,
@@ -137,6 +161,7 @@ export async function repairApplicationBuild(
       continue;
     }
 
+    if (!options.allowUnmeteredProvider) continue;
     if (!process.env.GOOGLE_AI_API_KEY) continue;
     const model =
       mode === "economy"
