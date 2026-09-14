@@ -17,6 +17,7 @@
     "deploy-worker": "tsx scripts/deployment-worker.ts",
     "check": "npm run typecheck && npm run lint && npm run test && npm run check:pwa && npm run build",
     "smoke:contributor": "tsx scripts/contributor-smoke.ts",
+    "check:public-launch": "tsx scripts/public-launch-readiness.ts",
     "smoke:generated": "tsx scripts/smoke-generated-build.ts",
     "check:full": "npm run smoke:contributor && npm run check && npm run smoke:generated && npm audit --audit-level=moderate",
     "check:pwa": "node scripts/check-pwa.mjs"
