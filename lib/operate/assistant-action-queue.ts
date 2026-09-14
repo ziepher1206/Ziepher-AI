@@ -4,7 +4,7 @@ import {
   DEFAULT_TREE_AUTOMATION_POLICY,
   planTreeServiceAutomation,
   type AutomationSignal,
-} from "@/lib/operate/automation";
+} from "./automation";
 
 export const assistantActionSignalSchema = z.object({
   kind: z.enum([
