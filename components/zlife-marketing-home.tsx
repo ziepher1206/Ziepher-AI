@@ -24,6 +24,12 @@ export function ZLifeMarketingHome() {
         <nav aria-label="Primary navigation"><a href="#home">Home</a><a href="#team">AI Team</a><a href="#modules">Modules</a><a href="#vision">Our Vision</a><Link href="/community">Community</Link></nav>
         <Link className="zlife-nav-cta" href="/auth/sign-in">Open Z-Life</Link>
       </header>
+      <nav className={styles.mobileNav} aria-label="Mobile navigation">
+        <a href="#team">AI Team</a>
+        <a href="#modules">Modules</a>
+        <a href="#vision">Our Vision</a>
+        <Link href="/community">Community</Link>
+      </nav>
 
       <section id="main-content" className="zlife-hero" tabIndex={-1}>
         <div className="zlife-hero-copy">
