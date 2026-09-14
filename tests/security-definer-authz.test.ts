@@ -75,4 +75,32 @@ describe("SECURITY DEFINER authorization source", () => {
       expect(sql).toContain(`grant execute on function public.${signature} to authenticated;`);
     }
   });
+
+  it("keeps project sync and bridge RPCs authenticated, member-scoped, and non-anonymous", () => {
+    const sql = readRepoFile("supabase/migrations/0007_project_sync_bridge.sql");
+
+    expect(sql).toContain("create or replace function public.get_project_sync_state");
+    expect(sql).toContain("create or replace function public.apply_project_sync_patch");
+    expect(sql).toContain("create or replace function public.register_project_bridge_device");
+    expect(sql).toContain("if not public.is_project_member(p_project_id) then");
+    expect(sql).toContain("if auth.uid() is null then");
+    expect(sql).toContain(
+      "revoke all on function public.get_project_sync_state(uuid)\nfrom public, anon",
+    );
+    expect(sql).toContain(
+      "revoke all on function public.apply_project_sync_patch(uuid, bigint, uuid, text, text, jsonb)\nfrom public, anon",
+    );
+    expect(sql).toContain(
+      "revoke all on function public.register_project_bridge_device(uuid, text, text, text, text, text, jsonb)\nfrom public, anon",
+    );
+    expect(sql).toContain(
+      "grant execute on function public.get_project_sync_state(uuid) to authenticated",
+    );
+    expect(sql).toContain(
+      "grant execute on function public.apply_project_sync_patch(uuid, bigint, uuid, text, text, jsonb) to authenticated",
+    );
+    expect(sql).toContain(
+      "grant execute on function public.register_project_bridge_device(uuid, text, text, text, text, text, jsonb) to authenticated",
+    );
+  });
 });
