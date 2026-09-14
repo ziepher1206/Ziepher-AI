@@ -44,12 +44,12 @@ export async function getPublicContributorSummaries(): Promise<PublicContributor
   const moduleIds = [...new Set((events ?? []).map((event) => event.module_id).filter(Boolean))] as string[];
   const moduleNames = new Map<string, string>();
   if (moduleIds.length) {
-    const { data: modules, error: moduleError } = await supabase
+    const { data: moduleRows, error: moduleError } = await supabase
       .from("community_modules")
       .select("id, name")
       .in("id", moduleIds);
     if (moduleError) throw moduleError;
-    for (const module of modules ?? []) moduleNames.set(module.id, module.name);
+    for (const moduleRow of moduleRows ?? []) moduleNames.set(moduleRow.id, moduleRow.name);
   }
 
   const cutoff = Date.now() - 90 * 24 * 60 * 60 * 1000;
