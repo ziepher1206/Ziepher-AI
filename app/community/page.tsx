@@ -36,6 +36,7 @@ export default async function CommunityPage() {
         <nav aria-label="Community navigation">
           <Link href="/">Home</Link>
           <a href="#contributors">Contributors</a>
+          <Link href="/community/value">Proof of Value</Link>
           <a href="#roles">Roles</a>
           <a href="#build">Build With Us</a>
         </nav>
@@ -48,6 +49,7 @@ export default async function CommunityPage() {
         <p className="zlife-lede">Z-Life is being built in public so developers can contribute with their own tools and resources without receiving access to Ziepher Tech production infrastructure.</p>
         <div className="zlife-hero-actions">
           <a className="zlife-primary" href="https://github.com/ziepher1206/Ziepher-AI/issues" target="_blank" rel="noreferrer">View Open Tasks <span>→</span></a>
+          <Link className="zlife-secondary" href="/community/value">Explore Proof of Value</Link>
           <a className="zlife-secondary" href="https://github.com/ziepher1206/Ziepher-AI/blob/main/CONTRIBUTING.md" target="_blank" rel="noreferrer">Contributor Guide</a>
         </div>
         <div className="zlife-community-stats">
