@@ -20,7 +20,7 @@ The project is ready to announce as open for public development only when all of
 - [ ] Review conversations must be resolved before merge.
 - [ ] Outside-contributor changes require maintainer review.
 - [ ] CI for fork pull requests remains read-only and does not expose repository or production secrets.
-- [ ] `CODEOWNERS`, `CONTRIBUTING.md`, `SECURITY.md`, the PR template, and the community issue template are present.
+- [ ] `CODEOWNERS`, `CONTRIBUTING.md`, `SECURITY.md`, the PR template, and public/community issue templates are present.
 - [ ] `npm run smoke:contributor` passes with the repository's zero-cost defaults.
 - [ ] `npm run check` passes.
 - [ ] Production/provider credentials remain absent from the contributor environment.
@@ -28,6 +28,19 @@ The project is ready to announce as open for public development only when all of
 - [ ] Review/verification actions require a verified maintainer identity.
 - [ ] A contributor cannot verify or reject their own contribution.
 - [ ] Public contributors cannot directly trigger production deployments, live Stripe charges, payouts, outbound communications, or paid AI/provider usage.
+- [ ] Ziepher Tech has selected and documented repository licensing / contributor-use terms; public visibility alone is not treated as permission to reuse or redistribute the code. See issue #150.
+
+## Local readiness command
+
+Run:
+
+```bash
+npm run check:public-launch
+```
+
+The command checks repository-local launch requirements without calling GitHub, Supabase, Stripe, AI providers, email/SMS providers, or production systems. It verifies required contributor files, fork-safe CI configuration, the zero-cost contributor smoke gate, public intake surfaces, and whether a repository license is present.
+
+A successful local check does **not** replace the manual GitHub and production-boundary checks below. Branch protection and a real fork PR must still be verified against the live repository before the public announcement.
 
 ## GitHub rule configuration
 
@@ -58,13 +71,15 @@ GitHub OAuth may be used to prove control of a GitHub account. Identity linking 
 
 When every required gate above is satisfied:
 
-1. Run the contributor smoke test and full repository check on current `main`.
-2. Verify the `main` ruleset is active.
-3. Test a pull request from a separate fork/account with no repository secrets.
-4. Confirm CI runs and cannot deploy production or access protected provider credentials.
-5. Confirm maintainer review is required before merge.
-6. Confirm the Contribution Ledger records merged contribution evidence as pending rather than automatically verified.
-7. Publish the public contributor announcement and link contributors to `CONTRIBUTING.md`, `SECURITY.md`, and the community task template.
+1. Run `npm run check:public-launch` on current `main`.
+2. Run the contributor smoke test and full repository check on current `main`.
+3. Verify the `main` ruleset is active.
+4. Test a pull request from a separate fork/account with no repository secrets.
+5. Confirm CI runs and cannot deploy production or access protected provider credentials.
+6. Confirm maintainer review is required before merge.
+7. Confirm the Contribution Ledger records merged contribution evidence as pending rather than automatically verified.
+8. Confirm approved licensing/contributor-use terms are published and linked from contributor documentation.
+9. Publish the public contributor announcement and link contributors to `CONTRIBUTING.md`, `SECURITY.md`, the roadmap-governance document, and the public issue templates.
 
 ## What public access does not mean
 
