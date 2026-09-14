@@ -7,11 +7,13 @@ import { buildWithOpenAI } from "./providers/openai-build";
 import { parseJsonObject } from "./json";
 import { paidAIProviderOrder } from "./provider-policy";
 import type { QualityMode } from "@/lib/domain/schemas";
+import { shouldUseZLifeMock } from "../community/dev-mode";
 
 export type BuildRouteResult = {
   artifact: BuildArtifact;
-  provider: "gemini" | "openai" | "deterministic";
+  provider: "gemini" | "openai" | "deterministic" | "mock";
   model: string;
+  developmentData?: boolean;
 };
 
 function googleModelFor(mode: QualityMode) {
@@ -32,12 +34,28 @@ function openAIModelFor(mode: QualityMode) {
   return process.env.OPENAI_BUILD_MODEL;
 }
 
+function createMockBuild(
+  plan: AppPlan,
+  visualConceptId: string,
+): BuildRouteResult {
+  return {
+    artifact: createDeterministicBuild(plan, visualConceptId),
+    provider: "mock",
+    model: "zlife-development-mock-ai-v1",
+    developmentData: true
+  };
+}
+
 export async function createApplicationBuild(
   plan: AppPlan,
   visualConceptId: string,
   mode: QualityMode,
   projectContext?: unknown
 ): Promise<BuildRouteResult> {
+  if (shouldUseZLifeMock("ai")) {
+    return createMockBuild(plan, visualConceptId);
+  }
+
   const prompt = createBuildPrompt(plan, visualConceptId, projectContext);
 
   for (const provider of paidAIProviderOrder()) {
@@ -86,6 +104,10 @@ export async function repairApplicationBuild(
   mode: QualityMode,
   projectContext?: unknown
 ): Promise<BuildRouteResult | null> {
+  if (shouldUseZLifeMock("ai")) {
+    return createMockBuild(plan, visualConceptId);
+  }
+
   const prompt = createRepairPrompt(
     plan,
     visualConceptId,

@@ -1,6 +1,9 @@
 import Stripe from "stripe";
+import { assertZLifeLiveProviderAllowed } from "../community/provider-adapters";
 
 export function getStripe() {
+  assertZLifeLiveProviderAllowed("payments");
+
   if (process.env.STRIPE_ENABLED !== "true") {
     throw new Error(
       "Stripe is disabled. Complete and verify the core application before enabling payments."

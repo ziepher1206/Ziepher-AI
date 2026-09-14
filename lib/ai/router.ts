@@ -5,11 +5,22 @@ import { planWithOpenAI } from "./providers/openai";
 import { createDeterministicPlan } from "./deterministic-plan";
 import { parseJsonObject } from "./json";
 import { paidAIProviderOrder } from "./provider-policy";
+import { shouldUseZLifeMock } from "../community/dev-mode";
 
 export async function createFreePlan(
   idea: string,
   projectContext?: unknown
 ): Promise<PlanResult> {
+  if (shouldUseZLifeMock("ai")) {
+    return {
+      plan: createDeterministicPlan(idea),
+      provider: "mock",
+      model: "zlife-development-mock-ai-v1",
+      estimatedProviderCostUsd: 0,
+      developmentData: true
+    };
+  }
+
   const prompt = createPlanningPrompt(idea, projectContext);
 
   for (const provider of paidAIProviderOrder()) {

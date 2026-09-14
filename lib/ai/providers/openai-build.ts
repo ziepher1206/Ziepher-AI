@@ -1,6 +1,9 @@
 import OpenAI from "openai";
+import { assertZLifeLiveProviderAllowed } from "../../community/provider-adapters";
 
 export async function buildWithOpenAI(prompt: string, model: string) {
+  assertZLifeLiveProviderAllowed("ai");
+
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) throw new Error("OPENAI_API_KEY is not configured.");
 
