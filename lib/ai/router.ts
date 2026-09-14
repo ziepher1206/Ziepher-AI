@@ -5,7 +5,7 @@ import { planWithOpenAI } from "./providers/openai";
 import { createDeterministicPlan } from "./deterministic-plan";
 import { parseJsonObject } from "./json";
 import { paidAIProviderOrder } from "./provider-policy";
-import { shouldUseZLifeMock } from "@/lib/community/dev-mode";
+import { shouldUseZLifeMock } from "../community/dev-mode";
 
 export async function createFreePlan(
   idea: string,
