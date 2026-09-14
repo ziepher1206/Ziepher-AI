@@ -6,6 +6,12 @@ const migration = readFileSync(
   "utf8",
 );
 
+function sqlWithoutComments(sql: string) {
+  return sql
+    .replace(/--.*$/gm, "")
+    .replace(/\/\*[\s\S]*?\*\//g, "");
+}
+
 describe("Tree Service launch database performance hardening", () => {
   it("adds covering indexes for the core lead-to-review lifecycle", () => {
     for (const indexName of [
@@ -37,8 +43,9 @@ describe("Tree Service launch database performance hardening", () => {
       expect(migration).toContain(`alter policy \"${policyName}\"`);
     }
 
-    expect(migration).toContain("(select auth.uid())");
-    expect(migration).not.toMatch(/(?<!select )auth\.uid\(\)/);
+    const executableSql = sqlWithoutComments(migration);
+    expect(executableSql).toContain("(select auth.uid())");
+    expect(executableSql).not.toMatch(/(?<!select )auth\.uid\(\)/);
   });
 
   it("keeps the accidental production migration marker represented in GitHub", () => {
