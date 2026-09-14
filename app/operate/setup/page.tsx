@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { OperateBusinessProfile } from "@/components/operate-business-profile";
 import { OperateBusinessSetup } from "@/components/operate-business-setup";
 import { OperateScheduleExceptions } from "@/components/operate-schedule-exceptions";
-import { OperateServiceTiming } from "@/components/operate-service-timing";
+import { OperateServiceSelector } from "@/components/operate-service-selector";
 import { OperateTimezoneSetup } from "@/components/operate-timezone-setup";
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/env";
@@ -62,14 +62,17 @@ export default async function OperateSetupPage() {
         <div>
           <p className="panel-label">Tree Service</p>
           <h1 style={{ margin: "6px 0 8px" }}>Business setup</h1>
-          <p className="auth-copy" style={{ maxWidth: 760, margin: 0 }}>Configure company details, service area, services, crews, staffing, timezone, working hours, and temporary schedule exceptions. Ziepher can reuse this verified business context across operations and future modules.</p>
+          <p className="auth-copy" style={{ maxWidth: 760, margin: 0 }}>Set up the company once, choose the services you offer, then configure crews and availability. Job-specific pricing, duration, and scope are handled later.</p>
         </div>
         <OperateBusinessProfile workspaceId={workspaceId} profile={businessProfile ?? null} />
+        <OperateServiceSelector workspaceId={workspaceId} services={(services ?? []).map(({ id, name, active }) => ({ id, name, active }))} />
         <OperateTimezoneSetup workspaceId={workspaceId} timezone={workspace?.timezone ?? null} />
-        <OperateBusinessSetup workspaceId={workspaceId} services={services ?? []} crews={crews ?? []} workspaceMembers={workspaceMembers ?? []} crewMembers={crewMembers ?? []} availabilityRules={availabilityRules ?? []} />
-        <OperateServiceTiming workspaceId={workspaceId} services={services ?? []} />
+        <div className="hide-legacy-service-setup">
+          <OperateBusinessSetup workspaceId={workspaceId} services={services ?? []} crews={crews ?? []} workspaceMembers={workspaceMembers ?? []} crewMembers={crewMembers ?? []} availabilityRules={availabilityRules ?? []} />
+        </div>
         <OperateScheduleExceptions workspaceId={workspaceId} timezone={workspace?.timezone ?? null} crews={crews ?? []} overrides={(scheduleOverrides ?? []) as never[]} />
       </section>
+      <style>{`.hide-legacy-service-setup > div > section:first-child { display: none; }`}</style>
     </main>
   );
 }
