@@ -121,4 +121,30 @@ describe("SECURITY DEFINER authorization source", () => {
     expect(sql).toContain("raise exception 'Project access denied';");
     expect(sql).toContain("and project_id = p_project_id");
   });
+
+  it("keeps build queuing scoped to a project member and that project's approved spec", () => {
+    const sql = readRepoFile("supabase/migrations/0001_core.sql");
+
+    expect(sql).toContain("create or replace function public.queue_build_job");
+    expect(sql).toContain("if not public.is_project_member(p_project_id) then");
+    expect(sql).toContain("raise exception 'Project access denied';");
+    expect(sql).toContain("where id = p_spec_version_id");
+    expect(sql).toContain("and project_id = p_project_id");
+    expect(sql).toContain("and approved_at is not null");
+    expect(sql).toContain("requested_by,");
+    expect(sql).toContain("auth.uid(),");
+  });
+
+  it("keeps version restore scoped to a member and a version from the same project", () => {
+    const sql = readRepoFile("supabase/migrations/0004_versions_billing.sql");
+
+    expect(sql).toContain("create or replace function public.restore_project_version");
+    expect(sql).toContain("if not public.is_project_member(p_project_id) then");
+    expect(sql).toContain("raise exception 'Project access denied';");
+    expect(sql).toContain("from public.project_versions");
+    expect(sql).toContain("where project_id = p_project_id");
+    expect(sql).toContain("and version = p_target_version");
+    expect(sql).toContain("created_by");
+    expect(sql).toContain("auth.uid()");
+  });
 });
