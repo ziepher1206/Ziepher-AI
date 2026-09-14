@@ -37,6 +37,7 @@ export default async function CommunityPage() {
           <Link href="/">Home</Link>
           <a href="#contributors">Contributors</a>
           <a href="#roles">Roles</a>
+          <a href="#shape">Shape Z-Life</a>
           <a href="#build">Build With Us</a>
         </nav>
         <a className="zlife-nav-cta" href="https://github.com/ziepher1206/Ziepher-AI" target="_blank" rel="noreferrer">GitHub</a>
@@ -84,6 +85,15 @@ export default async function CommunityPage() {
       <section id="roles" className="zlife-section zlife-modules-section">
         <div className="zlife-section-heading"><div><p className="zlife-kicker">COMMUNITY PATH</p><h2>Earn trust through meaningful work.</h2><p>Community recognition is based on reviewed contribution and responsibility. These roles do not automatically create employment, contractor, partnership, equity, or ownership status.</p></div></div>
         <div className="zlife-community-role-grid">{roles.map(([role, description], index) => <article key={role}><span>{String(index + 1).padStart(2, "0")}</span><h3>{role}</h3><p>{description}</p></article>)}</div>
+      </section>
+
+      <section id="shape" className="zlife-section zlife-community-build">
+        <div><p className="zlife-kicker">SHAPE Z-LIFE WITHOUT WRITING CODE</p><h2>Report problems. Propose ideas. Help decide what matters.</h2><p>Public participation is not limited to developers. People can report reproducible problems, propose features or new module ideas, explain real workflows, and volunteer to design, build, or test improvements.</p></div>
+        <div className="zlife-hero-actions">
+          <a className="zlife-primary" href="https://github.com/ziepher1206/Ziepher-AI/issues/new?template=feature-proposal.md" target="_blank" rel="noreferrer">Propose an Idea <span>→</span></a>
+          <a className="zlife-secondary" href="https://github.com/ziepher1206/Ziepher-AI/issues/new?template=bug-report.md" target="_blank" rel="noreferrer">Report a Bug</a>
+        </div>
+        <p className="zlife-community-empty">Never post passwords, API keys, private customer information, payment details, session tokens, or unpatched security vulnerabilities in public issues. Security reports follow the repository Security Policy.</p>
       </section>
 
       <section id="build" className="zlife-section zlife-community-build">
