@@ -3,13 +3,13 @@ import "./globals.css";
 import "./ziepher-theme.css";
 
 export const metadata: Metadata = {
-  applicationName: "Ziepher",
+  applicationName: "Z-Life",
   title: {
-    default: "Ziepher — Business Operating Platform",
-    template: "%s · Ziepher"
+    default: "Z-Life — Your Life & Business OS",
+    template: "%s · Z-Life"
   },
   description:
-    "Ziepher brings business operations, scheduling, estimates, jobs, invoicing, growth, analytics, and AI assistance into one platform.",
+    "Z-Life brings business, home, family, money, services, documents, scheduling, growth, analytics, and AI assistance into one connected app built by Ziepher Tech.",
   manifest: "/manifest.webmanifest",
   icons: {
     icon: [
@@ -21,7 +21,7 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "Ziepher"
+    title: "Z-Life"
   },
   formatDetection: {
     telephone: false

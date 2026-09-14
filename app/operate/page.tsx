@@ -92,8 +92,8 @@ export default async function OperatePage() {
         <div className="brand">
           <div className="brand-mark">Z</div>
           <div>
-            <div className="brand-title">ZIEPHER</div>
-            <div className="brand-subtitle">RUN · BUILD · GROW</div>
+            <div className="brand-title">Z-LIFE</div>
+            <div className="brand-subtitle">BUSINESS · TREE SERVICE</div>
           </div>
         </div>
         <div className="inline-actions">
@@ -112,10 +112,10 @@ export default async function OperatePage() {
 
       <section style={{ display: "grid", gap: 26 }}>
         <div>
-          <p className="panel-label">{workspace?.name ?? "Your business"}</p>
-          <h1 style={{ margin: "6px 0 10px" }}>Your business today</h1>
+          <p className="panel-label">{workspace?.name ?? "Your business"} · Built by Ziepher Tech</p>
+          <h1 style={{ margin: "6px 0 10px" }}>Business today</h1>
           <p className="auth-copy" style={{ maxWidth: 760, margin: 0 }}>
-            Ziepher brings leads, estimates, scheduling, crews, jobs, invoices, payments, websites, and growth into one workspace.
+            Z-Life Business brings leads, estimates, scheduling, crews, jobs, invoices, payments, websites, growth, and AI assistance into one simple workflow.
           </p>
         </div>
 
@@ -208,19 +208,19 @@ export default async function OperatePage() {
 
         <section className="project-grid" style={{ marginTop: 0 }}>
           <Link className="project-card" href="/operate/leads">
-            <span className="status-pill">Operate</span>
+            <span className="status-pill">Tree Service</span>
             <h2>Lead → Estimate → Job</h2>
-            <p>Capture work, schedule estimates, price it, accept it, assign the crew, and complete the job in one workflow.</p>
+            <p>Capture work, offer estimate windows, approve appointments, price the job, schedule the crew, and complete the work in one flow.</p>
           </Link>
           <Link className="project-card" href="/operate/invoices">
-            <span className="status-pill">Payments</span>
-            <h2>Invoices</h2>
+            <span className="status-pill">Money</span>
+            <h2>Invoices & Payments</h2>
             <p>Completed jobs create draft invoices with Stripe payment rails kept safely in test mode until live billing is explicitly approved.</p>
           </Link>
           <Link className="project-card" href="/operate/growth">
-            <span className="status-pill">Grow</span>
-            <h2>Website & Growth</h2>
-            <p>Turn completed jobs into reviews, compare lead sources against collected revenue, and prepare approval-gated website and campaign changes.</p>
+            <span className="status-pill">Growth</span>
+            <h2>Marketing</h2>
+            <p>Track where leads came from, tie revenue back to sources, request reviews, and prepare approval-gated marketing actions.</p>
           </Link>
           <Link className="project-card" href="/projects">
             <span className="status-pill">Create</span>
