@@ -13,12 +13,13 @@ describe("ZLife public SEO boundaries", () => {
     expect(source).toContain('export const ZLIFE_PUBLIC_ORIGIN = "https://ziepher-ai.vercel.app";');
   });
 
-  it("builds the public sitemap from the canonical module registry", () => {
+  it("builds the public sitemap from canonical public routes and module registry", () => {
     const source = read("app/sitemap.ts");
 
     expect(source).toContain('import { zlifeModules } from "@/lib/zlife/modules";');
+    expect(source).toContain('import { zlifePublicRoutes } from "@/lib/zlife/public-navigation";');
+    expect(source).toContain('url: route === "/" ? ZLIFE_PUBLIC_ORIGIN : `${ZLIFE_PUBLIC_ORIGIN}${route}`');
     expect(source).toContain('url: `${ZLIFE_PUBLIC_ORIGIN}/modules/${module.slug}`');
-    expect(source).toContain('url: `${ZLIFE_PUBLIC_ORIGIN}/community`');
     expect(source).not.toContain("/team");
     expect(source).not.toContain("/operate");
     expect(source).not.toContain("/projects");
@@ -27,7 +28,12 @@ describe("ZLife public SEO boundaries", () => {
   it("keeps authenticated application surfaces out of the crawl boundary", () => {
     const source = read("app/robots.ts");
 
-    expect(source).toContain('allow: ["/", "/community", "/modules/"]');
+    expect(source).toContain('"/ai-teams"');
+    expect(source).toContain('"/modules"');
+    expect(source).toContain('"/about"');
+    expect(source).toContain('"/vision"');
+    expect(source).toContain('"/community"');
+    expect(source).toContain('"/modules/"');
     expect(source).toContain('"/api/"');
     expect(source).toContain('"/auth/"');
     expect(source).toContain('"/operate/"');
