@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   estimateOpenAIProviderCostUsd,
   openAIUsageFromResponse
-} from "@/lib/ai/usage";
+} from "../lib/ai/usage";
 
 describe("OpenAI usage cost metering", () => {
   it("prices Luna usage including cached input", () => {
