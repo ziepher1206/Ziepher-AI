@@ -19,7 +19,8 @@ describe("Tree Service Phase 7 Ziepher Assistant guards", () => {
     const page = source("app/operate/assistant/page.tsx");
     expect(page).toContain("new lead");
     expect(page).toContain("expires");
-    expect(page).toContain("needs a crew");
+    expect(page).toContain("assigned_crew_id");
+    expect(page).toContain("Assign crew");
     expect(page).toContain("overdue invoice");
     expect(page).toContain("campaign");
     expect(page).toContain("Zero-cost advisor mode");
