@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import "./ziepher-theme.css";
 import "./zlife-verdant.css";
+import "./zlife-scroll-fix.css";
 
 export const metadata: Metadata = {
   applicationName: "Z-Life",
