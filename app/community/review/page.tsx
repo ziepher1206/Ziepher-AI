@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { getCommunityReviewWorkspace } from "@/lib/community/review-workspace";
+import { ContributionReviewActions } from "./review-actions";
 import "../community.css";
 import "./review.css";
 
@@ -53,18 +54,18 @@ export default async function CommunityReviewPage() {
             Your Z-Life session is authenticated, but it is not linked to a
             verified Module Maintainer, Core Contributor, or Core Team identity.
             Pending contribution evidence is not exposed until that identity is
-            cryptographically or provider-verified.
+            provider-verified through GitHub OAuth.
           </p>
           <div className="zlife-review-lock-note">
             <strong>No identity guessing.</strong>
             <span>
               Z-Life will not match accounts by display name or inferred email.
-              GitHub identity linking is tracked separately before review actions
-              can be enabled.
+              Connect the verified GitHub account through Z-Life before review
+              actions become available.
             </span>
           </div>
-          <Link className="zlife-secondary" href="/community">
-            Return to community
+          <Link className="zlife-secondary" href="/settings/connections">
+            Connect GitHub identity
           </Link>
         </section>
       </main>
@@ -91,7 +92,7 @@ export default async function CommunityReviewPage() {
       <section className="zlife-review-shell">
         <div className="zlife-review-heading">
           <div>
-            <p className="zlife-eyebrow">MAINTAINER REVIEW · READ-ONLY GATE</p>
+            <p className="zlife-eyebrow">MAINTAINER REVIEW · VERIFIED IDENTITY</p>
             <h1>Contribution review workspace.</h1>
             <p>
               Signed in as {workspace.access.displayName} · {formatRole(workspace.access.status)}
@@ -104,12 +105,11 @@ export default async function CommunityReviewPage() {
         </div>
 
         <div className="zlife-review-safety">
-          <strong>Review mutations remain disabled.</strong>
+          <strong>Audited maintainer review enabled.</strong>
           <span>
-            This workspace exposes pending evidence only to an already verified
-            maintainer identity. Verify/Reject actions stay unavailable until the
-            authenticated Z-Life ↔ GitHub identity-linking path is completed and
-            covered by authorization tests.
+            Reviewer identity is resolved server-side from the authenticated
+            Z-Life session. Scores and reasons are validated server-side, and
+            contribution verification remains recorded in append-only audit history.
           </span>
         </div>
       </section>
@@ -182,13 +182,9 @@ export default async function CommunityReviewPage() {
                   ) : (
                     <span className="zlife-review-no-link">No verified source URL</span>
                   )}
-                  <button type="button" disabled title="Identity-linked audited review actions are not enabled yet.">
-                    Verify disabled
-                  </button>
-                  <button type="button" disabled title="Identity-linked audited review actions are not enabled yet.">
-                    Reject disabled
-                  </button>
                 </div>
+
+                <ContributionReviewActions eventId={item.id} />
               </article>
             ))
           ) : (
