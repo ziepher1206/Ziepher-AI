@@ -86,6 +86,9 @@ export default async function UsagePage({ params }: Props) {
           <Link className="button" href={`/projects/${projectId}`}>
             Website overview
           </Link>
+          <Link className="button" href={`/projects/${projectId}/ai-status`}>
+            AI status
+          </Link>
           <Link className="button" href="/projects">
             All websites
           </Link>
@@ -122,9 +125,9 @@ export default async function UsagePage({ params }: Props) {
         {!hasMeasuredProviderCost ? (
           <section className="project-card">
             <p className="panel-label">Metering status</p>
-            <h2>Exact provider spend is not fully metered yet</h2>
+            <h2>No paid provider cost has been recorded yet</h2>
             <p>
-              The ledger is wired to receive model-usage costs, but the current build worker still records provider cost as $0 for its AI build event. SiteRefiner will not label that as a real zero-cost build until token usage and provider pricing are measured and written by the AI provider integration.
+              Deterministic scans, reports, plans, and builds can legitimately record $0 provider cost. When an explicitly approved live OpenAI operation runs, its measured tokens and provider cost are written to this ledger. Unmetered paid build fallback is blocked by default.
             </p>
           </section>
         ) : null}
@@ -156,7 +159,7 @@ export default async function UsagePage({ params }: Props) {
           ) : (
             <section className="empty-projects" style={{ marginTop: 12 }}>
               <h2>No metered usage yet</h2>
-              <p>When billable provider operations are recorded for this website, they will appear here.</p>
+              <p>When provider operations are recorded for this website, they will appear here.</p>
             </section>
           )}
         </section>
