@@ -38,6 +38,23 @@ describe("Tree Service launch readiness command", () => {
     ]) expect(checker).toContain(path);
   });
 
+  it("requires the recovery runbook and keeps recovery drills manual", () => {
+    const checker = read("scripts/tree-service-launch-readiness.ts");
+    const runbook = read("docs/TREE-SERVICE-RECOVERY-RUNBOOK.md");
+
+    expect(checker).toContain("docs/TREE-SERVICE-RECOVERY-RUNBOOK.md");
+    for (const phrase of [
+      "Application rollback",
+      "Database backup and restore verification",
+      "Schema or data-integrity incident",
+      "Stripe/payment incident",
+      "Recovery verification checklist",
+    ]) expect(runbook).toContain(phrase);
+
+    expect(checker).toContain("backup/restore against an approved restore target using the recovery runbook");
+    expect(checker).toContain("production rollback drill for the current Vercel app using the recovery runbook");
+  });
+
   it("does not let static success erase the real production launch gates", () => {
     const checker = read("scripts/tree-service-launch-readiness.ts");
     for (const phrase of [
