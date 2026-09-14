@@ -51,7 +51,8 @@ export type AppPlan = z.infer<typeof appPlanSchema>;
 
 export type PlanResult = {
   plan: AppPlan;
-  provider: "gemini" | "openai" | "deterministic";
+  provider: "gemini" | "openai" | "deterministic" | "mock";
   model: string;
   estimatedProviderCostUsd: number;
+  developmentData?: boolean;
 };
