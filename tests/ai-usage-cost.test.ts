@@ -21,15 +21,15 @@ describe("OpenAI usage cost metering", () => {
     });
   });
 
-  it("prices Terra and Sol at their configured token rates", () => {
+  it("prices Terra and Sol at their configured base token rates", () => {
     expect(
-      estimateOpenAIProviderCostUsd("gpt-5.6-terra", 1_000_000, 1_000_000)
+      estimateOpenAIProviderCostUsd("gpt-5.6-terra", 100_000, 100_000)
         .costUsd
-    ).toBe(22);
+    ).toBe(1.4);
     expect(
-      estimateOpenAIProviderCostUsd("gpt-5.6-sol", 1_000_000, 1_000_000)
+      estimateOpenAIProviderCostUsd("gpt-5.6-sol", 100_000, 100_000)
         .costUsd
-    ).toBe(38);
+    ).toBe(2.4);
   });
 
   it("applies GPT-5.6 long-context multipliers above 272K input tokens", () => {
