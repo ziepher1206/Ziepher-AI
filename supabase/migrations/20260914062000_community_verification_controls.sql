@@ -2,6 +2,25 @@
 -- Verification remains a maintainer-controlled server action. Browser roles
 -- cannot execute these functions or update the underlying ledger tables.
 
+create table if not exists public.contribution_review_events (
+  id uuid primary key default gen_random_uuid(),
+  contribution_event_id uuid not null references public.contribution_events(id) on delete restrict,
+  action text not null check (action in ('verified', 'rejected')),
+  previous_status text not null,
+  new_status text not null,
+  previous_verified_score integer null,
+  new_verified_score integer null,
+  reason text not null,
+  reviewed_by uuid not null references public.community_contributors(id) on delete restrict,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists contribution_review_events_event_idx
+  on public.contribution_review_events (contribution_event_id, created_at desc);
+
+alter table public.contribution_review_events enable row level security;
+revoke all on table public.contribution_review_events from anon, authenticated;
+
 create or replace function public.guard_contribution_verification_fields()
 returns trigger
 language plpgsql
@@ -44,6 +63,7 @@ as $$
 declare
   v_event public.contribution_events;
   v_verifier public.community_contributors;
+  v_previous_status text;
   v_previous_score integer;
 begin
   if p_verified_score < 0 then
@@ -79,6 +99,7 @@ begin
     raise exception 'Rejected or superseded contribution events cannot be verified.';
   end if;
 
+  v_previous_status := v_event.status;
   v_previous_score := v_event.verified_score;
 
   perform set_config('app.community_verification_write', 'allowed', true);
@@ -106,6 +127,26 @@ begin
     p_verifier_contributor_id
   );
 
+  insert into public.contribution_review_events (
+    contribution_event_id,
+    action,
+    previous_status,
+    new_status,
+    previous_verified_score,
+    new_verified_score,
+    reason,
+    reviewed_by
+  ) values (
+    p_event_id,
+    'verified',
+    v_previous_status,
+    'verified',
+    v_previous_score,
+    p_verified_score,
+    btrim(p_reason),
+    p_verifier_contributor_id
+  );
+
   return v_event;
 end;
 $$;
@@ -126,6 +167,8 @@ as $$
 declare
   v_event public.contribution_events;
   v_verifier public.community_contributors;
+  v_previous_status text;
+  v_previous_score integer;
 begin
   if nullif(btrim(p_reason), '') is null then
     raise exception 'A rejection reason is required.';
@@ -160,6 +203,9 @@ begin
     raise exception 'Superseded contribution events cannot be rejected.';
   end if;
 
+  v_previous_status := v_event.status;
+  v_previous_score := v_event.verified_score;
+
   perform set_config('app.community_verification_write', 'allowed', true);
 
   update public.contribution_events
@@ -167,13 +213,29 @@ begin
       verified_score = null,
       verified_by = p_verifier_contributor_id,
       verified_at = now(),
-      metadata = coalesce(metadata, '{}'::jsonb) || jsonb_build_object(
-        'review_reason', btrim(p_reason),
-        'reviewed_at', now()
-      ),
       updated_at = now()
   where id = p_event_id
   returning * into v_event;
+
+  insert into public.contribution_review_events (
+    contribution_event_id,
+    action,
+    previous_status,
+    new_status,
+    previous_verified_score,
+    new_verified_score,
+    reason,
+    reviewed_by
+  ) values (
+    p_event_id,
+    'rejected',
+    v_previous_status,
+    'rejected',
+    v_previous_score,
+    null,
+    btrim(p_reason),
+    p_verifier_contributor_id
+  );
 
   return v_event;
 end;
@@ -182,6 +244,8 @@ $$;
 revoke execute on function public.reject_contribution_event(uuid, uuid, text) from public, anon, authenticated;
 grant execute on function public.reject_contribution_event(uuid, uuid, text) to service_role;
 
+comment on table public.contribution_review_events is
+  'Append-only audit history for contribution verification and rejection decisions.';
 comment on function public.verify_contribution_event(uuid, uuid, integer, text) is
   'Maintainer-only audited transition from pending contribution evidence to verified contribution value.';
 comment on function public.reject_contribution_event(uuid, uuid, text) is
