@@ -52,8 +52,8 @@ export default async function OperatePage() {
     { count: overdueInvoiceCount }
   ] = await Promise.all([
     supabase.from("leads").select("id", { count: "exact", head: true }).eq("workspace_id", workspaceId).eq("status", "new"),
-    supabase.from("jobs").select("id", { count: "exact", head: true }).eq("workspace_id", workspaceId).in("status", ["scheduled", "active", "paused"]),
-    supabase.from("jobs").select("id", { count: "exact", head: true }).eq("workspace_id", workspaceId).eq("status", "paused"),
+    supabase.from("jobs").select("id", { count: "exact", head: true }).eq("workspace_id", workspaceId).in("status", ["scheduled", "en_route", "arrived", "active", "weather_delay", "paused"]),
+    supabase.from("jobs").select("id", { count: "exact", head: true }).eq("workspace_id", workspaceId).in("status", ["weather_delay", "paused"]),
     supabase.from("estimates").select("id", { count: "exact", head: true }).eq("workspace_id", workspaceId).in("status", ["draft", "scheduled", "completed", "sent"]),
     supabase.from("estimates").select("id", { count: "exact", head: true }).eq("workspace_id", workspaceId).in("status", ["completed", "sent"]),
     supabase.from("invoices").select("id", { count: "exact", head: true }).eq("workspace_id", workspaceId).eq("status", "draft"),
@@ -101,6 +101,7 @@ export default async function OperatePage() {
           <Link className="button" href="/operate/estimates">Estimates</Link>
           <Link className="button" href="/operate/calendar">Calendar</Link>
           <Link className="button" href="/operate/invoices">Invoices</Link>
+          <Link className="button" href="/operate/growth">Growth</Link>
           <Link className="button" href="/projects">Websites</Link>
           <Link className="button" href="/settings">Settings</Link>
           <form action="/auth/sign-out" method="post">
@@ -142,7 +143,7 @@ export default async function OperatePage() {
           <Link href="/operate/calendar" className="project-card" style={{ minHeight: 0 }}>
             <p className="panel-label">Active jobs</p>
             <h2 style={{ fontSize: 34, margin: "8px 0 4px" }}>{activeJobCount ?? 0}</h2>
-            <p>Scheduled or in progress</p>
+            <p>Scheduled, traveling, on site, or paused</p>
           </Link>
           <Link href="/operate/invoices" className="project-card" style={{ minHeight: 0 }}>
             <p className="panel-label">Outstanding</p>
@@ -214,10 +215,15 @@ export default async function OperatePage() {
           <Link className="project-card" href="/operate/invoices">
             <span className="status-pill">Payments</span>
             <h2>Invoices</h2>
-            <p>Completed jobs create draft invoices with the existing Stripe payment rails kept safely in test mode.</p>
+            <p>Completed jobs create draft invoices with Stripe payment rails kept safely in test mode until live billing is explicitly approved.</p>
+          </Link>
+          <Link className="project-card" href="/operate/growth">
+            <span className="status-pill">Grow</span>
+            <h2>Website & Growth</h2>
+            <p>Turn completed jobs into reviews, compare lead sources against collected revenue, and prepare approval-gated website and campaign changes.</p>
           </Link>
           <Link className="project-card" href="/projects">
-            <span className="status-pill">Create & Grow</span>
+            <span className="status-pill">Create</span>
             <h2>Websites</h2>
             <p>Build, connect, scan, improve, preview, and safely publish business websites.</p>
           </Link>
