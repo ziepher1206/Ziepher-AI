@@ -44,8 +44,8 @@ export function OperateDailyPriorities({
   });
 
   if (pausedJobs > 0) priorities.push({
-    label: `${pausedJobs} paused job${pausedJobs === 1 ? "" : "s"}`,
-    detail: "Review paused field work and decide whether to resume, reschedule, or resolve the blocker.",
+    label: `${pausedJobs} paused or weather-delayed job${pausedJobs === 1 ? "" : "s"}`,
+    detail: "Review blocked field work and decide whether to resume, reschedule, or resolve the blocker.",
     href: "/operate/calendar",
     level: "high"
   });
@@ -87,6 +87,7 @@ export function OperateDailyPriorities({
           <p className="auth-copy" style={{ margin: 0 }}>Read-only priorities generated from your live business data. No paid AI call is used for this view.</p>
         </div>
         <div className="inline-actions">
+          <Link className="button primary" href="/operate/assistant">Open full assistant</Link>
           <Link className="button" href="/operate/setup">Business setup</Link>
           <span className="status-pill">{priorities.filter((priority) => priority.level !== "clear").length} priorities</span>
         </div>
