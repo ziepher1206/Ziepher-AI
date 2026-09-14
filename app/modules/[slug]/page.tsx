@@ -1,11 +1,34 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { ZLifeModuleBackLink } from "@/components/zlife-module-back-link";
 import { zlifeModuleBySlug, zlifeModules } from "@/lib/zlife/modules";
+import { ZLIFE_PUBLIC_ORIGIN } from "@/lib/zlife/public-origin";
 
 export function generateStaticParams() {
   return zlifeModules.map((item) => ({ slug: item.slug }));
+}
+
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const { slug } = await params;
+  const selectedModule = zlifeModuleBySlug.get(slug);
+
+  if (!selectedModule) return {};
+
+  const url = `${ZLIFE_PUBLIC_ORIGIN}/modules/${selectedModule.slug}`;
+
+  return {
+    title: selectedModule.name,
+    description: selectedModule.summary,
+    alternates: { canonical: url },
+    openGraph: {
+      title: selectedModule.name,
+      description: selectedModule.summary,
+      url,
+      type: "website"
+    }
+  };
 }
 
 export default async function ZLifeModulePage({ params }: { params: Promise<{ slug: string }> }) {
