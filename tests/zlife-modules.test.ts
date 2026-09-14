@@ -3,13 +3,13 @@ import { zlifeModuleBySlug, zlifeModules } from "../lib/zlife/modules";
 
 describe("ZLife module registry", () => {
   it("keeps module slugs unique and every registry entry addressable", () => {
-    const slugs = zlifeModules.map((module) => module.slug);
+    const slugs = zlifeModules.map((entry) => entry.slug);
     expect(new Set(slugs).size).toBe(slugs.length);
 
-    for (const module of zlifeModules) {
-      expect(zlifeModuleBySlug.get(module.slug)).toEqual(module);
-      expect(module.summary.length).toBeGreaterThan(0);
-      expect(module.capabilities.length).toBeGreaterThan(0);
+    for (const entry of zlifeModules) {
+      expect(zlifeModuleBySlug.get(entry.slug)).toEqual(entry);
+      expect(entry.summary.length).toBeGreaterThan(0);
+      expect(entry.capabilities.length).toBeGreaterThan(0);
     }
   });
 
@@ -23,9 +23,9 @@ describe("ZLife module registry", () => {
   });
 
   it("keeps active module launch targets separate from module explanation routes", () => {
-    for (const module of zlifeModules.filter((item) => item.status === "active")) {
-      expect(module.launchHref).toBeTruthy();
-      expect(module.launchHref).not.toBe(`/modules/${module.slug}`);
+    for (const entry of zlifeModules.filter((item) => item.status === "active")) {
+      expect(entry.launchHref).toBeTruthy();
+      expect(entry.launchHref).not.toBe(`/modules/${entry.slug}`);
     }
   });
 });
