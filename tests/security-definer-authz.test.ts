@@ -75,4 +75,22 @@ describe("SECURITY DEFINER authorization source", () => {
       expect(sql).toContain(`grant execute on function public.${signature} to authenticated;`);
     }
   });
+
+  it("keeps planning and visual-selection RPCs scoped to project members", () => {
+    const sql = readRepoFile("supabase/migrations/0003_orchestration.sql");
+
+    for (const functionName of [
+      "save_project_plan",
+      "select_visual_concept",
+      "approve_project_spec",
+    ]) {
+      expect(sql).toContain(`create or replace function public.${functionName}`);
+    }
+
+    const membershipGuard = "if not public.is_project_member(p_project_id) then";
+    const occurrences = sql.split(membershipGuard).length - 1;
+    expect(occurrences).toBeGreaterThanOrEqual(3);
+    expect(sql).toContain("raise exception 'Project access denied';");
+    expect(sql).toContain("and project_id = p_project_id");
+  });
 });
