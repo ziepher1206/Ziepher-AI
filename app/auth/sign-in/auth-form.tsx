@@ -3,7 +3,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 
-const REMEMBERED_EMAIL_KEY = "ziepher.remembered-email";
+const REMEMBERED_EMAIL_KEY = "z-life.remembered-email";
 
 export function AuthForm() {
   const [mode, setMode] = useState<"sign-in" | "sign-up">("sign-in");
@@ -15,7 +15,7 @@ export function AuthForm() {
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    const remembered = window.localStorage.getItem(REMEMBERED_EMAIL_KEY);
+    const remembered = window.localStorage.getItem(REMEMBERED_EMAIL_KEY) ?? window.localStorage.getItem("ziepher.remembered-email");
     if (remembered) {
       setEmail(remembered);
       setRememberEmail(true);
@@ -25,8 +25,10 @@ export function AuthForm() {
   function persistRememberedEmail() {
     if (rememberEmail && email) {
       window.localStorage.setItem(REMEMBERED_EMAIL_KEY, email);
+      window.localStorage.removeItem("ziepher.remembered-email");
     } else {
       window.localStorage.removeItem(REMEMBERED_EMAIL_KEY);
+      window.localStorage.removeItem("ziepher.remembered-email");
     }
   }
 
@@ -117,17 +119,16 @@ export function AuthForm() {
       <div className="brand auth-brand">
         <div className="brand-mark">Z</div>
         <div>
-          <div className="brand-title">ZIEPHER AI</div>
-          <div className="brand-subtitle">BUILD YOUR DREAMS</div>
+          <div className="brand-title">Z-LIFE</div>
+          <div className="brand-subtitle">BUILT BY ZIEPHER TECH</div>
         </div>
       </div>
 
       <div>
-        <p className="panel-label">Secure workspace</p>
-        <h1>{mode === "sign-in" ? "Welcome back" : "Create your studio"}</h1>
+        <p className="panel-label">One connected life</p>
+        <h1>{mode === "sign-in" ? "Welcome back" : "Create your Z-Life account"}</h1>
         <p className="auth-copy">
-          Plan for free, compare visual directions, and build complete
-          applications in an isolated workspace.
+          Run your business and, over time, connect the rest of your life through one simple AI-assisted app.
         </p>
       </div>
 
@@ -216,7 +217,7 @@ export function AuthForm() {
         }}
       >
         {mode === "sign-in"
-          ? "New to Ziepher? Create an account"
+          ? "New to Z-Life? Create an account"
           : "Already have an account? Sign in"}
       </button>
     </form>
