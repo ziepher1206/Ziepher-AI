@@ -6,6 +6,12 @@ This repository is the active engineering foundation for **ZLife**, the main pla
 
 Ziepher Tech is the company. ZLife is the unified customer-facing platform. Capabilities that were previously explored as separate products—Ziepher AI, SiteRefiner, Ziepher Builder, SchedulePilot capabilities, and Ziepher Match—are being consolidated into ZLife modules or connected services instead of competing standalone products.
 
+## Want to help build ZLife?
+
+Start with `docs/START-HERE-CONTRIBUTORS.md`. It explains the current priority, zero-cost fork/PR workflow, production safety boundary, beginner tasks, community proposal paths, and the repository-governance items still being finalized.
+
+Public contributors should use forks, focused Pull Requests, fake development data, and the default contributor smoke/check commands. Production credentials, customer data, live billing, production deployment authority, and outbound provider access are not part of the public contributor workflow.
+
 ## Product mission
 
 ZLife helps people and businesses **create, operate, grow, organize, and improve** from one connected platform.
@@ -141,6 +147,7 @@ Production changes use review, checks, preview, exact-SHA release controls, and 
 
 ## Canonical docs
 
+- `docs/START-HERE-CONTRIBUTORS.md`
 - `docs/ZIEPHER-MASTER-SOURCE.md`
 - `docs/ZIEPHER-TREE-SERVICE-LAUNCH.md`
 - `docs/ZIEPHER-LEGACY-MIGRATION-MAP.md`
