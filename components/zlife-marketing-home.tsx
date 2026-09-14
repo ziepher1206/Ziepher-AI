@@ -17,7 +17,7 @@ function ZMark() {
 
 export function ZLifeMarketingHome() {
   return (
-    <main className="zlife-landing">
+    <main id="home" className="zlife-landing">
       <a className={styles.skipLink} href="#main-content">Skip to main content</a>
       <header className="zlife-nav">
         <Link href="/" className="zlife-brand" aria-label="Z-Life home"><ZMark /><small>by Ziepher Tech</small></Link>
