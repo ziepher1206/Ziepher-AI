@@ -119,7 +119,7 @@ export async function connectGitHubFromAuthorizationCode(input: {
   const accessToken = token.access_token!;
   const user = await getGitHubUser(accessToken);
 
-  return upsertProviderConnection({
+  const connection = await upsertProviderConnection({
     workspaceId: input.workspaceId,
     provider: "github",
     providerAccountId: user.id,
@@ -130,6 +130,8 @@ export async function connectGitHubFromAuthorizationCode(input: {
     accessTokenExpiresAt: expiresAt(token.expires_in),
     refreshTokenExpiresAt: expiresAt(token.refresh_token_expires_in)
   });
+
+  return { connection, githubUser: user };
 }
 
 export async function refreshGitHubOAuthToken(refreshToken: string) {
