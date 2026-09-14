@@ -2,22 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { ziepherAgents } from "@/lib/agents/registry";
 import { founderCardImage } from "@/lib/founder-card-image";
-
-const modules = [
-  { name: "Z-Life Business", icon: "▣", description: "Your all-in-one business command center.", status: "active", href: "/operate", nested: "Tree Service · Active module" },
-  { name: "Z-Life AI Assistant", icon: "◎", description: "Your always-on AI teammate for life and business.", status: "active", href: "/operate/assistant" },
-  { name: "Z-Life AI Web Builder", icon: "▤", description: "Build, improve, and manage websites with AI.", status: "development", href: "/projects" },
-  { name: "Z-Life AI App Builder", icon: "⌘", description: "Turn an idea into working software with AI.", status: "development", href: "/projects" },
-  { name: "Z-Life Home", icon: "⌂", description: "A smarter, simpler home life.", status: "development" },
-  { name: "Z-Life Money", icon: "$", description: "Clarity for today. Freedom for tomorrow.", status: "development" },
-  { name: "Z-Life Family", icon: "◉", description: "More connection. Less chaos.", status: "development" },
-  { name: "Z-Life Auto", icon: "◇", description: "Everything for the road ahead.", status: "development" },
-  { name: "Z-Life Documents", icon: "▱", description: "Find it. Use it. Keep it safe.", status: "development" },
-  { name: "Z-Life Health", icon: "♡", description: "A healthier, happier you.", status: "development" },
-  { name: "Z-Life Travel", icon: "✈", description: "Plan more. Experience more.", status: "development" },
-  { name: "Z-Life Learning", icon: "⌑", description: "Feed your curiosity. Build your future.", status: "development" },
-  { name: "Z-Life Services", icon: "⌁", description: "Find. Book. Get things done.", status: "development" }
-] as const;
+import { zlifeModules } from "@/lib/zlife/modules";
 
 const team = ziepherAgents.slice(0, 8);
 
@@ -68,11 +53,14 @@ export function ZLifeMarketingHome() {
       <section id="modules" className="zlife-section zlife-modules-section">
         <div className="zlife-section-heading"><div><p className="zlife-kicker">Z-LIFE MODULES</p><h2>One platform. Specialized modules.</h2><p>Every module starts with the Z-Life identity and connects back to the same assistant, data, and account.</p></div></div>
         <div className="zlife-module-grid">
-          {modules.map((module) => {
-            const content = <><div className="zlife-module-brand"><span className="module-z">Z</span><span>Z-LIFE</span></div><div className="zlife-module-main"><span className="zlife-module-icon">{module.icon}</span><div><h3>{module.name.replace("Z-Life ", "")}</h3><p>{module.description}</p></div></div>{"nested" in module && module.nested ? <div className="zlife-nested-module"><span>▲</span><div><strong>Tree Service</strong><small>First active business vertical</small></div><b>ACTIVE</b></div> : null}<span className={`zlife-status ${module.status === "active" ? "is-active" : ""}`}>{module.status === "active" ? "Active Module" : "In Development"}</span></>;
-            const cls = `zlife-module-card ${module.status === "active" ? "is-active" : ""} ${"nested" in module ? "has-nested" : ""}`;
-            return "href" in module && module.href ? <Link className={cls} href={module.href} key={module.name}>{content}</Link> : <article className={cls} key={module.name}>{content}</article>;
-          })}
+          {zlifeModules.map((item) => (
+            <Link className={`zlife-module-card ${item.status === "active" ? "is-active" : ""} ${item.nestedLabel ? "has-nested" : ""}`} href={`/modules/${item.slug}`} key={item.slug}>
+              <div className="zlife-module-brand"><span className="module-z">Z</span><span>Z-LIFE</span></div>
+              <div className="zlife-module-main"><span className="zlife-module-icon">{item.icon}</span><div><h3>{item.shortName}</h3><p>{item.description}</p></div></div>
+              {item.nestedLabel ? <div className="zlife-nested-module"><span>▲</span><div><strong>Tree Service</strong><small>First active business vertical</small></div><b>ACTIVE</b></div> : null}
+              <span className={`zlife-status ${item.status === "active" ? "is-active" : ""}`}>{item.status === "active" ? "Active Module" : "In Development"}</span>
+            </Link>
+          ))}
         </div>
       </section>
 
