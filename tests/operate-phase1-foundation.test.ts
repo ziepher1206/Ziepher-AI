@@ -26,6 +26,47 @@ describe("Tree Service Phase 1 foundation", () => {
     expect(sql).toContain("on delete restrict");
   });
 
+  it("keeps core operational relationships inside one workspace", () => {
+    const sql = read("supabase/migrations/20260913142500_ziepher_operate_foundation.sql");
+
+    const tenantConstraints = [
+      "properties_customer_workspace_fk",
+      "crew_members_crew_workspace_fk",
+      "crew_members_workspace_user_fk",
+      "leads_customer_workspace_fk",
+      "leads_property_workspace_fk",
+      "leads_service_workspace_fk",
+    ];
+
+    for (const constraint of tenantConstraints) {
+      expect(sql).toContain(`constraint ${constraint}`);
+    }
+
+    expect(sql).toContain("foreign key (customer_id, workspace_id)");
+    expect(sql).toContain("references public.customers(id, workspace_id)");
+    expect(sql).toContain("foreign key (property_id, workspace_id)");
+    expect(sql).toContain("references public.properties(id, workspace_id)");
+    expect(sql).toContain("foreign key (service_id, workspace_id)");
+    expect(sql).toContain("references public.services(id, workspace_id)");
+    expect(sql).toContain("foreign key (crew_id, workspace_id)");
+    expect(sql).toContain("references public.crews(id, workspace_id)");
+    expect(sql).toContain("foreign key (workspace_id, user_id)");
+    expect(sql).toContain("references public.workspace_members(workspace_id, user_id)");
+  });
+
+  it("keeps core customer, property, and lead RLS workspace-scoped", () => {
+    const sql = read("supabase/migrations/20260913142500_ziepher_operate_foundation.sql");
+
+    for (const table of ["customers", "properties", "leads"]) {
+      expect(sql).toContain(`alter table public.${table} enable row level security`);
+    }
+
+    expect(sql.match(/public\.is_workspace_member\(workspace_id\)/g)?.length ?? 0).toBeGreaterThanOrEqual(9);
+    expect(sql).toContain(
+      "revoke all on public.customers, public.properties, public.services,\n  public.crews, public.crew_members, public.leads from anon",
+    );
+  });
+
   it("requires explicit workspace admin authorization for every setup mutation route", () => {
     const routes = [
       "app/api/operate/setup/route.ts",
