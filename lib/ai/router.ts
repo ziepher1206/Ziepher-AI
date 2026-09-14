@@ -32,7 +32,8 @@ export async function createFreePlan(
           plan: appPlanSchema.parse(parseJsonObject(result.text)),
           provider: "openai",
           model: result.model,
-          estimatedProviderCostUsd: 0
+          estimatedProviderCostUsd: result.usage.providerCostUsd,
+          usage: result.usage
         };
       } catch (error) {
         console.error("OpenAI planning route failed:", error);
