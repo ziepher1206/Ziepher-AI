@@ -3,17 +3,17 @@ import type { MetadataRoute } from "next";
 export default function manifest(): MetadataRoute.Manifest {
   return {
     id: "/",
-    name: "Ziepher AI — Build Your Dreams",
-    short_name: "Ziepher AI",
+    name: "Z-Life — Built by Ziepher Tech",
+    short_name: "Z-Life",
     description:
-      "Plan, design, build, test, and launch complete applications with voice, visuals, and AI.",
+      "One connected app for business, home, family, money, services, documents, scheduling, growth, analytics, and AI assistance.",
     start_url: "/",
     scope: "/",
     display: "standalone",
     orientation: "any",
     background_color: "#090b12",
     theme_color: "#090b12",
-    categories: ["productivity", "developer", "design"],
+    categories: ["productivity", "business", "lifestyle"],
     icons: [
       {
         src: "/icon-192.png",
@@ -36,17 +36,17 @@ export default function manifest(): MetadataRoute.Manifest {
     ],
     shortcuts: [
       {
-        name: "Start a new app",
-        short_name: "New app",
-        description: "Open Ziepher AI and start planning a new application.",
-        url: "/?new=1",
+        name: "Today",
+        short_name: "Today",
+        description: "Open your Z-Life Today view.",
+        url: "/operate",
         icons: [{ src: "/icon-192.png", sizes: "192x192" }]
       },
       {
-        name: "My projects",
-        short_name: "Projects",
-        description: "Open saved Ziepher AI projects.",
-        url: "/projects",
+        name: "Business",
+        short_name: "Business",
+        description: "Open Z-Life Business.",
+        url: "/operate",
         icons: [{ src: "/icon-192.png", sizes: "192x192" }]
       }
     ]
