@@ -9,7 +9,8 @@ import { shouldUseZLifeMock } from "../community/dev-mode";
 
 export async function createFreePlan(
   idea: string,
-  projectContext?: unknown
+  projectContext?: unknown,
+  options: { allowPaidProviders?: boolean } = {}
 ): Promise<PlanResult> {
   if (shouldUseZLifeMock("ai")) {
     return {
@@ -18,6 +19,15 @@ export async function createFreePlan(
       model: "zlife-development-mock-ai-v1",
       estimatedProviderCostUsd: 0,
       developmentData: true
+    };
+  }
+
+  if (!options.allowPaidProviders) {
+    return {
+      plan: createDeterministicPlan(idea),
+      provider: "deterministic",
+      model: "local-planner-v2",
+      estimatedProviderCostUsd: 0
     };
   }
 
@@ -32,7 +42,8 @@ export async function createFreePlan(
           plan: appPlanSchema.parse(parseJsonObject(result.text)),
           provider: "openai",
           model: result.model,
-          estimatedProviderCostUsd: 0
+          estimatedProviderCostUsd: result.usage.providerCostUsd,
+          usage: result.usage
         };
       } catch (error) {
         console.error("OpenAI planning route failed:", error);

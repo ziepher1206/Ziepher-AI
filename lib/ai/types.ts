@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { AIUsage } from "./usage";
 
 export const appPlanSchema = z.object({
   title: z.string().min(3).max(120),
@@ -54,5 +55,6 @@ export type PlanResult = {
   provider: "gemini" | "openai" | "deterministic" | "mock";
   model: string;
   estimatedProviderCostUsd: number;
+  usage?: AIUsage;
   developmentData?: boolean;
 };

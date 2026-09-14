@@ -1,13 +1,18 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { createClient } from "@/lib/supabase/server";
 import { createFreePlan } from "@/lib/ai/router";
+import {
+  assertAIProviderBudget,
+  currentUtcMonthStart
+} from "@/lib/ai/spend-guard";
 import { apiError } from "@/lib/http";
 import {
   projectAIContextSchema,
   projectIdSchema
 } from "@/lib/domain/schemas";
 import { parseProjectSyncState } from "@/lib/sync/project-state";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/supabase/server";
 
 const requestSchema = z.object({
   idea: z.string().trim().min(10).max(12000),
@@ -21,10 +26,35 @@ export async function POST(request: Request, context: Context) {
     const projectId = projectIdSchema.parse((await context.params).projectId);
     const input = requestSchema.parse(await request.json());
     const supabase = await createClient();
+    const admin = createAdminClient();
     const {
       data: { user }
     } = await supabase.auth.getUser();
     if (!user) throw new Error("Authentication required.");
+
+    const { data: project, error: projectError } = await supabase
+      .from("projects")
+      .select("id,workspace_id")
+      .eq("id", projectId)
+      .single();
+    if (projectError || !project) throw new Error("Project not found.");
+
+    const paidAIEnabled = process.env.SITE_REFINER_PAID_AI_ENABLED === "true";
+    let budget: ReturnType<typeof assertAIProviderBudget> | null = null;
+    if (paidAIEnabled) {
+      const { data: costEvents, error: costError } = await admin
+        .from("project_cost_events")
+        .select("provider_cost_usd")
+        .eq("workspace_id", project.workspace_id)
+        .eq("category", "ai")
+        .gte("created_at", currentUtcMonthStart());
+      if (costError) throw costError;
+      const spentThisMonth = (costEvents ?? []).reduce(
+        (sum, event) => sum + Number(event.provider_cost_usd ?? 0),
+        0
+      );
+      budget = assertAIProviderBudget(spentThisMonth);
+    }
 
     const { data: syncRows, error: syncError } = await supabase.rpc(
       "get_project_sync_state",
@@ -35,7 +65,9 @@ export async function POST(request: Request, context: Context) {
     const projectContext =
       input.context ?? parseProjectSyncState(syncRow?.state).aiContext;
 
-    const result = await createFreePlan(input.idea, projectContext);
+    const result = await createFreePlan(input.idea, projectContext, {
+      allowPaidProviders: paidAIEnabled
+    });
     const { data: specVersionId, error } = await supabase.rpc(
       "save_project_plan",
       {
@@ -48,6 +80,29 @@ export async function POST(request: Request, context: Context) {
     );
 
     if (error) throw error;
+
+    if (result.usage) {
+      const { error: usageError } = await admin.from("model_usage").insert({
+        workspace_id: project.workspace_id,
+        project_id: projectId,
+        operation: "project_planning",
+        billable_to_user: false,
+        provider: result.provider,
+        model: result.model,
+        input_tokens: result.usage.inputTokens,
+        output_tokens: result.usage.outputTokens,
+        cached_input_tokens: result.usage.cachedInputTokens,
+        provider_cost_usd: result.usage.providerCostUsd,
+        customer_usage_usd: 0,
+        usage_metadata: {
+          source: "ai_workspace",
+          pricing_known: result.usage.pricingKnown,
+          monthly_budget_usd: budget?.budgetUsd ?? null,
+          monthly_spend_before_call_usd: budget?.spentUsd ?? null
+        }
+      });
+      if (usageError) throw usageError;
+    }
 
     const { data: concepts, error: conceptsError } = await supabase
       .from("visual_concepts")
@@ -110,6 +165,7 @@ export async function POST(request: Request, context: Context) {
       plan: result.plan,
       provider: result.provider,
       model: result.model,
+      providerCostUsd: result.usage?.providerCostUsd ?? 0,
       specVersionId,
       concepts,
       chargedBuildCredits: 0

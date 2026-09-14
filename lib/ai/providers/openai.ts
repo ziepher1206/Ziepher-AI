@@ -1,5 +1,7 @@
 import OpenAI from "openai";
 import { assertZLifeLiveProviderAllowed } from "../../community/provider-adapters";
+import { openAIMaxOutputTokens } from "../provider-limits";
+import { openAIUsageFromResponse } from "../usage";
 
 export async function planWithOpenAI(prompt: string) {
   assertZLifeLiveProviderAllowed("ai");
@@ -12,6 +14,7 @@ export async function planWithOpenAI(prompt: string) {
   const client = new OpenAI({ apiKey });
   const response = await client.responses.create({
     model,
+    max_output_tokens: openAIMaxOutputTokens("planning"),
     input: [
       {
         role: "system",
@@ -26,5 +29,9 @@ export async function planWithOpenAI(prompt: string) {
     throw new Error("OpenAI returned an empty planning response.");
   }
 
-  return { text: response.output_text, model };
+  return {
+    text: response.output_text,
+    model,
+    usage: openAIUsageFromResponse(model, response.usage)
+  };
 }
