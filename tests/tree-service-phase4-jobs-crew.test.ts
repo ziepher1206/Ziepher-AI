@@ -36,7 +36,10 @@ describe("Tree Service Phase 4 jobs and crew", () => {
     expect(foundation).toContain("approval_method");
     expect(foundation).toContain("approved_at");
     expect(changeOrders).toContain("customer_in_person");
-    expect(changeOrders).toContain("Customer has already approved");
+    expect(changeOrders).toContain("Choose how the customer approved this change.");
+    expect(changeOrders).toContain("approval_method");
+    expect(changeOrders).toContain("approved_at");
+    expect(changeOrders).toContain('.eq("workspace_id", job.workspace_id)');
   });
 
   it("requires completion verification and an after photo", () => {
