@@ -88,7 +88,9 @@ export async function POST(_request: Request, context: Context) {
       "Preserve the existing business website and make only the requested improvement. The output must be reviewable before production."
     ].join("\n\n");
 
-    const result = await createFreePlan(idea, aiContext);
+    const result = await createFreePlan(idea, aiContext, {
+      allowPaidProviders: true
+    });
     const { data: specVersionId, error: saveError } = await supabase.rpc(
       "save_project_plan",
       {
