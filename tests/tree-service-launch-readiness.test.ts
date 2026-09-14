@@ -26,16 +26,19 @@ describe("Tree Service launch readiness gate", () => {
 
   it("keeps the full owner workflow visible from one Operate dashboard", () => {
     const dashboard = source("app/operate/page.tsx");
+    const priorities = source("components/operate-daily-priorities.tsx");
     for (const href of [
       "/operate/leads",
       "/operate/estimates",
       "/operate/calendar",
       "/operate/invoices",
-      "/operate/growth",
-      "/operate/assistant"
+      "/operate/growth"
     ]) {
       expect(dashboard).toContain(href);
     }
+    expect(dashboard).toContain("OperateDailyPriorities");
+    expect(priorities).toContain('href="/operate/assistant"');
+    expect(priorities).toContain("Open full assistant");
     expect(dashboard).toContain("Lead → Estimate → Job");
   });
 
