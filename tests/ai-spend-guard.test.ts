@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   assertAIProviderBudget,
   configuredAIMonthlyBudgetUsd
-} from "@/lib/ai/spend-guard";
+} from "../lib/ai/spend-guard";
 
 describe("AI spend guard", () => {
   it("fails closed when no positive monthly budget is configured", () => {
