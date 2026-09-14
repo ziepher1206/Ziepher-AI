@@ -1,6 +1,8 @@
 import OpenAI from "openai";
 import { agentById } from "./registry";
 import { buildAgentSystemPrompt } from "./prompt";
+import { shouldUseZLifeMock } from "@/lib/community/dev-mode";
+import { assertZLifeLiveProviderAllowed } from "@/lib/community/provider-adapters";
 
 export type AgentExecutionInput = {
   agentId: string;
@@ -10,9 +12,10 @@ export type AgentExecutionInput = {
 
 export type AgentExecutionResult = {
   agentId: string;
-  mode: "live";
+  mode: "live" | "mock";
   model: string;
   output: string;
+  developmentData?: boolean;
 };
 
 export function liveAgentExecutionEnabled() {
@@ -22,12 +25,35 @@ export function liveAgentExecutionEnabled() {
 export async function executeLiveAgent(
   input: AgentExecutionInput
 ): Promise<AgentExecutionResult> {
+  const agent = agentById.get(input.agentId);
+  if (!agent) throw new Error(`Unknown Ziepher agent: ${input.agentId}`);
+
+  const projectBrief = input.projectBrief.trim().slice(0, 12_000);
+  const upstreamContext = input.upstreamContext?.trim().slice(0, 16_000) ?? "";
+  if (!projectBrief) throw new Error("Project brief is required.");
+
+  if (shouldUseZLifeMock("ai")) {
+    return {
+      agentId: agent.id,
+      mode: "mock",
+      model: "zlife-development-mock-ai-v1",
+      developmentData: true,
+      output: [
+        "[ZLIFE DEVELOPMENT MOCK — NO EXTERNAL AI REQUEST SENT]",
+        `Agent: ${agent.name}`,
+        `Department: ${agent.department}`,
+        `Project brief: ${projectBrief}`,
+        upstreamContext ? `Upstream context: ${upstreamContext}` : "Upstream context: none",
+        "Result: deterministic development-only specialist review placeholder."
+      ].join("\n")
+    };
+  }
+
   if (!liveAgentExecutionEnabled()) {
     throw new Error("Live Ziepher agent execution is disabled.");
   }
 
-  const agent = agentById.get(input.agentId);
-  if (!agent) throw new Error(`Unknown Ziepher agent: ${input.agentId}`);
+  assertZLifeLiveProviderAllowed("ai");
 
   const apiKey = process.env.OPENAI_API_KEY;
   const model = process.env.OPENAI_AGENT_MODEL ?? process.env.OPENAI_PLANNING_MODEL;
@@ -38,10 +64,6 @@ export async function executeLiveAgent(
       "OPENAI_AGENT_MODEL or OPENAI_PLANNING_MODEL must be configured."
     );
   }
-
-  const projectBrief = input.projectBrief.trim().slice(0, 12_000);
-  const upstreamContext = input.upstreamContext?.trim().slice(0, 16_000) ?? "";
-  if (!projectBrief) throw new Error("Project brief is required.");
 
   const client = new OpenAI({ apiKey });
   const response = await client.responses.create({
