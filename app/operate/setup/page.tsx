@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { OperateBusinessProfile } from "@/components/operate-business-profile";
 import { OperateBusinessSetup } from "@/components/operate-business-setup";
 import { OperateScheduleExceptions } from "@/components/operate-schedule-exceptions";
+import { OperateServiceTiming } from "@/components/operate-service-timing";
 import { OperateTimezoneSetup } from "@/components/operate-timezone-setup";
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/env";
@@ -66,6 +67,7 @@ export default async function OperateSetupPage() {
         <OperateBusinessProfile workspaceId={workspaceId} profile={businessProfile ?? null} />
         <OperateTimezoneSetup workspaceId={workspaceId} timezone={workspace?.timezone ?? null} />
         <OperateBusinessSetup workspaceId={workspaceId} services={services ?? []} crews={crews ?? []} workspaceMembers={workspaceMembers ?? []} crewMembers={crewMembers ?? []} availabilityRules={availabilityRules ?? []} />
+        <OperateServiceTiming workspaceId={workspaceId} services={services ?? []} />
         <OperateScheduleExceptions workspaceId={workspaceId} timezone={workspace?.timezone ?? null} crews={crews ?? []} overrides={(scheduleOverrides ?? []) as never[]} />
       </section>
     </main>
