@@ -4,14 +4,14 @@ import { notFound } from "next/navigation";
 import { zlifeModuleBySlug, zlifeModules } from "@/lib/zlife/modules";
 
 export function generateStaticParams() {
-  return zlifeModules.map((module) => ({ slug: module.slug }));
+  return zlifeModules.map((item) => ({ slug: item.slug }));
 }
 
 export default async function ZLifeModulePage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const module = zlifeModuleBySlug.get(slug);
+  const selectedModule = zlifeModuleBySlug.get(slug);
 
-  if (!module) notFound();
+  if (!selectedModule) notFound();
 
   return (
     <main className="zlife-landing">
@@ -32,22 +32,22 @@ export default async function ZLifeModulePage({ params }: { params: Promise<{ sl
         <div className="zlife-section-heading">
           <div>
             <p className="zlife-kicker">Z-LIFE MODULE</p>
-            <h1>{module.name}</h1>
-            <p>{module.summary}</p>
+            <h1>{selectedModule.name}</h1>
+            <p>{selectedModule.summary}</p>
           </div>
-          <span className={`zlife-status ${module.status === "active" ? "is-active" : ""}`}>
-            {module.status === "active" ? "Active Module" : "In Development"}
+          <span className={`zlife-status ${selectedModule.status === "active" ? "is-active" : ""}`}>
+            {selectedModule.status === "active" ? "Active Module" : "In Development"}
           </span>
         </div>
 
-        {module.nestedLabel ? (
+        {selectedModule.nestedLabel ? (
           <div className="zlife-nested-module" style={{ marginBottom: "24px" }}>
             <span>▲</span><div><strong>Tree Service</strong><small>First active business vertical</small></div><b>ACTIVE</b>
           </div>
         ) : null}
 
         <div className="zlife-flow-grid">
-          {module.capabilities.map((capability, index) => (
+          {selectedModule.capabilities.map((capability, index) => (
             <article key={capability}>
               <span>{String(index + 1).padStart(2, "0")}</span>
               <h3>{capability}</h3>
@@ -56,7 +56,7 @@ export default async function ZLifeModulePage({ params }: { params: Promise<{ sl
         </div>
 
         <div className="zlife-hero-actions" style={{ marginTop: "32px" }}>
-          {module.launchHref ? <Link className="zlife-primary" href={module.launchHref}>Open {module.shortName} <span>→</span></Link> : null}
+          {selectedModule.launchHref ? <Link className="zlife-primary" href={selectedModule.launchHref}>Open {selectedModule.shortName} <span>→</span></Link> : null}
           <Link className="zlife-secondary" href="/#modules">Back to modules</Link>
         </div>
       </section>
