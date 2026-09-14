@@ -7,6 +7,11 @@ import {
   createApplicationBuild,
   repairApplicationBuild
 } from "@/lib/ai/build-router";
+import type { AIUsage } from "@/lib/ai/usage";
+import {
+  assertAIProviderBudget,
+  currentUtcMonthStart
+} from "@/lib/ai/spend-guard";
 import type { QualityMode } from "@/lib/domain/schemas";
 import { validateGeneratedArtifact } from "@/lib/runner/security";
 import {
@@ -32,6 +37,27 @@ const supabase = createAdminClient();
 
 function firstRow<T>(data: T | T[] | null): T | null {
   return Array.isArray(data) ? (data[0] ?? null) : data;
+}
+
+function emptyUsage(): AIUsage {
+  return {
+    inputTokens: 0,
+    outputTokens: 0,
+    cachedInputTokens: 0,
+    providerCostUsd: 0,
+    pricingKnown: true
+  };
+}
+
+function addUsage(total: AIUsage, usage?: AIUsage): AIUsage {
+  if (!usage) return total;
+  return {
+    inputTokens: total.inputTokens + usage.inputTokens,
+    outputTokens: total.outputTokens + usage.outputTokens,
+    cachedInputTokens: total.cachedInputTokens + usage.cachedInputTokens,
+    providerCostUsd: Number((total.providerCostUsd + usage.providerCostUsd).toFixed(8)),
+    pricingKnown: total.pricingKnown && usage.pricingKnown
+  };
 }
 
 async function setJobStatus(jobId: string, status: string) {
@@ -76,7 +102,8 @@ async function finishStep(
   stepId: string,
   result: Record<string, unknown>,
   provider?: string,
-  model?: string
+  model?: string,
+  usage?: AIUsage
 ) {
   const { error } = await supabase
     .from("build_steps")
@@ -85,6 +112,9 @@ async function finishStep(
       result,
       model_provider: provider ?? null,
       model_name: model ?? null,
+      actual_cost_usd: usage?.providerCostUsd ?? 0,
+      input_tokens: usage?.inputTokens ?? 0,
+      output_tokens: usage?.outputTokens ?? 0,
       completed_at: new Date().toISOString()
     })
     .eq("id", stepId);
@@ -115,6 +145,9 @@ async function processJob(job: BuildJob) {
   let activeStepId: string | null = null;
   let provider = "unknown";
   let model = "unknown";
+  let totalUsage = emptyUsage();
+  let measuredAICalls = 0;
+  const paidBuildsEnabled = process.env.SITE_REFINER_PAID_BUILDS_ENABLED === "true";
   const workdir = await prepareWorkdir(workRoot, job.id);
 
   try {
@@ -134,7 +167,7 @@ async function processJob(job: BuildJob) {
         .single(),
       supabase
         .from("projects")
-        .select("selected_visual_concept_id")
+        .select("workspace_id,selected_visual_concept_id")
         .eq("id", job.project_id)
         .single(),
       supabase
@@ -148,6 +181,22 @@ async function processJob(job: BuildJob) {
     if (projectResult.error) throw projectResult.error;
     if (syncResult.error) throw syncResult.error;
     const projectContext = parseProjectSyncState(syncResult.data?.state).aiContext;
+
+    let existingMonthlyAISpendUsd = 0;
+    if (paidBuildsEnabled) {
+      const { data: costEvents, error: costError } = await supabase
+        .from("project_cost_events")
+        .select("provider_cost_usd")
+        .eq("workspace_id", projectResult.data.workspace_id)
+        .eq("category", "ai")
+        .gte("created_at", currentUtcMonthStart());
+      if (costError) throw costError;
+      existingMonthlyAISpendUsd = (costEvents ?? []).reduce(
+        (sum, event) => sum + Number(event.provider_cost_usd ?? 0),
+        0
+      );
+      assertAIProviderBudget(existingMonthlyAISpendUsd);
+    }
 
     let visualConceptId = "default";
     if (projectResult.data.selected_visual_concept_id) {
@@ -176,10 +225,15 @@ async function processJob(job: BuildJob) {
       plan,
       visualConceptId,
       job.quality_mode,
-      projectContext
+      projectContext,
+      { allowPaidProvider: paidBuildsEnabled }
     );
     provider = generated.provider;
     model = generated.model;
+    if (generated.usage) {
+      totalUsage = addUsage(totalUsage, generated.usage);
+      measuredAICalls += 1;
+    }
     validateGeneratedArtifact(generated.artifact);
     let previewPath = await writeArtifact(workdir, generated.artifact);
     await finishStep(
@@ -187,10 +241,12 @@ async function processJob(job: BuildJob) {
       {
         files: generated.artifact.files.length,
         summary: generated.artifact.summary,
-        knownLimitations: generated.artifact.knownLimitations
+        knownLimitations: generated.artifact.knownLimitations,
+        usageMeasured: Boolean(generated.usage)
       },
       provider,
-      model
+      model,
+      generated.usage
     );
     activeStepId = null;
 
@@ -274,6 +330,10 @@ async function processJob(job: BuildJob) {
 
         if (repairCount >= maxRepairs) throw validationError;
 
+        if (paidBuildsEnabled) {
+          assertAIProviderBudget(existingMonthlyAISpendUsd + totalUsage.providerCostUsd);
+        }
+
         const failure =
           validationError instanceof Error
             ? validationError.message
@@ -293,7 +353,8 @@ async function processJob(job: BuildJob) {
           generated.artifact,
           failure,
           job.quality_mode,
-          projectContext
+          projectContext,
+          { allowPaidProvider: paidBuildsEnabled }
         );
 
         if (!repaired) {
@@ -305,6 +366,10 @@ async function processJob(job: BuildJob) {
           throw validationError;
         }
 
+        if (repaired.usage) {
+          totalUsage = addUsage(totalUsage, repaired.usage);
+          measuredAICalls += 1;
+        }
         generated = repaired;
         provider = repaired.provider;
         model = repaired.model;
@@ -317,10 +382,12 @@ async function processJob(job: BuildJob) {
           {
             repaired: true,
             nextAttempt: repairCount + 1,
-            files: generated.artifact.files.length
+            files: generated.artifact.files.length,
+            usageMeasured: Boolean(repaired.usage)
           },
           provider,
-          model
+          model,
+          repaired.usage
         );
         activeStepId = null;
       }
@@ -406,13 +473,25 @@ async function processJob(job: BuildJob) {
 
     const credits = finalCredits(job.quality_mode, provider);
     const { error: usageError } = await supabase.from("model_usage").insert({
+      workspace_id: projectResult.data.workspace_id,
       project_id: job.project_id,
       build_job_id: job.id,
       operation: "application_build",
       billable_to_user: true,
       provider,
       model,
-      provider_cost_usd: 0
+      input_tokens: totalUsage.inputTokens,
+      output_tokens: totalUsage.outputTokens,
+      cached_input_tokens: totalUsage.cachedInputTokens,
+      provider_cost_usd: totalUsage.providerCostUsd,
+      customer_usage_usd: 0,
+      usage_metadata: {
+        measured_ai_calls: measuredAICalls,
+        repair_count: repairCount,
+        pricing_known: totalUsage.pricingKnown,
+        paid_builds_enabled: paidBuildsEnabled,
+        deterministic_or_mock: provider === "deterministic" || provider === "mock"
+      }
     });
     if (usageError) throw usageError;
 
@@ -430,7 +509,7 @@ async function processJob(job: BuildJob) {
         security_passed: true,
         visual_score: 85,
         repair_count: repairCount,
-        provider_cost_usd: 0,
+        provider_cost_usd: totalUsage.providerCostUsd,
         anonymized_for_learning: false
       });
     if (experienceError) throw experienceError;
@@ -450,7 +529,7 @@ async function processJob(job: BuildJob) {
     if (completeError) throw completeError;
 
     console.log(
-      `[${workerId}] completed build ${job.id} with ${provider}/${model}`
+      `[${workerId}] completed build ${job.id} with ${provider}/${model}; provider cost $${totalUsage.providerCostUsd.toFixed(6)}`
     );
   } catch (error) {
     if (activeStepId) await failStep(activeStepId, error);
