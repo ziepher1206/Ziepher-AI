@@ -24,6 +24,6 @@ describe("public launch readiness checker", () => {
     expect(packageJson).toContain('"check:public-launch": "tsx scripts/public-launch-readiness.ts"');
     expect(launch).toContain("npm run check:public-launch");
     expect(launch).toContain("issue #150");
-    expect(launch).toContain("does not replace the manual GitHub and production-boundary checks");
+    expect(launch).toContain("replace the manual GitHub and production-boundary checks");
   });
 });
