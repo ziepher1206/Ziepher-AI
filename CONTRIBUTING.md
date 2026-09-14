@@ -2,6 +2,8 @@
 
 ZLife is a community-built platform operated by Ziepher Tech. GitHub is the source of truth for code, review, and verified engineering contributions.
 
+If you are new to the project, start with `docs/START-HERE-CONTRIBUTORS.md` for the current priorities, beginner tasks, safe contributor workflow, and production boundary.
+
 ## Production boundary
 
 Community contributors must work from forks or contributor branches and must not require access to Ziepher Tech production infrastructure. Do not request, copy, or commit production customer data, Supabase service-role keys, Vercel production tokens, Stripe secrets, OpenAI keys, Resend keys, Twilio credentials, DNS credentials, or other production secrets.
