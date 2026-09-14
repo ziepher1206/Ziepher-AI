@@ -56,10 +56,6 @@ export default async function HomeFamilyPage() {
   const maintenance = maintenanceResult.data ?? [];
   const openTasks = tasks.filter((task) => task.status !== "done");
   const completedTasks = tasks.filter((task) => task.status === "done");
-  const now = Date.now();
-  const dueMaintenance = maintenance.filter(
-    (item) => item.next_due_at && new Date(item.next_due_at).getTime() <= now,
-  );
 
   return (
     <main className="projects-page">
@@ -95,9 +91,9 @@ export default async function HomeFamilyPage() {
             <p>Household, family, project, and reminder items still active.</p>
           </div>
           <div className="project-card" style={{ minHeight: 0 }}>
-            <p className="panel-label">Maintenance due</p>
-            <h2 style={{ fontSize: 34, margin: "8px 0" }}>{dueMaintenance.length}</h2>
-            <p>Recurring home items whose next due date has arrived.</p>
+            <p className="panel-label">Maintenance tracked</p>
+            <h2 style={{ fontSize: 34, margin: "8px 0" }}>{maintenance.length}</h2>
+            <p>Recurring home items saved with their next planned service date.</p>
           </div>
           <div className="project-card" style={{ minHeight: 0 }}>
             <p className="panel-label">Completed</p>
