@@ -59,7 +59,7 @@ export function CampaignDraftForm({
         ends_at: endsAt,
         requires_financial_approval: false,
         campaign_metadata: {
-          source: "customer_campaign_workspace",
+          source: "ziepher_growth_workspace",
           ai_generation_status: "not_requested"
         }
       });
@@ -84,7 +84,7 @@ export function CampaignDraftForm({
     <form className="auth-card" onSubmit={submit} style={{ maxWidth: 720 }}>
       <div>
         <p className="panel-label">New promotion request</p>
-        <h2 style={{ marginTop: 6 }}>Tell SiteRefiner what you want to promote</h2>
+        <h2 style={{ marginTop: 6 }}>Tell Ziepher what you want to promote</h2>
         <p className="auth-copy">
           Save the business request, timing, and channels first. This step does not call a paid AI model and does not publish anything.
         </p>
@@ -103,7 +103,7 @@ export function CampaignDraftForm({
       </label>
 
       <label>
-        What should SiteRefiner create?
+        What should Ziepher prepare?
         <textarea
           value={instructions}
           onChange={(event) => setInstructions(event.target.value)}

@@ -66,13 +66,14 @@ export default async function CampaignsPage({ params }: Props) {
     <main className="projects-page">
       <header className="projects-header">
         <div className="brand">
-          <div className="brand-mark">S</div>
+          <div className="brand-mark">Z</div>
           <div>
-            <div className="brand-title">SITEREFINER</div>
-            <div className="brand-subtitle">PROMOTIONS & CAMPAIGNS</div>
+            <div className="brand-title">ZIEPHER</div>
+            <div className="brand-subtitle">GROW · CAMPAIGNS</div>
           </div>
         </div>
         <div className="inline-actions">
+          <Link className="button" href="/operate/growth">Growth workspace</Link>
           <Link className="button" href={`/projects/${projectId}`}>Website overview</Link>
           <Link className="button" href={`/projects/${projectId}/changes`}>Change requests</Link>
           <Link className="button" href="/projects">All websites</Link>
@@ -84,7 +85,7 @@ export default async function CampaignsPage({ params }: Props) {
           <p className="panel-label">{project.business_name ?? project.name}</p>
           <h1 style={{ margin: "6px 0 10px" }}>Promotions and marketing requests</h1>
           <p className="auth-copy" style={{ maxWidth: 820 }}>
-            {domain ? `${domain} · ` : ""}Create the campaign request once, then send it into the SiteRefiner change pipeline for AI generation, preview, and approval when those steps are authorized.
+            {domain ? `${domain} · ` : ""}Create the campaign request once, then move a website promotion into Ziepher’s tracked change pipeline for generation, preview, and approval only when those later actions are authorized.
           </p>
         </div>
 
