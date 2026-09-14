@@ -7,10 +7,11 @@ function read(relativePath: string) {
 }
 
 describe("ZLife public SEO boundaries", () => {
-  it("uses one canonical public origin", () => {
+  it("uses the primary Ziepher Tech domain as the canonical public origin", () => {
     const source = read("lib/zlife/public-origin.ts");
 
-    expect(source).toContain('export const ZLIFE_PUBLIC_ORIGIN = "https://ziepher-ai.vercel.app";');
+    expect(source).toContain('export const ZLIFE_PUBLIC_ORIGIN = "https://www.ziephertech.com";');
+    expect(source).not.toContain("ziepher-ai.vercel.app");
   });
 
   it("builds the public sitemap from canonical public routes and module registry", () => {
