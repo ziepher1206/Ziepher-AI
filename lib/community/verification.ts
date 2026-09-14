@@ -27,13 +27,16 @@ export async function verifyContributionEvent(input: {
   const supabase = createAdminClient();
   const { data: event, error: eventError } = await supabase
     .from("contribution_events")
-    .select("id, status, impact_score, difficulty_score, scope_score, maintenance_score")
+    .select("id, contributor_id, status, impact_score, difficulty_score, scope_score, maintenance_score")
     .eq("id", input.eventId)
     .single();
 
   if (eventError) throw eventError;
   if (event.status !== "pending") {
     throw new Error("Only pending contribution events can be verified through this workflow.");
+  }
+  if (event.contributor_id === input.verifierContributorId) {
+    throw new Error("Contributors cannot verify their own contribution events.");
   }
 
   const scoring = calculateVerifiedContributionScore({
@@ -62,6 +65,20 @@ export async function rejectContributionEvent(input: {
   reason: string;
 }) {
   const supabase = createAdminClient();
+  const { data: event, error: eventError } = await supabase
+    .from("contribution_events")
+    .select("id, contributor_id, status")
+    .eq("id", input.eventId)
+    .single();
+
+  if (eventError) throw eventError;
+  if (event.status !== "pending") {
+    throw new Error("Only pending contribution events can be rejected through this workflow.");
+  }
+  if (event.contributor_id === input.verifierContributorId) {
+    throw new Error("Contributors cannot reject their own contribution events.");
+  }
+
   const { data, error } = await supabase.rpc("reject_contribution_event", {
     p_event_id: input.eventId,
     p_verifier_contributor_id: input.verifierContributorId,
