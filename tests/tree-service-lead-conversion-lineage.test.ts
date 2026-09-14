@@ -6,12 +6,27 @@ function read(path: string) {
   return readFileSync(join(process.cwd(), path), "utf8");
 }
 
-const conversion = read("supabase/migrations/20260913235500_tree_service_phase2_public_lead_intake.sql");
+const conversion = read("supabase/migrations/20260914000500_tree_service_phase3_scheduling_media.sql");
 
 describe("Tree Service lead conversion lineage", () => {
   it("requires an authenticated workspace member", () => {
     expect(conversion).toContain("if auth.uid() is null then raise exception 'Authentication required.'");
     expect(conversion).toContain("if not public.is_workspace_member(v_lead.workspace_id) then raise exception 'Workspace access required.'");
+  });
+
+  it("includes service travel, preparation and cleanup buffers in estimate occupancy", () => {
+    expect(conversion).toContain("coalesce(s.travel_buffer_minutes, 0)");
+    expect(conversion).toContain("coalesce(s.preparation_buffer_minutes, 0)");
+    expect(conversion).toContain("coalesce(s.cleanup_buffer_minutes, 0)");
+    expect(conversion).toContain("v_occupied_start := p_starts_at - make_interval(mins => v_travel + v_prep)");
+    expect(conversion).toContain("v_occupied_end := v_ends_at + make_interval(mins => v_cleanup)");
+  });
+
+  it("rejects estimate times blocked by workspace or assigned-user schedule overrides", () => {
+    expect(conversion).toContain("so.mode = 'block'");
+    expect(conversion).toContain("so.resource_type = 'workspace'");
+    expect(conversion).toContain("so.resource_type = 'user' and so.resource_user_id = auth.uid()");
+    expect(conversion).toContain("The selected estimate time is blocked by a schedule exception.");
   });
 
   it("serializes conversion by normalized customer identity to reduce duplicate races", () => {
@@ -43,10 +58,11 @@ describe("Tree Service lead conversion lineage", () => {
     expect(conversion).toContain("values(v_lead.workspace_id,v_customer_id,v_property_id,v_lead.id,v_lead.service_id,auth.uid(),v_title");
   });
 
-  it("creates a linked estimate appointment with the same lineage", () => {
-    expect(conversion).toContain("insert into public.appointments(workspace_id,customer_id,property_id,lead_id,service_id,estimate_id,assigned_user_id,appointment_type,status,title,notes,starts_at,ends_at)");
-    expect(conversion).toContain("values(v_lead.workspace_id,v_customer_id,v_property_id,v_lead.id,v_lead.service_id,v_estimate_id,auth.uid(),'estimate','confirmed'");
-    expect(conversion).toContain("p_starts_at + make_interval(mins => p_duration_minutes)");
+  it("creates a linked estimate appointment with the same lineage and buffers", () => {
+    expect(conversion).toContain("workspace_id,customer_id,property_id,lead_id,service_id,estimate_id,assigned_user_id");
+    expect(conversion).toContain("travel_buffer_minutes,preparation_buffer_minutes,cleanup_buffer_minutes");
+    expect(conversion).toContain("v_lead.workspace_id,v_customer_id,v_property_id,v_lead.id,v_lead.service_id,v_estimate_id,auth.uid()");
+    expect(conversion).toContain("v_travel,v_prep,v_cleanup");
   });
 
   it("updates the originating lead to the converted records", () => {
