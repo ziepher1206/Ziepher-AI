@@ -11,7 +11,7 @@ describe("ZLife module navigation", () => {
 
     expect(backLink).toContain("previousUrl.origin === window.location.origin");
     expect(backLink).toContain("router.back()");
-    expect(backLink).toContain('router.push("/#modules")');
+    expect(backLink).toContain('href="/#modules"');
   });
 
   it("uses the history-aware control throughout module detail pages", () => {
