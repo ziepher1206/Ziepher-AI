@@ -1,14 +1,34 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+
+const REMEMBERED_EMAIL_KEY = "ziepher.remembered-email";
 
 export function AuthForm() {
   const [mode, setMode] = useState<"sign-in" | "sign-up">("sign-in");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [rememberEmail, setRememberEmail] = useState(true);
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    const remembered = window.localStorage.getItem(REMEMBERED_EMAIL_KEY);
+    if (remembered) {
+      setEmail(remembered);
+      setRememberEmail(true);
+    }
+  }, []);
+
+  function persistRememberedEmail() {
+    if (rememberEmail && email) {
+      window.localStorage.setItem(REMEMBERED_EMAIL_KEY, email);
+    } else {
+      window.localStorage.removeItem(REMEMBERED_EMAIL_KEY);
+    }
+  }
 
   async function submit(event: FormEvent) {
     event.preventDefault();
@@ -26,6 +46,7 @@ export function AuthForm() {
           }
         });
         if (error) throw error;
+        persistRememberedEmail();
         setMessage(
           "Account created. Check your email if confirmation is enabled."
         );
@@ -35,6 +56,7 @@ export function AuthForm() {
           password
         });
         if (error) throw error;
+        persistRememberedEmail();
         window.location.assign("/");
       }
     } catch (error) {
@@ -46,11 +68,11 @@ export function AuthForm() {
     }
   }
 
-
   async function signInWithGoogle() {
     setBusy(true);
     setMessage(null);
     try {
+      persistRememberedEmail();
       const supabase = createClient();
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
@@ -71,6 +93,7 @@ export function AuthForm() {
     setBusy(true);
     setMessage(null);
     try {
+      persistRememberedEmail();
       const supabase = createClient();
       const { error } = await supabase.auth.signInWithOtp({
         email,
@@ -121,15 +144,38 @@ export function AuthForm() {
 
       <label>
         Password
-        <input
-          type="password"
-          value={password}
-          onChange={(event) => setPassword(event.target.value)}
-          autoComplete={mode === "sign-in" ? "current-password" : "new-password"}
-          minLength={8}
-          required
-        />
+        <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 8 }}>
+          <input
+            type={showPassword ? "text" : "password"}
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+            autoComplete={mode === "sign-in" ? "current-password" : "new-password"}
+            minLength={8}
+            required
+          />
+          <button
+            className="button"
+            type="button"
+            onClick={() => setShowPassword((current) => !current)}
+            aria-label={showPassword ? "Hide password" : "Show password"}
+            aria-pressed={showPassword}
+          >
+            {showPassword ? "Hide" : "Show"}
+          </button>
+        </div>
       </label>
+
+      {mode === "sign-in" ? (
+        <label style={{ display: "flex", alignItems: "center", gap: 9 }}>
+          <input
+            type="checkbox"
+            checked={rememberEmail}
+            onChange={(event) => setRememberEmail(event.target.checked)}
+            style={{ width: 16, height: 16 }}
+          />
+          Remember my email on this device
+        </label>
+      ) : null}
 
       {message ? <div className="auth-message">{message}</div> : null}
 
@@ -162,11 +208,12 @@ export function AuthForm() {
       <button
         className="text-button"
         type="button"
-        onClick={() =>
+        onClick={() => {
+          setShowPassword(false);
           setMode((current) =>
             current === "sign-in" ? "sign-up" : "sign-in"
-          )
-        }
+          );
+        }}
       >
         {mode === "sign-in"
           ? "New to Ziepher? Create an account"
