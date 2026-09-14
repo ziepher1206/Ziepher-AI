@@ -1,14 +1,5 @@
-import { redirect } from "next/navigation";
-import { isSupabaseConfigured } from "@/lib/env";
-import { createClient } from "@/lib/supabase/server";
+import { ZLifeMarketingHome } from "@/components/zlife-marketing-home";
 
-export default async function HomePage() {
-  if (!isSupabaseConfigured()) redirect("/auth/sign-in");
-
-  const supabase = await createClient();
-  const {
-    data: { user }
-  } = await supabase.auth.getUser();
-
-  redirect(user ? "/operate" : "/auth/sign-in");
+export default function HomePage() {
+  return <ZLifeMarketingHome />;
 }

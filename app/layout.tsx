@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import "./ziepher-theme.css";
+import "./zlife-verdant.css";
 
 export const metadata: Metadata = {
   applicationName: "Z-Life",
@@ -9,7 +10,7 @@ export const metadata: Metadata = {
     template: "%s · Z-Life"
   },
   description:
-    "Z-Life brings business, home, family, money, services, documents, scheduling, growth, analytics, and AI assistance into one connected app built by Ziepher Tech.",
+    "Z-Life brings business, home, family, money, services, documents, scheduling, growth, analytics, websites, apps, and AI assistance into one connected app built by Ziepher Tech.",
   manifest: "/manifest.webmanifest",
   icons: {
     icon: [
@@ -29,7 +30,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#090b12",
+  themeColor: "#031012",
   colorScheme: "dark",
   width: "device-width",
   initialScale: 1,
