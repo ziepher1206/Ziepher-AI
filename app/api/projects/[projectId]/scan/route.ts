@@ -30,34 +30,37 @@ export async function POST(_request: Request, context: Context) {
     const domain = project.source_domain ?? project.primary_domain;
     if (!domain) throw new Error("Connect a source domain before scanning.");
 
-    const { error: scanningError } = await supabase
-      .from("projects")
-      .update({ scan_status: "scanning" })
-      .eq("id", projectId);
+    const { error: scanningError } = await supabase.rpc("set_project_scan_state", {
+      p_project_id: projectId,
+      p_scan_status: "scanning",
+      p_last_scanned_at: null,
+      p_website_health: null
+    });
     if (scanningError) throw scanningError;
 
     const health = await scanWebsite(domain);
     const scannedAt = new Date().toISOString();
 
-    const { data: updated, error: updateError } = await supabase
-      .from("projects")
-      .update({
-        scan_status: "complete",
-        last_scanned_at: scannedAt,
-        website_health: health
-      })
-      .eq("id", projectId)
-      .select("id,scan_status,last_scanned_at,website_health")
-      .single();
+    const { data: updated, error: updateError } = await supabase.rpc(
+      "set_project_scan_state",
+      {
+        p_project_id: projectId,
+        p_scan_status: "complete",
+        p_last_scanned_at: scannedAt,
+        p_website_health: health
+      }
+    );
 
     if (updateError) throw updateError;
     return NextResponse.json({ project: updated, health });
   } catch (error) {
     if (supabase && projectId) {
-      await supabase
-        .from("projects")
-        .update({ scan_status: "failed" })
-        .eq("id", projectId);
+      await supabase.rpc("set_project_scan_state", {
+        p_project_id: projectId,
+        p_scan_status: "failed",
+        p_last_scanned_at: null,
+        p_website_health: null
+      });
     }
     return apiError(error, "Unable to scan website.");
   }
