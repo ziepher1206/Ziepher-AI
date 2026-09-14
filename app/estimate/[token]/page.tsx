@@ -1,28 +1,8 @@
 import { notFound } from "next/navigation";
 import { PublicEstimateAccept } from "@/components/public-estimate-accept";
-import { publicSupabaseRpc } from "@/lib/public-supabase-rpc";
+import { getPublicEstimate } from "@/lib/operate/public-estimate";
 
 type Props = { params: Promise<{ token: string }> };
-type Item = { description: string; quantity: number | string; unitPriceCents: number; lineTotalCents: number };
-type EstimatePayload = {
-  estimateId: string;
-  title: string;
-  notes: string | null;
-  status: string;
-  subtotalCents: number;
-  taxCents: number;
-  discountCents: number;
-  totalCents: number;
-  validUntil: string | null;
-  expiresAt: string;
-  acceptedAt: string | null;
-  customerName: string;
-  propertyAddress: string | null;
-  businessName: string;
-  businessPhone: string | null;
-  businessEmail: string | null;
-  items: Item[];
-};
 
 function money(cents: number) {
   return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(cents / 100);
@@ -30,9 +10,9 @@ function money(cents: number) {
 
 export default async function PublicEstimatePage({ params }: Props) {
   const { token } = await params;
-  let estimate: EstimatePayload;
+  let estimate;
   try {
-    estimate = await publicSupabaseRpc<EstimatePayload>("get_public_operate_estimate", { p_token: token });
+    estimate = await getPublicEstimate(token);
   } catch {
     notFound();
   }
@@ -63,6 +43,20 @@ export default async function PublicEstimatePage({ params }: Props) {
             {estimate.discountCents ? <div style={{ display: "flex", justifyContent: "space-between", gap: 40 }}><span>Discount</span><strong>−{money(estimate.discountCents)}</strong></div> : null}
             <div style={{ display: "flex", justifyContent: "space-between", gap: 40, fontSize: 22, paddingTop: 8, borderTop: "1px solid rgba(255,255,255,.18)" }}><span>Total</span><strong>{money(estimate.totalCents)}</strong></div>
           </div>
+          {estimate.photos.length ? (
+            <div style={{ marginTop: 22 }}>
+              <p className="panel-label">Site photos</p>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))", gap: 12 }}>
+                {estimate.photos.map((photo) => (
+                  <figure key={photo.id} className="project-card" style={{ minHeight: 0, margin: 0, padding: 10 }}>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={photo.url} alt={photo.caption || photo.displayName} style={{ width: "100%", aspectRatio: "4 / 3", objectFit: "cover", borderRadius: 10 }} />
+                    <figcaption className="auth-copy" style={{ marginTop: 8, fontSize: 13 }}>{photo.caption || photo.category.replaceAll("_", " ")}</figcaption>
+                  </figure>
+                ))}
+              </div>
+            </div>
+          ) : null}
           {estimate.notes ? <div style={{ marginTop: 22 }}><p className="panel-label">Notes</p><p className="auth-copy" style={{ whiteSpace: "pre-wrap" }}>{estimate.notes}</p></div> : null}
         </article>
         <article className="auth-card" style={{ maxWidth: "none" }}>
