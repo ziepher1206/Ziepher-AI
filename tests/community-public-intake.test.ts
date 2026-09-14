@@ -24,4 +24,13 @@ describe("public community intake", () => {
     expect(proposal).toContain("help build this");
     expect(proposal).toContain("does not create employment, ownership, equity, compensation");
   });
+
+  it("exposes both feedback paths from the public community page", () => {
+    const page = read("app/community/page.tsx");
+
+    expect(page).toContain("Shape Z-Life");
+    expect(page).toContain("issues/new?template=feature-proposal.md");
+    expect(page).toContain("issues/new?template=bug-report.md");
+    expect(page).toContain("Never post passwords, API keys, private customer information");
+  });
 });
