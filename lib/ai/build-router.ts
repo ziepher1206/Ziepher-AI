@@ -7,7 +7,7 @@ import { buildWithOpenAI } from "./providers/openai-build";
 import { parseJsonObject } from "./json";
 import { paidAIProviderOrder } from "./provider-policy";
 import type { QualityMode } from "@/lib/domain/schemas";
-import { shouldUseZLifeMock } from "@/lib/community/dev-mode";
+import { shouldUseZLifeMock } from "../community/dev-mode";
 
 export type BuildRouteResult = {
   artifact: BuildArtifact;
