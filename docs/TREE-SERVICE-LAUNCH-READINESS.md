@@ -1,16 +1,15 @@
 # Tree Service Launch Readiness
 
-Current production baseline: `c909ae373e2ed9070615b4cef711825f75c98919`
+Run `npm run check:tree-launch` on the current candidate commit for deterministic repository-local launch checks. Always verify the exact candidate SHA against CI and the corresponding Vercel production/preview deployment separately; this document intentionally does not hardcode a deployment SHA that will become stale as `main` advances.
 
-## Verified now
+## Verified repository baseline
 
 - Phases 1–7 are merged into `main`.
-- The exact Phase 7 production deployment is READY on Vercel.
-- Post-deploy runtime error scan returned no error clusters in the checked window.
 - Core launch-loop tables have row-level security enabled and at least one RLS policy: workspaces, workspace_members, leads, customers, properties, appointments, estimates, jobs, invoices, invoice_milestones, payment_transactions, operate_review_requests, marketing_campaigns, marketing_source_spend, and workspace_business_profiles.
-- Tree Service lead-intake SECURITY DEFINER functions explicitly require authentication; create/revoke token functions also require owner/admin access and validate project/workspace ownership.
+- Tree Service lead-intake SECURITY DEFINER functions explicitly require authentication where appropriate; token-management functions require owner/admin access and validate project/workspace ownership.
+- Public lead intake and public estimate capability RPCs are mediated through the ZLife server rather than directly exposed to browser roles.
 - Stripe operating-payment guards remain test-key-only and reject live Stripe event handling.
-- CI runs typecheck, lint, Vitest, production build, and a moderate-level dependency audit on pull requests and main.
+- CI runs contributor smoke, typecheck, lint, Vitest, production build, and a moderate-level dependency audit on pull requests and main.
 - The launch-readiness regression test keeps all seven phase guard suites and the core owner workflow in CI scope.
 
 ## Still required before accepting production customers
