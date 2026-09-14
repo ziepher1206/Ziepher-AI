@@ -49,7 +49,8 @@ export default async function CommunityPage() {
         <h1>Build Z-Life With Us.</h1>
         <p className="zlife-lede">Z-Life is being built in public so developers can contribute with their own tools and resources without receiving access to Ziepher Tech production infrastructure.</p>
         <div className="zlife-hero-actions">
-          <a className="zlife-primary" href="https://github.com/ziepher1206/Ziepher-AI/issues" target="_blank" rel="noreferrer">View Open Tasks <span>→</span></a>
+          <a className="zlife-primary" href="https://github.com/ziepher1206/Ziepher-AI/blob/main/docs/START-HERE-CONTRIBUTORS.md" target="_blank" rel="noreferrer">Start Here <span>→</span></a>
+          <a className="zlife-secondary" href="https://github.com/ziepher1206/Ziepher-AI/issues" target="_blank" rel="noreferrer">View Open Tasks</a>
           <Link className="zlife-secondary" href="/community/value">Explore Proof of Value</Link>
           <a className="zlife-secondary" href="https://github.com/ziepher1206/Ziepher-AI/blob/main/CONTRIBUTING.md" target="_blank" rel="noreferrer">Contributor Guide</a>
         </div>
@@ -94,6 +95,7 @@ export default async function CommunityPage() {
         <div className="zlife-hero-actions">
           <a className="zlife-primary" href="https://github.com/ziepher1206/Ziepher-AI/issues/new?template=feature-proposal.md" target="_blank" rel="noreferrer">Propose an Idea <span>→</span></a>
           <a className="zlife-secondary" href="https://github.com/ziepher1206/Ziepher-AI/issues/new?template=bug-report.md" target="_blank" rel="noreferrer">Report a Bug</a>
+          <a className="zlife-secondary" href="https://github.com/ziepher1206/Ziepher-AI/issues/167" target="_blank" rel="noreferrer">Review Tree Service Workflow</a>
         </div>
         <p className="zlife-community-empty">Never post passwords, API keys, private customer information, payment details, session tokens, or unpatched security vulnerabilities in public issues. Security reports follow the repository Security Policy.</p>
       </section>
@@ -101,7 +103,11 @@ export default async function CommunityPage() {
       <section id="build" className="zlife-section zlife-community-build">
         <div><p className="zlife-kicker">BUILD WITH YOUR OWN RESOURCES</p><h2>Fork. Build. Test. Submit.</h2><p>Use your own GitHub account, local machine, Vercel preview, Supabase development project, and development API keys. Z-Life includes mock-mode foundations so ordinary UI and workflow work does not require paid provider usage.</p></div>
         <div className="zlife-community-flow"><span>Fork</span><b>→</b><span>Branch</span><b>→</b><span>Preview</span><b>→</b><span>Pull Request</span><b>→</b><span>CI + Review</span><b>→</b><span>Verified Credit</span></div>
-        <div className="zlife-hero-actions"><a className="zlife-primary" href="https://github.com/ziepher1206/Ziepher-AI" target="_blank" rel="noreferrer">Open Repository <span>→</span></a><a className="zlife-secondary" href="https://github.com/ziepher1206/Ziepher-AI/security" target="_blank" rel="noreferrer">Security Policy</a></div>
+        <div className="zlife-hero-actions">
+          <a className="zlife-primary" href="https://github.com/ziepher1206/Ziepher-AI/issues/166" target="_blank" rel="noreferrer">Run the Clean-Fork Test <span>→</span></a>
+          <a className="zlife-secondary" href="https://github.com/ziepher1206/Ziepher-AI" target="_blank" rel="noreferrer">Open Repository</a>
+          <a className="zlife-secondary" href="https://github.com/ziepher1206/Ziepher-AI/security" target="_blank" rel="noreferrer">Security Policy</a>
+        </div>
       </section>
     </main>
   );
