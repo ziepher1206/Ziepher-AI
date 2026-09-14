@@ -40,7 +40,7 @@ export default async function OperateAssistantPage() {
   ] = await Promise.all([
     supabase.from("leads").select("id,contact_name,status,received_at").eq("workspace_id", workspaceId).eq("status", "new").order("received_at", { ascending: true }),
     supabase.from("estimates").select("id,title,status,valid_until,total_cents").eq("workspace_id", workspaceId).in("status", ["completed", "sent"]).order("valid_until", { ascending: true, nullsFirst: false }),
-    supabase.from("jobs").select("id,title,status,assigned_crew_id,planned_start_at").eq("workspace_id", workspaceId).in("status", ["scheduled", "en_route", "arrived", "active", "weather_delay", "paused").order("planned_start_at", { ascending: true, nullsFirst: false }),
+    supabase.from("jobs").select("id,title,status,assigned_crew_id,planned_start_at").eq("workspace_id", workspaceId).in("status", ["scheduled", "en_route", "arrived", "active", "weather_delay", "paused"]).order("planned_start_at", { ascending: true, nullsFirst: false }),
     supabase.from("invoices").select("id,invoice_number,status,balance_due_cents,due_date").eq("workspace_id", workspaceId).in("status", ["draft", "sent", "partial", "overdue"]).order("due_date", { ascending: true, nullsFirst: false }),
     supabase.from("operate_review_requests").select("id,job_id,status").eq("workspace_id", workspaceId),
     supabase.from("marketing_campaigns").select("id,project_id,name,status,ends_at").eq("workspace_id", workspaceId).order("ends_at", { ascending: true, nullsFirst: false }),
