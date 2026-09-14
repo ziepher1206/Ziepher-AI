@@ -1,0 +1,15 @@
+# ZLife / Ziepher Tech ownership map.
+# This file documents review ownership now and becomes enforceable when the
+# main-branch protection/ruleset tracked in #93 is enabled.
+
+* @ziepher1206
+
+# Production-sensitive and community-governance surfaces.
+/.github/ @ziepher1206
+/supabase/migrations/ @ziepher1206
+/supabase/seed.sql @ziepher1206
+/SECURITY.md @ziepher1206
+/CONTRIBUTING.md @ziepher1206
+/docs/COMMUNITY-ARCHITECTURE.md @ziepher1206
+/lib/community/ @ziepher1206
+/scripts/ @ziepher1206
