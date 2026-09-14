@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { OperateAssistantAI } from "@/components/operate-assistant-ai";
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/env";
 
@@ -165,6 +166,20 @@ export default async function OperateAssistantPage() {
   const rank = { high: 0, next: 1, watch: 2, clear: 3 } as const;
   priorities.sort((a, b) => rank[a.level] - rank[b.level]);
   const urgentCount = priorities.filter((item) => item.level === "high").length;
+  const assistantPriorities = priorities.map(({ level, title, detail, action }) => ({
+    level,
+    title,
+    detail,
+    action
+  }));
+  const budgetUsd = Number(process.env.ZLIFE_AI_MONTHLY_PROVIDER_BUDGET_USD ?? "0");
+  const liveAIAvailable =
+    process.env.ZLIFE_ASSISTANT_PAID_AI_ENABLED === "true" &&
+    Boolean(process.env.OPENAI_API_KEY?.trim()) &&
+    Boolean(process.env.OPENAI_PLANNING_MODEL?.trim()) &&
+    Boolean(process.env.OPENAI_PLANNING_MAX_OUTPUT_TOKENS?.trim()) &&
+    Number.isFinite(budgetUsd) &&
+    budgetUsd > 0;
 
   return (
     <main className="projects-page">
@@ -177,7 +192,7 @@ export default async function OperateAssistantPage() {
         <div>
           <p className="panel-label">{profile?.business_name ?? "Your business"}</p>
           <h1 style={{ margin: "6px 0 8px" }}>Here’s what I would work on next.</h1>
-          <p className="auth-copy" style={{ maxWidth: 820, margin: 0 }}>One prioritized view across Tree Service operations and growth. This launch version is read-only and deterministic, so it costs no AI tokens and cannot take a risky action behind your back.</p>
+          <p className="auth-copy" style={{ maxWidth: 820, margin: 0 }}>One prioritized view across Tree Service operations and growth. The core queue remains read-only and deterministic, so it costs no AI tokens and cannot take a risky action behind your back.</p>
         </div>
 
         <section style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))", gap: 14 }}>
@@ -204,6 +219,12 @@ export default async function OperateAssistantPage() {
           </div>
         </section>
 
+        <OperateAssistantAI
+          businessName={profile?.business_name ?? "Your business"}
+          priorities={assistantPriorities}
+          liveAIAvailable={liveAIAvailable}
+        />
+
         <section className="auth-card" style={{ maxWidth: "none" }}>
           <p className="panel-label">What I checked</p>
           <h2 style={{ margin: "6px 0 8px" }}>Operations + growth context</h2>
@@ -219,7 +240,7 @@ export default async function OperateAssistantPage() {
         <section className="project-card">
           <p className="panel-label">Approval boundary</p>
           <h2>I can prepare the next move without executing the risky part.</h2>
-          <p>Customer messages, social publishing, paid ads, production website releases, live Stripe charges, provider upgrades, and destructive actions remain outside this zero-cost assistant and require explicit approval before execution.</p>
+          <p>Customer messages, social publishing, paid ads, production website releases, live Stripe charges, provider upgrades, and destructive actions remain outside this assistant and require explicit approval before execution.</p>
         </section>
       </section>
     </main>
