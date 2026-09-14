@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import packageJson from "@/package.json";
 import { isSupabaseConfigured, stripeIsEnabled } from "@/lib/env";
 
 export const dynamic = "force-dynamic";
@@ -8,7 +9,7 @@ export async function GET() {
     {
       status: "ok",
       service: "ziepher-ai",
-      version: process.env.npm_package_version ?? "0.4.0",
+      version: packageJson.version,
       timestamp: new Date().toISOString(),
       capabilities: {
         supabase: isSupabaseConfigured(),
