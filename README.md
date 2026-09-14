@@ -1,51 +1,49 @@
-# Ziepher
+# ZLife
 
 > Legacy repository name: `Ziepher-AI`
 
-This repository is the active engineering foundation for **Ziepher**, the unified AI-powered platform built by Ziepher Tech.
+This repository is the active engineering foundation for **ZLife**, the main platform built and operated by **Ziepher Tech**.
 
-Ziepher is one customer-facing product. Former standalone directions—Ziepher AI, SiteRefiner, Ziepher Builder, SchedulePilot capabilities, and Ziepher Match—are being consolidated into modules inside one platform rather than developed as competing products.
+Ziepher Tech is the company. ZLife is the unified customer-facing platform. Capabilities that were previously explored as separate products—Ziepher AI, SiteRefiner, Ziepher Builder, SchedulePilot capabilities, and Ziepher Match—are being consolidated into ZLife modules or connected services instead of competing standalone products.
 
 ## Product mission
 
-Ziepher helps a business **create, operate, grow, and improve** from one account.
+ZLife helps people and businesses **create, operate, grow, organize, and improve** from one connected platform.
 
 ```text
-ZIEPHER
-├── Create
-│   ├── websites
-│   ├── web apps
-│   ├── hosting/deployment
-│   └── domains/database/storage management
-├── Operate
+ZLIFE
+├── Business
+│   ├── websites and web apps
 │   ├── leads/customers
 │   ├── estimates
 │   ├── scheduling/crew
 │   ├── jobs
-│   ├── invoices
-│   └── payments
-├── Grow
-│   ├── website improvement
-│   ├── SEO/CRO
-│   ├── promotions
-│   ├── social marketing
-│   └── advertising
-├── Match
-│   └── customer-to-business marketplace opportunities
-└── Ziepher Assistant
-    └── orchestrates specialist AI agents across the platform
+│   ├── invoices/payments
+│   └── growth/marketing
+├── Build
+│   ├── AI-assisted website/app creation
+│   ├── source control
+│   ├── preview/release
+│   └── infrastructure management
+├── Services
+│   └── customer-to-business opportunity workflows
+├── Future life modules
+│   └── additional personal and business capabilities
+└── ZLife Assistant
+    └── coordinates the existing specialist AI team across the platform
 ```
 
-The customer should not need to bounce between GitHub, Vercel, Supabase, AI providers, or secret-key setup for routine use. Ziepher acts as the control plane and presents one account, one assistant, one usage/billing view, and one operational workspace.
+Customers should not need to bounce between GitHub, Vercel, Supabase, AI providers, or secret-key setup for routine work. ZLife acts as the control plane and presents one account, one assistant, one usage/cost view, and connected modules.
 
-## First commercial launch
+## First active business module
 
-The first configured industry experience is **tree service**.
+The first active business module is **Tree Service**.
 
 Initial complete loop:
 
 ```text
 business signup
+→ company setup
 → website/app build or connection
 → lead
 → customer/property
@@ -55,13 +53,13 @@ business signup
 → scheduled job + crew
 → completion
 → invoice
-→ Stripe payment
+→ Stripe test-mode payment workflow
 → review/follow-up
 → marketing
-→ Ziepher Assistant recommends the next action
+→ ZLife Assistant recommends the next action
 ```
 
-We are deliberately not waiting for every future Ziepher module before launch.
+We are deliberately not waiting for every future ZLife module before completing the Tree Service launch path.
 
 ## Existing infrastructure retained
 
@@ -76,20 +74,20 @@ This repository already contains reusable core infrastructure:
 7. Usage/cost telemetry and customer-facing cost records.
 8. Supabase-backed control-plane state.
 
-Generated/untrusted code execution remains isolated from the public web process.
+Generated or untrusted code execution remains isolated from the public web process.
 
 ## Legacy capability sources
 
 - `ziepher1206/schedulepilot` — scheduling, leads, estimates, jobs, crews, availability and overrides.
 - `ziepher1206/treepilot` — preserved tree-service workflow/domain reference including customers, properties, jobs, crews and invoices.
-- `ziepher1206/ziepher-match` — current Match marketplace implementation; temporarily remains a separate service/database boundary while it is integrated safely.
-- `ziepher1206/ziepher-tech-homepage` — company/public marketing site, not a separate SaaS product.
+- `ziepher1206/ziepher-match` — marketplace implementation and capability source while service/opportunity workflows are integrated safely.
+- `ziepher1206/ziepher-tech-homepage` — Ziepher Tech company/public marketing site, not the ZLife application itself.
 
-Do not blindly concatenate old databases or migrations. Capabilities are ported into the unified Ziepher model with tenant-isolation/security tests.
+Do not blindly concatenate old databases or migrations. Capabilities are ported into the unified ZLife model with tenant-isolation and security tests.
 
 ## Infrastructure philosophy
 
-Ziepher should feel like its own hosting/application platform even when provider infrastructure is used underneath.
+ZLife should feel like its own platform even when provider infrastructure is used underneath.
 
 Current rails may include:
 
@@ -97,9 +95,9 @@ Current rails may include:
 - Vercel
 - GitHub
 - Stripe
-- OpenAI/approved AI providers
+- OpenAI and approved AI providers
 
-These are implementation suppliers. The customer's workflow is Ziepher.
+These are implementation suppliers. The customer's workflow is ZLife.
 
 Provider credentials should be OAuth/scoped and encrypted where possible. AI agents receive only the task-specific capability they require. High-impact actions remain approval and budget gated.
 
@@ -113,33 +111,33 @@ SITE_REFINER_PAID_AI_ENABLED=false
 SITE_REFINER_PAID_BUILDS_ENABLED=false
 ```
 
-Legacy environment-variable names may remain during compatibility-safe migration. Do not enable paid usage, real charges, production releases, social posts, ad spend, or outbound campaigns silently.
+Legacy environment-variable names may remain during compatibility-safe migration. Do not enable paid usage, real charges, production releases, social posts, ad spend, contributor payments, or outbound campaigns silently.
 
 ## Environments
 
-Ziepher is developed without stopping production:
+ZLife is developed without stopping production:
 
 - production — stable customer release
 - preview/staging — release verification
 - development branches — active work
 - feature flags — incomplete modules hidden until ready
 
-Production changes use review, checks, preview, explicit approval, exact-SHA release and rollback/version history.
+Production changes use review, checks, preview, exact-SHA release controls, and rollback/version history.
 
 ## Immediate priority
 
-1. Consolidate product language and architecture under Ziepher.
+1. Keep product language and architecture canonical under ZLife.
 2. Reuse existing auth/build/deploy/AI infrastructure.
-3. Build the tree-service operational data model.
-4. Port leads/customers/properties.
-5. Port estimate/scheduling/crew logic.
-6. Port jobs/invoices.
-7. Integrate Stripe in test mode.
+3. Complete the Tree Service operational data model.
+4. Strengthen leads/customers/properties tenant isolation.
+5. Complete estimate/scheduling/crew workflows.
+6. Complete jobs/invoices.
+7. Keep Stripe in test mode until launch approval.
 8. Connect website/growth capabilities to operational records.
-9. Integrate Match as an opportunity source.
-10. Pilot the end-to-end loop with a controlled tree-service business.
-11. Complete security/legal/billing launch review.
-12. Launch, collect revenue/feedback, then expand industries/modules.
+9. Integrate service/opportunity workflows safely.
+10. Complete security, accessibility, CI, database, and performance gates.
+11. Pilot the end-to-end Tree Service loop in a controlled environment.
+12. Expand into additional ZLife modules only after the first module is stable.
 
 ## Canonical docs
 
@@ -147,4 +145,8 @@ Production changes use review, checks, preview, explicit approval, exact-SHA rel
 - `docs/ZIEPHER-TREE-SERVICE-LAUNCH.md`
 - `docs/ZIEPHER-LEGACY-MIGRATION-MAP.md`
 
-The default rule going forward: **new ideas become Ziepher capabilities, not new standalone products, unless there is a strong architectural/business reason otherwise.**
+Some file names retain legacy Ziepher naming for compatibility and history. Their product language should follow the current rule:
+
+**Ziepher Tech is the company. ZLife is the main platform. Tree Service is the first active business module.**
+
+New ideas should become ZLife capabilities or modules rather than new standalone products unless a strong architectural or business reason requires a separate boundary.
