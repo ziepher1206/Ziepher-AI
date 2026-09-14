@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { apiError } from "@/lib/http";
 
 const bodySchema = z.discriminatedUnion("action", [
-  z.object({ action: z.enum(["start", "pause", "resume"]) }),
+  z.object({ action: z.enum(["depart", "arrive", "start", "weather", "pause", "resume"]) }),
   z.object({ action: z.literal("complete"), finalValueCents: z.number().int().min(0).max(100_000_000).nullable().optional() })
 ]);
 
