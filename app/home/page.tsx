@@ -18,6 +18,33 @@ function formatDate(value: string | null) {
   }).format(new Date(value));
 }
 
+function HomeHeader() {
+  return (
+    <header className="projects-header">
+      <div className="brand">
+        <div className="brand-mark">Z</div>
+        <div>
+          <div className="brand-title">Z-LIFE</div>
+          <div className="brand-subtitle">HOME & FAMILY</div>
+        </div>
+      </div>
+      <div className="inline-actions">
+        <Link className="button" href="/modules/home">About module</Link>
+        <Link className="button" href="/">Z-Life home</Link>
+      </div>
+    </header>
+  );
+}
+
+function missingHomeSchema(error: { code?: string; message?: string } | null) {
+  if (!error) return false;
+  return (
+    error.code === "42P01" ||
+    error.code === "PGRST205" ||
+    error.message?.includes("Could not find the table") === true
+  );
+}
+
 export default async function HomeFamilyPage() {
   if (!isSupabaseConfigured()) redirect("/auth/sign-in");
 
@@ -49,6 +76,30 @@ export default async function HomeFamilyPage() {
       .order("next_due_at", { ascending: true, nullsFirst: false }),
   ]);
 
+  if (missingHomeSchema(tasksResult.error) || missingHomeSchema(maintenanceResult.error)) {
+    return (
+      <main className="projects-page">
+        <HomeHeader />
+        <section style={{ display: "grid", gap: 22, maxWidth: 900 }}>
+          <section className="auth-card" style={{ maxWidth: "none" }}>
+            <p className="panel-label">Development readiness</p>
+            <h1 style={{ margin: "6px 0 10px" }}>Home & Family is waiting for its database migration.</h1>
+            <p className="auth-copy" style={{ maxWidth: 760 }}>
+              The application code is installed, but this environment does not have the Home & Family tables yet. ZLife is keeping the module behind a safe readiness screen instead of showing broken forms or pretending household data can be saved.
+            </p>
+            <p className="auth-copy" style={{ maxWidth: 760 }}>
+              Required repository migration: <code>20260914232000_home_family_foundation.sql</code>. Applying production database migrations remains a controlled release action.
+            </p>
+            <div className="inline-actions" style={{ marginTop: 14 }}>
+              <Link className="button primary" href="/modules/home">View Home & Family plan</Link>
+              <Link className="button" href="/">Back to ZLife</Link>
+            </div>
+          </section>
+        </section>
+      </main>
+    );
+  }
+
   if (tasksResult.error) throw tasksResult.error;
   if (maintenanceResult.error) throw maintenanceResult.error;
 
@@ -59,19 +110,7 @@ export default async function HomeFamilyPage() {
 
   return (
     <main className="projects-page">
-      <header className="projects-header">
-        <div className="brand">
-          <div className="brand-mark">Z</div>
-          <div>
-            <div className="brand-title">Z-LIFE</div>
-            <div className="brand-subtitle">HOME & FAMILY</div>
-          </div>
-        </div>
-        <div className="inline-actions">
-          <Link className="button" href="/modules/home">About module</Link>
-          <Link className="button" href="/">Z-Life home</Link>
-        </div>
-      </header>
+      <HomeHeader />
 
       <section style={{ display: "grid", gap: 22, maxWidth: 1180 }}>
         <div>
