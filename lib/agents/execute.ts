@@ -1,8 +1,8 @@
 import OpenAI from "openai";
 import { agentById } from "./registry";
 import { buildAgentSystemPrompt } from "./prompt";
-import { shouldUseZLifeMock } from "@/lib/community/dev-mode";
-import { assertZLifeLiveProviderAllowed } from "@/lib/community/provider-adapters";
+import { shouldUseZLifeMock } from "../community/dev-mode";
+import { assertZLifeLiveProviderAllowed } from "../community/provider-adapters";
 
 export type AgentExecutionInput = {
   agentId: string;
