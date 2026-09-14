@@ -37,11 +37,30 @@ type Props = {
 
 const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
-function numberOrNull(value: FormDataEntryValue | null, multiplier = 1) {
-  if (typeof value !== "string" || value.trim() === "") return null;
-  const parsed = Number(value);
-  return Number.isFinite(parsed) ? Math.round(parsed * multiplier) : null;
-}
+const treeServiceOptions = [
+  "Tree removal",
+  "Tree trimming / pruning",
+  "Stump grinding",
+  "Stump removal",
+  "Storm cleanup",
+  "Emergency tree service",
+  "Tree health / inspection",
+  "Cabling / bracing",
+  "Lot / land clearing",
+  "Brush removal",
+  "Crane-assisted tree removal",
+  "Tree planting"
+];
+
+const durationOptions = [
+  { value: "60", label: "About 1 hour" },
+  { value: "120", label: "About 2 hours" },
+  { value: "180", label: "About 3 hours" },
+  { value: "240", label: "Half day · about 4 hours" },
+  { value: "360", label: "Most of a day · about 6 hours" },
+  { value: "480", label: "Full day · about 8 hours" },
+  { value: "720", label: "Long day / large job · about 12 hours" }
+];
 
 function shortMember(member: WorkspaceMember) {
   return `${member.role} · ${member.user_id.slice(0, 8)}`;
@@ -82,11 +101,11 @@ export function OperateBusinessSetup({ workspaceId, services, crews, workspaceMe
         type: "service",
         workspaceId,
         name: form.get("name"),
-        description: form.get("description"),
-        defaultDurationMinutes: numberOrNull(form.get("duration")),
-        preparationBufferMinutes: numberOrNull(form.get("prep")) ?? 0,
-        cleanupBufferMinutes: numberOrNull(form.get("cleanup")) ?? 0,
-        basePriceCents: numberOrNull(form.get("price"), 100)
+        description: null,
+        defaultDurationMinutes: Number(form.get("duration") ?? 240),
+        preparationBufferMinutes: 0,
+        cleanupBufferMinutes: 0,
+        basePriceCents: null
       })
     });
     const body = await response.json().catch(() => ({}));
@@ -166,29 +185,36 @@ export function OperateBusinessSetup({ workspaceId, services, crews, workspaceMe
     <div style={{ display: "grid", gap: 20 }}>
       <section className="auth-card" style={{ maxWidth: "none" }}>
         <p className="panel-label">Tree service catalog</p>
-        <h2 style={{ margin: "6px 0 8px" }}>Services</h2>
-        <p className="auth-copy" style={{ marginTop: 0 }}>Set up the work your company sells. Duration and price are defaults that can still be changed on individual estimates.</p>
+        <h2 style={{ margin: "6px 0 8px" }}>What services do you offer?</h2>
+        <p className="auth-copy" style={{ marginTop: 0 }}>Keep setup simple: choose the service and a rough job length. Exact scope, pricing, notes, and job details are added later when you create the estimate.</p>
         <form onSubmit={createService} style={{ display: "grid", gap: 12, marginTop: 18 }}>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))", gap: 12 }}>
-            <label className="field"><span>Service name</span><input name="name" required maxLength={160} placeholder="Tree removal" /></label>
-            <label className="field"><span>Typical duration (minutes)</span><input name="duration" type="number" min="15" max="1440" step="15" placeholder="180" /></label>
-            <label className="field"><span>Starting price</span><input name="price" type="number" min="0" step="0.01" placeholder="0.00" /></label>
-            <label className="field"><span>Prep buffer (minutes)</span><input name="prep" type="number" min="0" max="240" step="5" defaultValue="0" /></label>
-            <label className="field"><span>Cleanup buffer (minutes)</span><input name="cleanup" type="number" min="0" max="240" step="5" defaultValue="0" /></label>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))", gap: 12 }}>
+            <label className="field">
+              <span>Service</span>
+              <select name="name" defaultValue="" required>
+                <option value="" disabled>Choose a service</option>
+                {treeServiceOptions.map((service) => <option key={service} value={service}>{service}</option>)}
+              </select>
+            </label>
+            <label className="field">
+              <span>Typical job length</span>
+              <select name="duration" defaultValue="240" required>
+                {durationOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+              </select>
+            </label>
           </div>
-          <label className="field"><span>Description</span><textarea name="description" rows={2} maxLength={1000} placeholder="What is normally included?" /></label>
           <div><button className="button primary" disabled={!!busy} type="submit">{busy === "service" ? "Adding…" : "Add service"}</button></div>
         </form>
         <div style={{ display: "grid", gap: 10, marginTop: 20 }}>
           {services.map((service) => (
             <div key={service.id} className="project-card" style={{ minHeight: 0 }}>
               <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "start", flexWrap: "wrap" }}>
-                <div><strong>{service.name}</strong><p className="auth-copy" style={{ margin: "5px 0 0" }}>{service.description || "No description"}{service.default_duration_minutes ? ` · ${service.default_duration_minutes} min` : ""}{service.base_price_cents != null ? ` · $${(service.base_price_cents / 100).toFixed(2)} starting` : ""}</p></div>
+                <div><strong>{service.name}</strong><p className="auth-copy" style={{ margin: "5px 0 0" }}>{service.default_duration_minutes ? `${service.default_duration_minutes} min typical` : "Duration not set"}</p></div>
                 <button className="button" disabled={!!busy} onClick={() => setActive("service", service.id, !service.active)}>{busy === service.id ? "Saving…" : service.active ? "Pause service" : "Reactivate"}</button>
               </div>
             </div>
           ))}
-          {!services.length ? <p className="auth-copy">No services configured yet. Add the first tree-service offering above.</p> : null}
+          {!services.length ? <p className="auth-copy">No services selected yet.</p> : null}
         </div>
       </section>
 
