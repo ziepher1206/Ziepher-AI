@@ -24,10 +24,13 @@ export default async function ProjectStudioPage({ params }: Props) {
           zIndex: 30,
           display: "grid",
           gap: 8,
-          maxWidth: 230
+          maxWidth: 245
         }}
       >
-        <Link className="button primary" href={`/projects/${projectId}/media`} style={{ textDecoration: "none" }}>
+        <Link className="button primary" href={`/projects/${projectId}/changes`} style={{ textDecoration: "none" }}>
+          Tell Z-Life What to Change
+        </Link>
+        <Link className="button" href={`/projects/${projectId}/media`} style={{ textDecoration: "none" }}>
           Add Photos & References
         </Link>
         <Link className="button" href="/projects" style={{ textDecoration: "none" }}>
