@@ -9,6 +9,7 @@ import { paidAIProviderOrder } from "./provider-policy";
 import type { QualityMode } from "@/lib/domain/schemas";
 import { shouldUseZLifeMock } from "../community/dev-mode";
 import type { AIUsage } from "./usage";
+import type { BuildReferenceImage } from "./build-reference-images";
 
 export type BuildRouteResult = {
   artifact: BuildArtifact;
@@ -21,6 +22,7 @@ export type BuildRouteResult = {
 type BuildRouteOptions = {
   allowPaidProvider?: boolean;
   allowUnmeteredProvider?: boolean;
+  referenceImages?: BuildReferenceImage[];
 };
 
 function googleModelFor(mode: QualityMode) {
@@ -86,7 +88,7 @@ export async function createApplicationBuild(
       const model = openAIModelFor(mode);
       if (!process.env.OPENAI_API_KEY || !model) continue;
       try {
-        const result = await buildWithOpenAI(prompt, model);
+        const result = await buildWithOpenAI(prompt, model, options.referenceImages);
         return {
           artifact: buildArtifactSchema.parse(parseJsonObject(result.text)),
           provider: "openai",
@@ -148,7 +150,7 @@ export async function repairApplicationBuild(
       const model = process.env.OPENAI_ESCALATION_MODEL ?? process.env.OPENAI_BUILD_MODEL;
       if (!process.env.OPENAI_API_KEY || !model) continue;
       try {
-        const result = await buildWithOpenAI(prompt, model);
+        const result = await buildWithOpenAI(prompt, model, options.referenceImages);
         return {
           artifact: buildArtifactSchema.parse(parseJsonObject(result.text)),
           provider: "openai",
