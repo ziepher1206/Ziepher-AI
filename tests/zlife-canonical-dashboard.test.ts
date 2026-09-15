@@ -6,36 +6,33 @@ function source(path: string) {
 }
 
 describe("canonical Z-Life signed-in dashboard", () => {
-  it("keeps the approved Z-Life visual language and core navigation", () => {
+  it("keeps the approved Z-Life visual language and the two primary actions", () => {
     const page = source("app/dashboard/page.tsx");
     expect(page).toContain("#02090b");
     expect(page).toContain("#38e0f3");
     expect(page).toContain("#10d981");
-    expect(page).toContain("Z <span");
     expect(page).toContain("⌁");
-    expect(page).toContain('href="/assistant"');
-    expect(page).toContain('href="/today"');
-    expect(page).toContain('href="/dashboard/modules"');
+    expect(page).toContain("What do you want to do?");
+    expect(page).toContain("Ask Z-Life");
+    expect(page).toContain("My Day");
   });
 
-  it("keeps Today at a Glance and quick module access on the home screen", () => {
+  it("shows only useful attention signals instead of a giant checklist", () => {
     const page = source("app/dashboard/page.tsx");
-    expect(page).toContain("Today at a glance");
-    expect(page).toContain("Quick access");
-    expect(page).toContain("Life & personal");
-    expect(page).toContain("Bills & payments");
-    expect(page).toContain("Auto & vehicle");
-    expect(page).toContain("End of day");
-    expect(page).toContain("Open My Day");
+    expect(page).toContain("Only what needs attention");
+    expect(page).toContain("New leads");
+    expect(page).toContain("Next 24 hours");
+    expect(page).toContain("Overdue");
+    expect(page).toContain("Home tasks");
+    expect(page).not.toContain("Grocery & shopping");
+    expect(page).not.toContain("Auto & vehicle");
   });
 
-  it("keeps Z-Life modular instead of forcing every module onto the dashboard", () => {
+  it("keeps unfinished modules off the main interface", () => {
     const page = source("app/dashboard/page.tsx");
-    const modulesPage = source("app/dashboard/modules/page.tsx");
-    expect(page).toContain("previewModules = modules.slice(0, 8)");
-    expect(page).toContain("Plug in only the parts you want");
-    expect(modulesPage).toContain("Choose only what you need");
-    expect(modulesPage).toContain("Remove from my Z-Life");
-    expect(modulesPage).toContain("Plug into my Z-Life");
+    expect(page).toContain('catalog.status === "active"');
+    expect(page).toContain("Things you can actually use");
+    expect(page).toContain("Preview modules and unfinished controls stay out of the main interface until they actually work");
+    expect(page).toContain('installedModules.slice(0, 4)');
   });
 });
