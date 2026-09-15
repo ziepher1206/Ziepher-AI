@@ -119,11 +119,18 @@ export default async function DashboardPage() {
     { label: "Grocery & shopping", value: "Connect", detail: "future daily context", href: "/dashboard/modules" },
     { label: "Auto & vehicle", value: "Connect", detail: "module in development", href: "/modules/auto" },
     { label: "Documents", value: "Connect", detail: "module in development", href: "/modules/documents" },
-    { label: "End of day", value: "Ask AI", detail: "review and plan tomorrow", href: "/operate/assistant" }
+    { label: "End of day", value: "Ask AI", detail: "review and plan tomorrow", href: "/assistant" }
   ];
 
   const previewModules = modules.slice(0, 8);
   const firstName = user.email?.split("@")[0]?.split(/[._-]/)[0] ?? "there";
+
+  const summaryCards = [
+    [String(modules.length), "Active modules", "Connected to your Z-Life"],
+    [businessDataReady ? String(upcomingAppointments) : "—", "Next 24 hours", businessDataReady ? "Scheduled appointments" : "Business not connected"],
+    [businessDataReady ? String(newLeads) : "—", "Business attention", businessDataReady ? "New leads waiting" : "Business not connected"],
+    [homeDataReady ? String(openHomeTasks) : "—", "Home attention", homeDataReady ? "Open household tasks" : "Home module data not connected"]
+  ];
 
   return (
     <main style={shell}>
@@ -136,8 +143,9 @@ export default async function DashboardPage() {
             </div>
           </Link>
           <div className="inline-actions" style={{ flexWrap: "wrap", justifyContent: "flex-end" }}>
+            <Link className="button" href="/today">My Day</Link>
             <Link className="button" href="/dashboard/modules">Modules</Link>
-            <Link className="button" href="/operate/assistant">Ask Z-Life</Link>
+            <Link className="button" href="/assistant">Ask Z-Life</Link>
             <Link className="button" href="/settings">Settings</Link>
             <form action="/auth/sign-out" method="post"><button className="button">Sign out</button></form>
           </div>
@@ -149,19 +157,15 @@ export default async function DashboardPage() {
             <h1 style={{ margin: "12px 0 10px", fontSize: "clamp(38px,5vw,66px)", lineHeight: .96, letterSpacing: "-.045em" }}>Good morning, {firstName}.<br /><span style={{ color: "#38e0f3" }}>Your whole day, one place.</span></h1>
             <p style={{ maxWidth: 720, color: "#b8d2cf", lineHeight: 1.65, margin: 0 }}>Z-Life connects the modules you use, keeps the rest out of the way, and gives you one AI entry point for life, business, planning, and whatever comes next.</p>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginTop: 22 }}>
-              <Link href="/operate/assistant" className="button primary" style={{ background: "linear-gradient(135deg,#38e0f3,#7fffd4)", color: "#001112", border: 0 }}>Ask Z-Life AI</Link>
+              <Link href="/assistant" className="button primary" style={{ background: "linear-gradient(135deg,#38e0f3,#7fffd4)", color: "#001112", border: 0 }}>Ask Z-Life AI</Link>
+              <Link href="/today" className="button">Open My Day</Link>
               <Link href="/dashboard/modules" className="button">Add a module</Link>
             </div>
           </div>
         </section>
 
         <section style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))", gap: 12, marginTop: 16 }}>
-          {[
-            [String(modules.length), "Active modules", "Connected to your Z-Life"],
-            [String(upcomingAppointments), "Next 24 hours", "Scheduled appointments"],
-            [String(newLeads), "Business attention", "New leads waiting"],
-            [String(openHomeTasks), "Home attention", homeDataReady ? "Open household tasks" : "Home module data not connected"]
-          ].map(([value, label, detail]) => (
+          {summaryCards.map(([value, label, detail]) => (
             <article key={label} style={{ ...card, padding: 18 }}>
               <p style={{ margin: 0, color: "#9dbbb7", fontSize: 11, textTransform: "uppercase", letterSpacing: ".1em" }}>{label}</p>
               <strong style={{ display: "block", marginTop: 8, fontSize: 26, color: "#f6fffd" }}>{value}</strong>
@@ -196,8 +200,10 @@ export default async function DashboardPage() {
           </article>
 
           <aside style={{ ...card, padding: 22 }}>
-            <p className="panel-label" style={{ color: "#7fffd4" }}>Today at a glance</p>
-            <h2 style={{ margin: "4px 0 16px" }}>Real connected data where it exists.</h2>
+            <div style={{ display: "flex", alignItems: "end", justifyContent: "space-between", gap: 12, marginBottom: 16 }}>
+              <div><p className="panel-label" style={{ color: "#7fffd4" }}>Today at a glance</p><h2 style={{ margin: "4px 0 0" }}>Real connected data where it exists.</h2></div>
+              <Link href="/today" style={{ color: "#7fffd4", fontSize: 12, textDecoration: "none", whiteSpace: "nowrap" }}>Open My Day →</Link>
+            </div>
             <div style={{ display: "grid", gap: 9 }}>
               {todayRows.map((item) => (
                 <Link key={item.label} href={item.href} style={{ color: "inherit", textDecoration: "none", display: "grid", gridTemplateColumns: "1fr auto", gap: 12, padding: "11px 12px", borderRadius: 12, background: "rgba(255,255,255,.025)", border: "1px solid rgba(255,255,255,.055)" }}>
@@ -216,7 +222,7 @@ export default async function DashboardPage() {
             <h2 style={{ margin: "4px 0 7px" }}>One AI teammate across every connected part of your life.</h2>
             <p style={{ margin: 0, color: "#8faaa7", lineHeight: 1.55 }}>Ask what needs attention, plan the day, work through a business problem, organize family tasks, or get routed to the right module automatically.</p>
           </div>
-          <Link href="/operate/assistant" className="button primary" style={{ whiteSpace: "nowrap", background: "linear-gradient(135deg,#38e0f3,#10d981)", color: "#001112", border: 0 }}>Open AI Assistant</Link>
+          <Link href="/assistant" className="button primary" style={{ whiteSpace: "nowrap", background: "linear-gradient(135deg,#38e0f3,#10d981)", color: "#001112", border: 0 }}>Open Ask Z-Life</Link>
         </section>
       </div>
     </main>
