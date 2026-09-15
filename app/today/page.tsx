@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
+import { ZLifeQuickAdd } from "@/components/zlife-quick-add";
 import { isSupabaseConfigured } from "@/lib/env";
 import { createClient } from "@/lib/supabase/server";
 
@@ -109,6 +110,8 @@ export default async function TodayPage() {
             <article key={label} style={{ ...card, padding: 18 }}><p style={{ margin: 0, color: "#9dbbb7", fontSize: 11, textTransform: "uppercase", letterSpacing: ".1em" }}>{label}</p><strong style={{ display: "block", marginTop: 8, fontSize: 28 }}>{value}</strong><small style={{ color: "#789b97" }}>{detail}</small></article>
           ))}
         </section>
+
+        {dailyStreamReady ? <div style={{ marginTop: 16 }}><ZLifeQuickAdd /></div> : null}
 
         {dailyStreamReady && unifiedItems.length ? (
           <section style={{ ...card, marginTop: 16, padding: 22 }}>
