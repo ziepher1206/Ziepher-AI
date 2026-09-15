@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { ZLifePublicShell } from "@/components/zlife-public-shell";
-import { zlifeModules } from "@/lib/zlife/modules";
+import { zlifeModules, zlifeModuleStatusLabel, zlifeModuleStatusShortLabel } from "@/lib/zlife/modules";
 
 export default function ModulesPage() {
   return (
@@ -10,15 +10,15 @@ export default function ModulesPage() {
           <div>
             <p className="zlife-kicker">Z-LIFE MODULES</p>
             <h1>One platform. Specialized modules.</h1>
-            <p>Every module connects to the same Z-Life identity, assistant, permissions, and account. Open any module to see its purpose, capabilities, and current status.</p>
+            <p>Every module connects to the same Z-Life identity, assistant, permissions, and account. Launch Focus marks what Z-Life is actively preparing to release first.</p>
           </div>
         </div>
 
         <div className="zlife-module-grid">
           {zlifeModules.map((item) => (
             <Link
-              aria-label={`${item.name}. ${item.status === "active" ? "Active module" : "In development"}.`}
-              className={`zlife-module-card ${item.status === "active" ? "is-active" : ""} ${item.nestedLabel ? "has-nested" : ""}`}
+              aria-label={`${item.name}. ${zlifeModuleStatusLabel(item.status)}.`}
+              className={`zlife-module-card ${item.status === "active" || item.status === "launch" ? "is-active" : ""} ${item.nestedLabel ? "has-nested" : ""}`}
               href={`/modules/${item.slug}`}
               key={item.slug}
             >
@@ -35,12 +35,12 @@ export default function ModulesPage() {
                     <strong>{item.nestedLabel}</strong>
                     <small>{item.slug === "business" ? "Industry profile inside Z-Life Business" : "Working foundation inside this module"}</small>
                   </div>
-                  <b>{item.status === "active" ? "ACTIVE" : "BUILDING"}</b>
+                  <b>{zlifeModuleStatusShortLabel(item.status)}</b>
                 </div>
               ) : null}
 
-              <span className={`zlife-status ${item.status === "active" ? "is-active" : ""}`}>
-                {item.status === "active" ? "Active Module" : "In Development"}
+              <span className={`zlife-status ${item.status === "active" || item.status === "launch" ? "is-active" : ""}`}>
+                {zlifeModuleStatusLabel(item.status)}
               </span>
             </Link>
           ))}
