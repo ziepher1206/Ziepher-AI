@@ -26,9 +26,16 @@ export default async function ProjectStudioPage({ params }: Props) {
           bottom: 52,
           zIndex: 30,
           display: "grid",
-          gap: 8
+          gap: 8,
+          maxWidth: 220
         }}
       >
+        <Link className="button primary" href={`/projects/${projectId}/media`} style={{ textDecoration: "none" }}>
+          Photos & design references
+        </Link>
+        <small style={{ color: "#8faaa7", lineHeight: 1.35 }}>
+          Upload screenshots or mockups before building when you want the visual result to closely match a reference.
+        </small>
         <Link className="button" href={`/projects/${projectId}`} style={{ textDecoration: "none" }}>
           Website overview
         </Link>
