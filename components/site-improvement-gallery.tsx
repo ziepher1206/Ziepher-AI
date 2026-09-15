@@ -112,7 +112,7 @@ export function SiteImprovementGallery({ projectId, recommendations, priorities 
   const [selected, setSelected] = useState(0);
 
   const items = useMemo<Improvement[]>(() => {
-    const source = priorities.length ? [...priorities] : recommendations.map((text) => ({ title: categoryFor(text), reason: text, recommendedChange: text, category: categoryFor(text) }));
+    const source: Improvement[] = priorities.length ? [...priorities] : recommendations.map((text) => ({ title: categoryFor(text), reason: text, recommendedChange: text, category: categoryFor(text) }));
     return source.sort((left, right) => priorityRank(left.impact) - priorityRank(right.impact));
   }, [priorities, recommendations]);
 
