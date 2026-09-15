@@ -20,6 +20,15 @@ describe("central Ask Z-Life entry point", () => {
     expect(router).toContain('href: "/services"');
   });
 
+  it("keeps mixed life requests together instead of forcing one module", () => {
+    const router = source("components/zlife-assistant-router.tsx");
+    expect(router).toContain("if (matches.length > 1)");
+    expect(router).toContain('area: "My Day"');
+    expect(router).toContain('href: "/dashboard"');
+    expect(router).toContain("Open Today at a Glance");
+    expect(router).toContain("instead of sending you into one isolated module");
+  });
+
   it("does not pretend uncertain requests were understood", () => {
     const router = source("components/zlife-assistant-router.tsx");
     expect(router).toContain("does not have enough connected context to classify that request confidently yet");
