@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
+import { BuilderProgress } from "@/components/builder-progress";
 import { ProjectDomainStep } from "@/components/project-domain-step";
 import { isSupabaseConfigured } from "@/lib/env";
 import { createClient } from "@/lib/supabase/server";
@@ -11,14 +12,8 @@ export default async function ProjectDomainsPage({ params }: Props) {
 
   const { projectId } = await params;
   const supabase = await createClient();
-  const {
-    data: { user }
-  } = await supabase.auth.getUser();
-  if (!user) {
-    redirect(
-      `/auth/sign-in?next=${encodeURIComponent(`/projects/${projectId}/domains`)}`
-    );
-  }
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) redirect(`/auth/sign-in?next=${encodeURIComponent(`/projects/${projectId}/domains`)}`);
 
   const { data: project, error } = await supabase
     .from("projects")
@@ -38,16 +33,13 @@ export default async function ProjectDomainsPage({ params }: Props) {
           </div>
         </div>
         <div className="inline-actions">
-          <Link className="button" href={`/projects/${projectId}/studio`}>
-            Back to preview
-          </Link>
-          <Link className="button" href={`/projects/${projectId}/media`}>
-            Photos & references
-          </Link>
+          <Link className="button" href={`/projects/${projectId}/studio`}>Back to preview</Link>
+          <Link className="button" href={`/projects/${projectId}/media`}>Photos & references</Link>
         </div>
       </header>
 
       <section style={{ display: "grid", gap: 24 }}>
+        <BuilderProgress projectId={projectId} currentStage={4} />
         <section className="project-card" style={{ display: "grid", gap: 10 }}>
           <p className="panel-label">Step 4 of 5 · Domain</p>
           <h1 style={{ margin: 0 }}>Give {project.business_name ?? project.name} a home.</h1>
@@ -56,11 +48,7 @@ export default async function ProjectDomainsPage({ params }: Props) {
           </p>
           <div className="inline-actions">
             <span className="status-pill">Build v{project.current_version ?? 0}</span>
-            {project.preview_url ? (
-              <a className="button" href={project.preview_url} target="_blank" rel="noreferrer">
-                Review preview again
-              </a>
-            ) : null}
+            {project.preview_url ? <a className="button" href={project.preview_url} target="_blank" rel="noreferrer">Review preview again</a> : null}
           </div>
         </section>
 
@@ -72,11 +60,7 @@ export default async function ProjectDomainsPage({ params }: Props) {
           <p>
             Choosing or connecting a domain does not publish the project. Use the final readiness screen to verify the preview, domain, and deployment target before any production approval is possible.
           </p>
-          <div>
-            <Link className="button primary" href={`/projects/${projectId}/publish`}>
-              Continue to Publish Readiness
-            </Link>
-          </div>
+          <div><Link className="button primary" href={`/projects/${projectId}/publish`}>Continue to Publish Readiness</Link></div>
         </section>
       </section>
     </main>
