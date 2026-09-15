@@ -1,5 +1,7 @@
 import Link from "next/link";
+import { ZLifeProgressMeter } from "@/components/zlife-progress-meter";
 import { ZLifePublicShell } from "@/components/zlife-public-shell";
+import { buildProgress } from "@/lib/zlife-build-progress";
 
 const homeDestinations = [
   {
@@ -7,35 +9,40 @@ const homeDestinations = [
     title: "AI Teams",
     description: "Meet the specialized AI teams that help route, organize, build, and improve work across ZLife.",
     href: "/ai-teams",
-    cta: "Explore AI Teams →"
+    cta: "Explore AI Teams →",
+    progressKey: "ai-teams",
   },
   {
     step: "02",
     title: "Modules",
     description: "Open the focused parts of ZLife for business, home, building, services, and everyday digital work.",
     href: "/modules",
-    cta: "Browse Modules →"
+    cta: "Browse Modules →",
+    progressKey: "modules",
   },
   {
     step: "03",
     title: "About ZLife",
     description: "See why ZLife exists, what problem it is trying to solve, and the real-world experience behind it.",
     href: "/about",
-    cta: "Read About ZLife →"
+    cta: "Read About ZLife →",
+    progressKey: "about",
   },
   {
     step: "04",
     title: "Future Plan",
     description: "See the larger roadmap for turning ZLife into a connected platform built by AI and people together.",
     href: "/vision",
-    cta: "See the Full Vision →"
+    cta: "See the Full Vision →",
+    progressKey: "vision",
   },
   {
     step: "05",
     title: "Community",
     description: "Learn how contributors can test, improve, and help shape ZLife without needing access to protected production systems.",
     href: "/community",
-    cta: "Explore Community →"
+    cta: "Explore Community →",
+    progressKey: "community",
   }
 ] as const;
 
@@ -86,20 +93,24 @@ export function ZLifeMarketingHome() {
       <section className="zlife-section" aria-labelledby="gateway-heading">
         <div className="zlife-section-heading">
           <div>
-            <p className="zlife-kicker">GO WHERE YOU NEED TO GO</p>
-            <h2 id="gateway-heading">Use ZLife like a platform, not one endless webpage.</h2>
-            <p>The homepage gives you the big picture. These buttons take you directly to the part of ZLife you want to explore next.</p>
+            <p className="zlife-kicker">LIVE BUILD FEED</p>
+            <h2 id="gateway-heading">See what is finished and what ZLife is building next.</h2>
+            <p>Every percentage is calculated from explicit build milestones. It is a readiness signal, not a made-up time estimate.</p>
           </div>
         </div>
         <div className="zlife-flow-grid">
-          {homeDestinations.map((item) => (
-            <article key={item.href}>
-              <span>{item.step}</span>
-              <h3>{item.title}</h3>
-              <p>{item.description}</p>
-              <Link href={item.href}>{item.cta}</Link>
-            </article>
-          ))}
+          {homeDestinations.map((item) => {
+            const progress = buildProgress[item.progressKey];
+            return (
+              <article key={item.href}>
+                <span>{item.step}</span>
+                <h3>{item.title}</h3>
+                <p>{item.description}</p>
+                <ZLifeProgressMeter progress={progress} />
+                <Link href={item.href}>{item.cta}</Link>
+              </article>
+            );
+          })}
         </div>
       </section>
 
