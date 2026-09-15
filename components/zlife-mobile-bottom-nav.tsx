@@ -4,11 +4,11 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import styles from "./zlife-mobile-bottom-nav.module.css";
 
-const signedInPrefixes = ["/dashboard", "/assistant", "/operate", "/home", "/services", "/projects", "/settings"];
+const signedInPrefixes = ["/dashboard", "/today", "/assistant", "/operate", "/home", "/services", "/projects", "/settings"];
 
 const navItems = [
   { label: "Home", href: "/dashboard", icon: "⌂" },
-  { label: "My Day", href: "/dashboard", icon: "☷" },
+  { label: "My Day", href: "/today", icon: "☷" },
   { label: "Ask Z-Life", href: "/assistant", icon: "⌁", primary: true },
   { label: "Modules", href: "/dashboard/modules", icon: "▦" },
   { label: "More", href: "/settings", icon: "•••" }
@@ -23,9 +23,7 @@ export function ZLifeMobileBottomNav() {
       <div aria-hidden="true" className={styles.spacer} />
       <nav aria-label="Z-Life mobile navigation" className={styles.nav}>
         {navItems.map((item) => {
-          const active = item.href === "/dashboard"
-            ? pathname === "/dashboard"
-            : pathname === item.href || pathname.startsWith(`${item.href}/`);
+          const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
           const className = [
             styles.item,
             active ? styles.itemActive : "",
