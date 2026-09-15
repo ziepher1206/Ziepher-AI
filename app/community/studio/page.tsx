@@ -41,7 +41,7 @@ async function getContributorIdentity() {
         : "";
 
     return {
-      authenticated: true,
+      authenticated: true as const,
       email: user.email ?? null,
       displayName: contributor?.display_name ?? metadataName,
       status: contributor?.status ?? "community_member",
