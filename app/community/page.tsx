@@ -22,6 +22,13 @@ function formatRole(value: string) {
     .join(" ");
 }
 
+function formatContributionType(value: string) {
+  return value
+    .split("_")
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+}
+
 export default async function CommunityPage() {
   const contributors = await getPublicContributorSummaries();
   const verifiedPoints = contributors.reduce((sum, contributor) => sum + contributor.lifetimeScore, 0);
@@ -64,24 +71,45 @@ export default async function CommunityPage() {
 
       <section id="contributors" className="zlife-section">
         <div className="zlife-section-heading">
-          <div><p className="zlife-kicker">VERIFIED CONTRIBUTORS</p><h2>Contribution, not popularity.</h2><p>Only verified ledger data appears here. Pending activity, raw commit counts, and unreviewed work do not create public contribution value.</p></div>
+          <div>
+            <p className="zlife-kicker">VERIFIED CONTRIBUTORS</p>
+            <h2>Contribution, not popularity.</h2>
+            <p>Only verified ledger data appears here. Pending activity, raw commit counts, time spent, and unreviewed work do not create public reputation or contribution value.</p>
+          </div>
         </div>
         <div className="zlife-community-contributors">
-          {contributors.length ? contributors.map((contributor) => (
-            <article className="zlife-community-contributor" key={contributor.githubLogin}>
-              <div className="zlife-community-contributor-head">
-                <div><h3>{contributor.displayName ?? contributor.githubLogin}</h3><p>@{contributor.githubLogin}</p></div>
-                <span>{formatRole(contributor.status)}</span>
-              </div>
-              <dl>
-                <div><dt>Lifetime verified score</dt><dd>{contributor.lifetimeScore.toLocaleString()}</dd></div>
-                <div><dt>Last 90 days</dt><dd>{contributor.recent90DayScore.toLocaleString()}</dd></div>
-                <div><dt>Lifetime contribution</dt><dd>{contributor.lifetimeContributionPercent}%</dd></div>
-                <div><dt>Recent contribution</dt><dd>{contributor.recentContributionPercent}%</dd></div>
-              </dl>
-              {contributor.modules.length ? <div className="zlife-community-module-list">{contributor.modules.map((module) => <span key={module.id}>{module.name}: {module.score} pts · {module.contributionPercent}%</span>)}</div> : <p className="zlife-community-empty">No scored contribution events have been verified yet.</p>}
-            </article>
-          )) : <article className="zlife-community-empty-card"><h3>No scored contributors yet.</h3><p>The ledger is live, but Z-Life will not invent contribution history. Verified work will appear here after review.</p></article>}
+          {contributors.length ? contributors.map((contributor) => {
+            const topTypes = Object.entries(contributor.contributionTypes)
+              .sort((a, b) => b[1] - a[1])
+              .slice(0, 3);
+
+            return (
+              <article className="zlife-community-contributor" key={contributor.githubLogin}>
+                <div className="zlife-community-contributor-head">
+                  <div><h3>{contributor.displayName ?? contributor.githubLogin}</h3><p>@{contributor.githubLogin}</p></div>
+                  <span>{formatRole(contributor.status)}</span>
+                </div>
+                <dl>
+                  <div><dt>Verified work</dt><dd>{contributor.verifiedContributionCount.toLocaleString()}</dd></div>
+                  <div><dt>Accepted last 90 days</dt><dd>{contributor.recent90DayVerifiedCount.toLocaleString()}</dd></div>
+                  <div><dt>Lifetime verified value</dt><dd>{contributor.lifetimeScore.toLocaleString()}</dd></div>
+                  <div><dt>Last 90 days value</dt><dd>{contributor.recent90DayScore.toLocaleString()}</dd></div>
+                  <div><dt>Active modules</dt><dd>{contributor.activeModuleCount.toLocaleString()}</dd></div>
+                  <div><dt>Lifetime contribution share</dt><dd>{contributor.lifetimeContributionPercent}%</dd></div>
+                </dl>
+                {topTypes.length ? (
+                  <div className="zlife-community-module-list">
+                    {topTypes.map(([type, score]) => <span key={type}>{formatContributionType(type)}: {score} verified pts</span>)}
+                  </div>
+                ) : null}
+                {contributor.modules.length ? (
+                  <div className="zlife-community-module-list">
+                    {contributor.modules.map((module) => <span key={module.id}>{module.name}: {module.score} pts · {module.contributionPercent}%</span>)}
+                  </div>
+                ) : <p className="zlife-community-empty">No scored contribution events have been verified yet.</p>}
+              </article>
+            );
+          }) : <article className="zlife-community-empty-card"><h3>No scored contributors yet.</h3><p>The ledger is live, but Z-Life will not invent contribution history. Verified work will appear here after review.</p></article>}
         </div>
       </section>
 
