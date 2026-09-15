@@ -44,12 +44,34 @@
 .zlife-community-flow span { padding: 12px 15px; border: 1px solid rgba(56,240,227,.25); border-radius: 10px; background: rgba(5,31,34,.8); font-weight: 800; font-size: 12px; }
 .zlife-community-flow b { color: #36e7d6; }
 
+.zlife-studio-workspace { display: grid; gap: 18px; }
+.zlife-studio-panel,.zlife-studio-lock { padding: clamp(20px,3vw,30px); border: 1px solid rgba(128,255,239,.17); border-radius: 18px; background: linear-gradient(145deg,rgba(7,31,34,.94),rgba(3,18,20,.96)); }
+.zlife-studio-panel h2,.zlife-studio-lock h2 { margin: 4px 0 8px; font-size: clamp(28px,3vw,40px); }
+.zlife-studio-panel p,.zlife-studio-lock p { color: #99b6b3; line-height: 1.6; }
+.zlife-studio-panel-head { display: flex; align-items: start; justify-content: space-between; gap: 20px; }
+.zlife-studio-sandbox-badge { flex: 0 0 auto; padding: 8px 11px; border: 1px solid rgba(255,164,71,.4); border-radius: 999px; color: #ffc27f; font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: .08em; }
+.zlife-studio-profile-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; margin-top: 20px; }
+.zlife-studio-profile-grid label { display: grid; gap: 7px; color: #cde2df; font-size: 12px; font-weight: 800; }
+.zlife-studio-profile-grid input { width: 100%; box-sizing: border-box; padding: 13px 14px; border: 1px solid rgba(128,255,239,.2); border-radius: 10px; background: rgba(2,15,17,.88); color: #effffd; outline: none; }
+.zlife-studio-profile-grid input:focus { border-color: rgba(79,245,225,.65); box-shadow: 0 0 0 3px rgba(79,245,225,.08); }
+.zlife-studio-task-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 12px; margin-top: 20px; }
+.zlife-studio-task { display: flex; flex-direction: column; min-height: 220px; padding: 18px; border: 1px solid rgba(128,255,239,.14); border-radius: 14px; background: rgba(4,24,27,.9); }
+.zlife-studio-task.is-selected { border-color: rgba(64,233,215,.72); box-shadow: 0 0 0 2px rgba(64,233,215,.08); }
+.zlife-studio-task-meta { display: flex; justify-content: space-between; gap: 8px; color: #61eadb; font-size: 10px; font-weight: 850; text-transform: uppercase; letter-spacing: .06em; }
+.zlife-studio-task h3 { margin: 14px 0 7px; font-size: 18px; }
+.zlife-studio-task p { margin: 0 0 12px; font-size: 12px; }
+.zlife-studio-task small { margin-top: auto; color: #8ba7a4; }
+.zlife-studio-task button { margin-top: 16px; padding: 11px 12px; border: 1px solid rgba(70,238,220,.28); border-radius: 9px; background: rgba(20,91,86,.26); color: #dffefa; font: inherit; font-size: 12px; font-weight: 850; cursor: pointer; }
+.zlife-studio-task button:hover { background: rgba(23,119,111,.34); }
+
 @media (max-width: 900px) {
   .zlife-community-stats,.zlife-community-role-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
   .zlife-community-contributors { grid-template-columns: 1fr; }
+  .zlife-studio-task-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
 }
 @media (max-width: 680px) {
-  .zlife-community-stats,.zlife-community-role-grid { grid-template-columns: 1fr; }
+  .zlife-community-stats,.zlife-community-role-grid,.zlife-studio-profile-grid,.zlife-studio-task-grid { grid-template-columns: 1fr; }
   .zlife-community-hero { padding-top: 42px; }
   .zlife-community-contributor dl { grid-template-columns: 1fr; }
+  .zlife-studio-panel-head { display: grid; }
 }
