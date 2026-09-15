@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
-import { createZiepherMatchHandoffPreview } from "@/lib/services/ziepher-match-contract";
+import { createZiepherMatchHandoffPreview } from "../lib/services/ziepher-match-contract";
 
 const previewPage = readFileSync("app/services/[requestId]/match-preview/page.tsx", "utf8");
 const servicesPage = readFileSync("app/services/page.tsx", "utf8");
