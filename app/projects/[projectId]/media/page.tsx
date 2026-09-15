@@ -1,6 +1,7 @@
 /* eslint-disable @next/next/no-img-element */
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
+import { BuilderProgress } from "@/components/builder-progress";
 import { SiteMediaUpload } from "@/components/site-media-upload";
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/env";
@@ -24,9 +25,7 @@ export default async function MediaLibraryPage({ params }: Props) {
 
   const { projectId } = await params;
   const supabase = await createClient();
-  const {
-    data: { user }
-  } = await supabase.auth.getUser();
+  const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/auth/sign-in");
 
   const { data: project, error: projectError } = await supabase
@@ -34,7 +33,6 @@ export default async function MediaLibraryPage({ params }: Props) {
     .select("id,workspace_id,name,business_name,primary_domain,source_domain")
     .eq("id", projectId)
     .single();
-
   if (projectError || !project?.workspace_id) notFound();
 
   const { data: assets, error: assetError } = await supabase
@@ -42,16 +40,13 @@ export default async function MediaLibraryPage({ params }: Props) {
     .select("id,display_name,mime_type,storage_bucket,storage_path,usage_status,ai_tags,ai_summary,created_at")
     .eq("project_id", projectId)
     .order("created_at", { ascending: false });
-
   if (assetError) throw assetError;
 
   const media = await Promise.all(
     ((assets ?? []) as MediaAsset[]).map(async (asset) => {
       if (!asset.storage_path) return { ...asset, signedUrl: null as string | null };
       const bucket = asset.storage_bucket ?? "site-media";
-      const { data } = await supabase.storage
-        .from(bucket)
-        .createSignedUrl(asset.storage_path, 3600);
+      const { data } = await supabase.storage.from(bucket).createSignedUrl(asset.storage_path, 3600);
       return { ...asset, signedUrl: data?.signedUrl ?? null };
     })
   );
@@ -65,25 +60,22 @@ export default async function MediaLibraryPage({ params }: Props) {
           <div className="brand-mark">Z</div>
           <div>
             <div className="brand-title">Z-LIFE BUILD</div>
-            <div className="brand-subtitle">BUSINESS PHOTO LIBRARY</div>
+            <div className="brand-subtitle">PHOTOS & REFERENCES</div>
           </div>
         </div>
         <div className="inline-actions">
-          <Link className="button" href={`/projects/${projectId}`}>
-            Website overview
-          </Link>
-          <Link className="button" href="/projects">
-            All websites
-          </Link>
+          <Link className="button" href={`/projects/${projectId}/studio`}>Continue to preview</Link>
+          <Link className="button" href="/projects">All projects</Link>
         </div>
       </header>
 
       <section style={{ display: "grid", gap: 24 }}>
+        <BuilderProgress projectId={projectId} currentStage={2} />
         <div>
-          <p className="panel-label">{project.business_name ?? project.name}</p>
-          <h1 style={{ margin: "6px 0 10px" }}>Photos approved for this business</h1>
+          <p className="panel-label">Step 2 of 5 · {project.business_name ?? project.name}</p>
+          <h1 style={{ margin: "6px 0 10px" }}>Add the visuals Z-Life should use or match.</h1>
           <p className="auth-copy" style={{ maxWidth: 760 }}>
-            Keep website-ready photos tied to this business instead of mixing files across clients. {domain ? `Current website: ${domain}.` : ""}
+            Upload real photos for the finished build and screenshots or mockups as design references. {domain ? `Current website: ${domain}.` : ""}
           </p>
         </div>
 
@@ -93,9 +85,9 @@ export default async function MediaLibraryPage({ params }: Props) {
           <div style={{ display: "flex", alignItems: "end", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
             <div>
               <p className="panel-label">Library</p>
-              <h2 style={{ margin: "6px 0" }}>{media.length} photo{media.length === 1 ? "" : "s"}</h2>
+              <h2 style={{ margin: "6px 0" }}>{media.length} image{media.length === 1 ? "" : "s"}</h2>
             </div>
-            <small>AI photo tagging and ranking are not active yet.</small>
+            <Link className="button primary" href={`/projects/${projectId}/studio`}>Continue to Preview & Refine</Link>
           </div>
 
           {media.length ? (
@@ -104,12 +96,7 @@ export default async function MediaLibraryPage({ params }: Props) {
                 <article className="project-card" key={asset.id} style={{ overflow: "hidden" }}>
                   {asset.signedUrl ? (
                     <div style={{ aspectRatio: "4 / 3", overflow: "hidden", borderRadius: 12, marginBottom: 14, background: "rgba(255,255,255,.04)" }}>
-                      <img
-                        src={asset.signedUrl}
-                        alt={asset.display_name}
-                        loading="lazy"
-                        style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
-                      />
+                      <img src={asset.signedUrl} alt={asset.display_name} loading="lazy" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
                     </div>
                   ) : null}
                   <div className="project-card-top">
@@ -123,8 +110,8 @@ export default async function MediaLibraryPage({ params }: Props) {
             </div>
           ) : (
             <section className="empty-projects" style={{ marginTop: 14 }}>
-              <h2>No business photos yet</h2>
-              <p>Upload real business-owned photos above. Z-Life Build can later recommend which approved images fit specific pages and campaigns.</p>
+              <h2>No images yet</h2>
+              <p>You can continue without uploads, or add real photos and visual references first for a more specific result.</p>
             </section>
           )}
         </section>

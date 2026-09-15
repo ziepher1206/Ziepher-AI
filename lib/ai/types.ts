@@ -2,6 +2,7 @@ import { z } from "zod";
 import type { AIUsage } from "./usage";
 
 export const appPlanSchema = z.object({
+  projectId: z.string().uuid().optional(),
   title: z.string().min(3).max(120),
   summary: z.string().min(20).max(1200),
   targetUsers: z.array(z.string().min(1)).min(1).max(8),

@@ -2,8 +2,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { ZLifeHeartbeat } from "@/components/zlife-heartbeat";
 import { ZLifeModuleBackLink } from "@/components/zlife-module-back-link";
-import { zlifeModuleBySlug, zlifeModules } from "@/lib/zlife/modules";
+import { zlifeModuleBySlug, zlifeModules, zlifeModuleStatusLabel, zlifeModuleStatusShortLabel } from "@/lib/zlife/modules";
 import { ZLIFE_PUBLIC_ORIGIN } from "@/lib/zlife/public-origin";
 
 export function generateStaticParams() {
@@ -37,12 +38,14 @@ export default async function ZLifeModulePage({ params }: { params: Promise<{ sl
 
   if (!selectedModule) notFound();
 
+  const highlighted = selectedModule.status === "active" || selectedModule.status === "launch";
+
   return (
     <main className="zlife-landing">
       <header className="zlife-nav">
         <ZLifeModuleBackLink className="zlife-brand">
           <span className="zlife-mark" aria-hidden="true">
-            <span className="zlife-z">Z</span><span className="zlife-pulse">⌁</span><span className="zlife-life">LIFE</span>
+            <span className="zlife-z">Z</span><ZLifeHeartbeat /><span className="zlife-life">LIFE</span>
           </span>
           <small>by Ziepher Tech</small>
         </ZLifeModuleBackLink>
@@ -59,10 +62,32 @@ export default async function ZLifeModulePage({ params }: { params: Promise<{ sl
             <h1>{selectedModule.name}</h1>
             <p>{selectedModule.summary}</p>
           </div>
-          <span className={`zlife-status ${selectedModule.status === "active" ? "is-active" : ""}`}>
-            {selectedModule.status === "active" ? "Active Module" : "In Development"}
+          <span className={`zlife-status ${highlighted ? "is-active" : ""}`}>
+            {zlifeModuleStatusLabel(selectedModule.status)}
           </span>
         </div>
+
+        {selectedModule.status === "launch" ? (
+          <section className="zlife-nested-module" style={{ marginBottom: "24px" }}>
+            <span aria-hidden="true">◆</span>
+            <div>
+              <strong>First public launch path</strong>
+              <small>This is one of the builder experiences Z-Life is actively preparing to release first.</small>
+            </div>
+            <b>LAUNCHING</b>
+          </section>
+        ) : null}
+
+        {selectedModule.status === "development" && !selectedModule.launchHref ? (
+          <section className="zlife-nested-module" style={{ marginBottom: "24px" }}>
+            <span aria-hidden="true">◇</span>
+            <div>
+              <strong>Not available yet</strong>
+              <small>This module is on the Z-Life roadmap, but its working experience is not open yet.</small>
+            </div>
+            <b>BUILDING</b>
+          </section>
+        ) : null}
 
         {selectedModule.nestedLabel ? (
           <div className="zlife-nested-module" style={{ marginBottom: "24px" }}>
@@ -71,7 +96,7 @@ export default async function ZLifeModulePage({ params }: { params: Promise<{ sl
               <strong>{selectedModule.nestedLabel}</strong>
               <small>{selectedModule.slug === "business" ? "Industry profile inside the shared Service Business OS" : "Working foundation inside this module"}</small>
             </div>
-            <b>{selectedModule.status === "active" ? "ACTIVE" : "BUILDING"}</b>
+            <b>{zlifeModuleStatusShortLabel(selectedModule.status)}</b>
           </div>
         ) : null}
 
@@ -85,7 +110,11 @@ export default async function ZLifeModulePage({ params }: { params: Promise<{ sl
         </div>
 
         <div className="zlife-hero-actions" style={{ marginTop: "32px" }}>
-          {selectedModule.launchHref ? <Link className="zlife-primary" href={selectedModule.launchHref}>Open {selectedModule.shortName} <span>→</span></Link> : null}
+          {selectedModule.launchHref ? (
+            <Link className="zlife-primary" href={selectedModule.launchHref}>Open {selectedModule.shortName} <span>→</span></Link>
+          ) : (
+            <span className="zlife-secondary" aria-disabled="true">Not available yet</span>
+          )}
           <ZLifeModuleBackLink className="zlife-secondary">Back to modules</ZLifeModuleBackLink>
         </div>
       </section>

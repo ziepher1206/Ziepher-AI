@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
+import { ZLifeHeartbeat } from "@/components/zlife-heartbeat";
 import { isSupabaseConfigured } from "@/lib/env";
 import { createClient } from "@/lib/supabase/server";
 
@@ -24,6 +25,17 @@ const card: React.CSSProperties = {
   boxShadow: "0 18px 55px rgba(0,0,0,.22)"
 };
 
+function BrandTitle({ subtitle }: { subtitle: string }) {
+  return (
+    <div>
+      <div className="brand-title" style={{ display: "flex", alignItems: "center", gap: 6 }}>
+        <span>Z</span><ZLifeHeartbeat width={32} height={12} /><span>LIFE</span>
+      </div>
+      <div className="brand-subtitle">{subtitle}</div>
+    </div>
+  );
+}
+
 export default async function DashboardPage() {
   if (!isSupabaseConfigured()) redirect("/auth/sign-in");
 
@@ -46,7 +58,7 @@ export default async function DashboardPage() {
         <div style={{ maxWidth: 920, margin: "0 auto", padding: "24px 18px 70px" }}>
           <div className="brand" style={{ marginBottom: 24 }}>
             <div className="brand-mark" style={{ background: "linear-gradient(135deg,#38e0f3,#10d981)", color: "#001112" }}>Z</div>
-            <div><div className="brand-title">Z <span style={{ color: "#38e0f3" }}>⌁</span> LIFE</div><div className="brand-subtitle">by Ziepher Tech</div></div>
+            <BrandTitle subtitle="by Ziepher Tech" />
           </div>
           <section style={{ ...card, padding: 26 }}>
             <p className="panel-label" style={{ color: "#38e0f3" }}>Almost ready</p>
@@ -100,7 +112,7 @@ export default async function DashboardPage() {
           <Link href="/dashboard" style={{ color: "inherit", textDecoration: "none" }}>
             <div className="brand">
               <div className="brand-mark" style={{ background: "linear-gradient(135deg,#38e0f3,#10d981)", color: "#001112" }}>Z</div>
-              <div><div className="brand-title">Z <span style={{ color: "#38e0f3" }}>⌁</span> LIFE</div><div className="brand-subtitle">HOME</div></div>
+              <BrandTitle subtitle="HOME" />
             </div>
           </Link>
           <Link className="button" href="/settings">Account</Link>

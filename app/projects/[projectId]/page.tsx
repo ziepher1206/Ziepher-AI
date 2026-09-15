@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { SiteAnalysisControls } from "@/components/site-analysis-controls";
+import { SiteImprovementGallery } from "@/components/site-improvement-gallery";
 import { SiteScanButton } from "@/components/site-scan-button";
 import type { SiteAnalysis } from "@/lib/ai/site-analysis";
 import { isSupabaseConfigured } from "@/lib/env";
@@ -147,13 +148,21 @@ export default async function ProjectPage({ params }: Props) {
             <p className="auth-copy" style={{ maxWidth: 820 }}>
               {score === null
                 ? "Run the first scan to establish a baseline."
-                : "Your scan results are shown immediately below. Build a detailed zero-cost report from the same evidence, or use guarded live AI later when the provider is connected and explicitly approved."}
+                : "Your scan results are shown immediately below. Z-Life now turns the findings into visual examples so you can see stronger directions before deciding what to change."}
             </p>
           </div>
           {project.scan_status === "complete" ? (
             <SiteAnalysisControls projectId={projectId} liveAIAvailable={liveAIAvailable} />
           ) : null}
         </section>
+
+        {project.scan_status === "complete" && (recommendations.length || deepAnalysis?.priorities?.length) ? (
+          <SiteImprovementGallery
+            projectId={projectId}
+            recommendations={recommendations}
+            priorities={deepAnalysis?.priorities ?? []}
+          />
+        ) : null}
 
         {checks.length ? (
           <section>
@@ -195,7 +204,7 @@ export default async function ProjectPage({ params }: Props) {
                           }
                         }}
                       >
-                        Turn into change request
+                        Improve this
                       </Link>
                     </div>
                   </div>
@@ -255,14 +264,14 @@ export default async function ProjectPage({ params }: Props) {
                     href={{
                       pathname: `/projects/${projectId}/changes`,
                       query: {
-                        source: "site_analysis",
+                        source: "scan_recommendation",
                         reference: `site-analysis-${index + 1}`,
                         title: priority.title,
                         instructions: priority.recommendedChange
                       }
                     }}
                   >
-                    Turn into change request
+                    Improve this
                   </Link>
                 </article>
               ))}

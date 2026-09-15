@@ -70,9 +70,9 @@ export function SiteOnboardingForm() {
   return (
     <form className="auth-card" onSubmit={submit} style={{ maxWidth: 680 }}>
       <div>
-        <p className="panel-label">Start a new build</p>
+        <p className="panel-label">Step 1 of 5 · Build</p>
         <h2 style={{ marginTop: 6 }}>What do you want Z-Life to build?</h2>
-        <p className="auth-copy">Keep it simple. You can add photos, screenshots, logos, and design references on the next screen.</p>
+        <p className="auth-copy">Keep it simple. Start with the type, name, and a short description. Photos, screenshots, logos, and design references come next.</p>
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
@@ -108,10 +108,14 @@ export function SiteOnboardingForm() {
         </label>
       ) : null}
 
+      <div className="project-card" style={{ padding: 12 }}>
+        <small>Starting the project only saves your setup. It does not call paid AI, publish anything, buy a domain, or change DNS.</small>
+      </div>
+
       {error ? <div className="auth-message">{error}</div> : null}
 
       <button className="button primary auth-submit" disabled={busy}>
-        {busy ? "Starting…" : "Continue to Photos & References →"}
+        {busy ? "Starting…" : "Continue to Step 2 · Photos & References →"}
       </button>
     </form>
   );

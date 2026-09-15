@@ -5,7 +5,7 @@ export type QualityMode = z.infer<typeof qualityModeSchema>;
 
 export const projectIdSchema = z.string().uuid();
 
-const domainSchema = z
+export const domainSchema = z
   .string()
   .trim()
   .min(3)

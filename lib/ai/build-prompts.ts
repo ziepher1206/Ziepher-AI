@@ -1,10 +1,15 @@
 import type { AppPlan } from "./types";
 import { formatProjectAIContext } from "./project-context";
+import {
+  formatSiteAssetManifest,
+  type BuildSiteAsset
+} from "./build-site-assets";
 
 export function createBuildPrompt(
   plan: AppPlan,
   visualConceptId: string,
-  projectContext?: unknown
+  projectContext?: unknown,
+  siteAssets: BuildSiteAsset[] = []
 ) {
   return `
 You are Ziepher AI's production application builder.
@@ -39,6 +44,15 @@ Visual quality contract:
 - For apps, include a clear signed-in shell, meaningful primary workspace, useful empty states, and realistic information density rather than decorative dashboards with no purpose.
 - previewHtml must reflect the same visual ambition as the generated application, not a stripped-down wireframe.
 
+Approved project-media rules:
+- The files listed under APPROVED PROJECT MEDIA are copied into the generated app's public directory before validation and publishing.
+- Their publicPath values are stable local application paths. Use those exact paths in React/HTML/CSS when the media fits the page.
+- Prefer these real customer images over invented stock photography or remote image URLs.
+- Do not rename, fetch, hotlink, or replace these files.
+- Do not reference storage-provider signed URLs in generated source because those URLs expire.
+- Use descriptive alt text based on the project context, media name, summary, and tags. Do not guess sensitive facts about people shown in photos.
+- It is acceptable not to use an approved photo when it is clearly irrelevant to the requested page, but do not leave all approved media unused without a design reason.
+
 Return this shape:
 {
   "appName": "string",
@@ -68,6 +82,9 @@ Treat this as built-in project memory. Preserve its decisions, constraints, term
 reference-image instructions, and brand requirements unless the approved plan explicitly supersedes them.
 ${formatProjectAIContext(projectContext)}
 
+APPROVED PROJECT MEDIA:
+${formatSiteAssetManifest(siteAssets)}
+
 APP PLAN:
 ${JSON.stringify(plan)}
 `.trim();
@@ -78,7 +95,8 @@ export function createRepairPrompt(
   visualConceptId: string,
   artifact: import("./build-types").BuildArtifact,
   failureOutput: string,
-  projectContext?: unknown
+  projectContext?: unknown,
+  siteAssets: BuildSiteAsset[] = []
 ) {
   const compactFailure = failureOutput.slice(-24_000);
   return `
@@ -93,6 +111,7 @@ Repair rules:
 - Preserve the approved features and visual direction.
 - Preserve visual fidelity to any saved reference screenshot, mockup, uploaded design reference, or explicit layout instruction. Do not "repair" by flattening the design into a generic template.
 - Keep rich graphics, imagery, section composition, spacing, responsive behavior, and brand-specific visual details unless they are the direct cause of the failure.
+- Preserve references to approved packaged project media using the exact local publicPath values below. Do not replace them with temporary signed URLs or unrelated stock media.
 - Use strict TypeScript and the Next.js App Router.
 - Keep dependencies minimal and version-compatible.
 - Do not add Stripe, billing, banking, payouts, or live money movement.
@@ -105,6 +124,9 @@ Approved visual concept ID: ${visualConceptId}
 
 DURABLE PROJECT CONTEXT:
 ${formatProjectAIContext(projectContext)}
+
+APPROVED PROJECT MEDIA:
+${formatSiteAssetManifest(siteAssets)}
 
 VALIDATION FAILURE:
 ${compactFailure}

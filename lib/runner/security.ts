@@ -1,5 +1,6 @@
 import path from "node:path";
 import type { BuildArtifact } from "@/lib/ai/build-types";
+import { evaluateVisualQuality } from "@/lib/runner/visual-quality";
 
 const forbiddenContent: Array<{ pattern: RegExp; reason: string }> = [
   {
@@ -23,6 +24,20 @@ const financialSignals = [
   /paymentIntents\.create/,
   /transfers\.create/
 ];
+
+function attachVisualQualityWarnings(artifact: BuildArtifact) {
+  const report = evaluateVisualQuality(artifact);
+  if (report.score >= 85) return report;
+
+  for (const finding of report.findings.slice(0, 4)) {
+    const warning = `Visual QA (${report.score}/100): ${finding.title} — ${finding.detail}`;
+    if (!artifact.knownLimitations.includes(warning) && artifact.knownLimitations.length < 20) {
+      artifact.knownLimitations.push(warning);
+    }
+  }
+
+  return report;
+}
 
 export function validateGeneratedArtifact(artifact: BuildArtifact) {
   let bytes = Buffer.byteLength(artifact.previewHtml, "utf8");
@@ -55,4 +70,6 @@ export function validateGeneratedArtifact(artifact: BuildArtifact) {
       "Financial integrations must be added in the final build stage, not the core build."
     );
   }
+
+  return attachVisualQualityWarnings(artifact);
 }

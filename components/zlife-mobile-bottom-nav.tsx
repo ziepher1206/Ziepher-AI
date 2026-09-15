@@ -2,12 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import type { ReactNode } from "react";
+import { ZLifeHeartbeat } from "@/components/zlife-heartbeat";
 import styles from "./zlife-mobile-bottom-nav.module.css";
 
 type NavItem = {
   label: string;
   href: string;
-  icon: string;
+  icon: ReactNode;
   primary?: boolean;
 };
 
@@ -15,7 +17,7 @@ const signedInPrefixes = ["/dashboard", "/today", "/assistant", "/operate", "/ho
 
 const navItems: NavItem[] = [
   { label: "Home", href: "/dashboard", icon: "⌂" },
-  { label: "Ask Z-Life", href: "/assistant", icon: "⌁", primary: true },
+  { label: "Ask Z-Life", href: "/assistant", icon: <ZLifeHeartbeat width={28} height={12} />, primary: true },
   { label: "My Day", href: "/today", icon: "☷" }
 ];
 

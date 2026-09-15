@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ZLifeHeartbeat } from "@/components/zlife-heartbeat";
 import { ContributorJoinClient } from "./join-client";
 import "../community.css";
 
@@ -7,7 +8,7 @@ export default function ContributorJoinPage() {
     <main className="zlife-landing zlife-community-page">
       <header className="zlife-nav">
         <Link href="/" className="zlife-brand" aria-label="Z-Life home">
-          <span className="zlife-mark" aria-hidden="true"><span className="zlife-z">Z</span><span className="zlife-pulse">⌁</span><span className="zlife-life">LIFE</span></span>
+          <span className="zlife-mark" aria-hidden="true"><span className="zlife-z">Z</span><ZLifeHeartbeat /><span className="zlife-life">LIFE</span></span>
           <small>by Ziepher Tech</small>
         </Link>
         <nav aria-label="Contributor onboarding navigation">

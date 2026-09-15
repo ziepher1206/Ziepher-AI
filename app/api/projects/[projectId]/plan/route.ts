@@ -68,12 +68,13 @@ export async function POST(request: Request, context: Context) {
     const result = await createFreePlan(input.idea, projectContext, {
       allowPaidProviders: paidAIEnabled
     });
+    const projectPlan = { ...result.plan, projectId };
     const { data: specVersionId, error } = await supabase.rpc(
       "save_project_plan",
       {
         p_project_id: projectId,
         p_idea: input.idea,
-        p_plan: result.plan,
+        p_plan: projectPlan,
         p_provider: result.provider,
         p_model: result.model
       }
@@ -130,7 +131,7 @@ export async function POST(request: Request, context: Context) {
           "source_id" in firstConcept.tokens &&
           typeof firstConcept.tokens.source_id === "string"
             ? firstConcept.tokens.source_id
-            : result.plan.visualDirections[0]?.id;
+            : projectPlan.visualDirections[0]?.id;
 
         const { error: syncWriteError } = await supabase.rpc(
           "apply_project_sync_patch",
@@ -144,7 +145,7 @@ export async function POST(request: Request, context: Context) {
               studio: {
                 ...currentState.studio,
                 prompt: input.idea,
-                plan: result.plan,
+                plan: projectPlan,
                 selectedConcept: sourceId,
                 updatedAt: new Date().toISOString()
               },
@@ -162,7 +163,7 @@ export async function POST(request: Request, context: Context) {
     }
 
     return NextResponse.json({
-      plan: result.plan,
+      plan: projectPlan,
       provider: result.provider,
       model: result.model,
       providerCostUsd: result.usage?.providerCostUsd ?? 0,

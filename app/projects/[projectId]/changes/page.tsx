@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
+import { BuilderProgress } from "@/components/builder-progress";
 import { SiteChangeRequestWorkflow } from "@/components/site-change-request-workflow";
 import { isSupabaseConfigured } from "@/lib/env";
 import { createClient } from "@/lib/supabase/server";
@@ -27,9 +28,7 @@ export default async function ChangesPage({ params, searchParams }: Props) {
   const { projectId } = await params;
   const query = await searchParams;
   const supabase = await createClient();
-  const {
-    data: { user }
-  } = await supabase.auth.getUser();
+  const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/auth/sign-in");
 
   const { data: project, error: projectError } = await supabase
@@ -56,47 +55,31 @@ export default async function ChangesPage({ params, searchParams }: Props) {
         <div className="brand">
           <div className="brand-mark">Z</div>
           <div>
-            <div className="brand-title">Z-LIFE BUILD</div>
-            <div className="brand-subtitle">CHANGE REQUESTS</div>
+            <div className="brand-title">Z-LIFE BUILDER</div>
+            <div className="brand-subtitle">REFINE YOUR BUILD</div>
           </div>
         </div>
         <div className="inline-actions">
-          <Link className="button" href={`/projects/${projectId}`}>Website overview</Link>
-          <Link className="button" href={`/projects/${projectId}/source-control`}>Build review</Link>
-          <Link className="button" href="/projects">All websites</Link>
+          <Link className="button primary" href={`/projects/${projectId}/studio`}>Back to live preview</Link>
+          <Link className="button" href={`/projects/${projectId}/media`}>Photos & references</Link>
         </div>
       </header>
 
       <section style={{ display: "grid", gap: 24 }}>
-        <div>
-          <p className="panel-label">{project.business_name ?? project.name}</p>
-          <h1 style={{ margin: "6px 0 10px" }}>Request, review, then publish</h1>
-          <p className="auth-copy" style={{ maxWidth: 860 }}>
-            {domain ? `${domain} · ` : ""}Z-Life Build change requests are the handoff between recommendations or business requests and the existing versioned build, QA, preview, approval, and source-control pipeline.
+        <BuilderProgress projectId={projectId} currentStage={3} />
+        <div style={{ maxWidth: 900 }}>
+          <p className="panel-label">Step 3 of 5 · {project.business_name ?? project.name}</p>
+          <h1 style={{ margin: "6px 0 10px", fontSize: "clamp(34px,6vw,64px)", lineHeight: .98 }}>
+            Keep improving the same build.
+          </h1>
+          <p className="auth-copy" style={{ maxWidth: 800, fontSize: 17, lineHeight: 1.65 }}>
+            {domain ? `${domain} · ` : ""}Tell Z-Life what looks wrong, what should move, which photo to use, what should feel stronger, or how closely you want it to match your reference. Z-Life keeps the request attached to this project instead of making you start over.
           </p>
         </div>
 
-        <section className="project-grid" style={{ marginTop: 0 }}>
-          <article className="project-card">
-            <p className="panel-label">AI proposal gate</p>
-            <h2>{aiGenerationEnabled ? "Provider generation enabled" : "Provider calls locked"}</h2>
-            <p>Saving and approving a request never bypasses the owner-level AI provider switch.</p>
-          </article>
-          <article className="project-card">
-            <p className="panel-label">Build execution gate</p>
-            <h2>{buildExecutionEnabled ? "Build execution enabled" : "Build provider usage locked"}</h2>
-            <p>Even after a proposal exists, build execution has its own owner-level switch before credits or provider work can begin.</p>
-          </article>
-          <article className="project-card">
-            <p className="panel-label">Production gate</p>
-            <h2>Separate approval required</h2>
-            <p>Builds move through checks and preview first. Production release still uses the existing exact-SHA approval workflow.</p>
-          </article>
-        </section>
-
         <SiteChangeRequestWorkflow
           projectId={projectId}
-          rows={(rows ?? [])}
+          rows={rows ?? []}
           initialSourceType={sourceType(query.source)}
           initialSourceReference={query.reference?.slice(0, 500) ?? ""}
           initialTitle={query.title?.slice(0, 160) ?? ""}
@@ -104,6 +87,27 @@ export default async function ChangesPage({ params, searchParams }: Props) {
           aiGenerationEnabled={aiGenerationEnabled}
           buildExecutionEnabled={buildExecutionEnabled}
         />
+
+        <details className="project-card">
+          <summary style={{ cursor: "pointer" }}>Advanced build safeguards</summary>
+          <div className="project-grid" style={{ marginTop: 16 }}>
+            <article className="project-card">
+              <p className="panel-label">AI generation</p>
+              <h2>{aiGenerationEnabled ? "Available after approval" : "Provider calls currently locked"}</h2>
+              <p>Saving a refinement never calls an AI provider by itself.</p>
+            </article>
+            <article className="project-card">
+              <p className="panel-label">Preview build</p>
+              <h2>{buildExecutionEnabled ? "Available after proposal approval" : "Build provider usage currently locked"}</h2>
+              <p>A refinement proposal and a new preview build remain separate approval steps.</p>
+            </article>
+            <article className="project-card">
+              <p className="panel-label">Production</p>
+              <h2>Never automatic</h2>
+              <p>Refinements go through preview first. Production publishing remains a separate release action.</p>
+            </article>
+          </div>
+        </details>
       </section>
     </main>
   );

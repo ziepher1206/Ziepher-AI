@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { completeDailyItemAction, postponeDailyItemAction } from "@/app/today/actions";
+import { ZLifeHeartbeat } from "@/components/zlife-heartbeat";
 import { ZLifeQuickAdd } from "@/components/zlife-quick-add";
 import { isSupabaseConfigured } from "@/lib/env";
 import { createClient } from "@/lib/supabase/server";
@@ -113,7 +114,13 @@ export default async function TodayPage() {
       <div style={{ maxWidth: 1180, margin: "0 auto", padding: "0 18px 70px" }}>
         <header style={{ position: "sticky", top: 0, zIndex: 30, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, padding: "16px 0", borderBottom: "1px solid rgba(78,234,221,.16)", background: "rgba(2,9,11,.88)", backdropFilter: "blur(18px)" }}>
           <Link href="/dashboard" style={{ color: "inherit", textDecoration: "none" }}>
-            <div className="brand"><div className="brand-mark" style={{ background: "linear-gradient(135deg,#38e0f3,#10d981)", color: "#001112" }}>Z</div><div><div className="brand-title">Z <span style={{ color: "#38e0f3" }}>⌁</span> LIFE</div><div className="brand-subtitle">MY DAY</div></div></div>
+            <div className="brand">
+              <div className="brand-mark" style={{ background: "linear-gradient(135deg,#38e0f3,#10d981)", color: "#001112" }}>Z</div>
+              <div>
+                <div className="brand-title" style={{ display: "flex", alignItems: "center", gap: 6 }}><span>Z</span><ZLifeHeartbeat width={32} height={12} /><span>LIFE</span></div>
+                <div className="brand-subtitle">MY DAY</div>
+              </div>
+            </div>
           </Link>
           <div className="inline-actions"><Link className="button" href="/dashboard">Home</Link><Link className="button" href="/assistant">Ask Z-Life</Link></div>
         </header>

@@ -9,6 +9,14 @@ import { paidAIProviderOrder } from "./provider-policy";
 import type { QualityMode } from "@/lib/domain/schemas";
 import { shouldUseZLifeMock } from "../community/dev-mode";
 import type { AIUsage } from "./usage";
+import {
+  loadBuildReferenceImages,
+  type BuildReferenceImage
+} from "./build-reference-images";
+import {
+  loadBuildSiteAssets,
+  type BuildSiteAsset
+} from "./build-site-assets";
 
 export type BuildRouteResult = {
   artifact: BuildArtifact;
@@ -21,6 +29,8 @@ export type BuildRouteResult = {
 type BuildRouteOptions = {
   allowPaidProvider?: boolean;
   allowUnmeteredProvider?: boolean;
+  referenceImages?: BuildReferenceImage[];
+  siteAssets?: BuildSiteAsset[];
 };
 
 function googleModelFor(mode: QualityMode) {
@@ -41,12 +51,16 @@ function openAIModelFor(mode: QualityMode) {
   return process.env.OPENAI_BUILD_MODEL;
 }
 
+function withProjectId(artifact: BuildArtifact, plan: AppPlan): BuildArtifact {
+  return plan.projectId ? { ...artifact, projectId: plan.projectId } : artifact;
+}
+
 function createMockBuild(
   plan: AppPlan,
   visualConceptId: string,
 ): BuildRouteResult {
   return {
-    artifact: createDeterministicBuild(plan, visualConceptId),
+    artifact: withProjectId(createDeterministicBuild(plan, visualConceptId), plan),
     provider: "mock",
     model: "zlife-development-mock-ai-v1",
     developmentData: true
@@ -58,10 +72,32 @@ function createDeterministicBuildResult(
   visualConceptId: string
 ): BuildRouteResult {
   return {
-    artifact: createDeterministicBuild(plan, visualConceptId),
+    artifact: withProjectId(createDeterministicBuild(plan, visualConceptId), plan),
     provider: "deterministic",
     model: "ziepher-scaffold-v2"
   };
+}
+
+async function referenceImagesForPaidBuild(
+  plan: AppPlan,
+  options: BuildRouteOptions
+) {
+  if (options.referenceImages) return options.referenceImages;
+  if (!plan.projectId) return [];
+  return loadBuildReferenceImages(plan.projectId);
+}
+
+async function siteAssetsForBuild(plan: AppPlan, options: BuildRouteOptions) {
+  if (options.siteAssets) return options.siteAssets;
+  if (!plan.projectId) return [];
+  return loadBuildSiteAssets(plan.projectId);
+}
+
+function parseProviderArtifact(text: string, plan: AppPlan) {
+  return withProjectId(
+    buildArtifactSchema.parse(parseJsonObject(text)),
+    plan
+  );
 }
 
 export async function createApplicationBuild(
@@ -79,16 +115,25 @@ export async function createApplicationBuild(
     return createDeterministicBuildResult(plan, visualConceptId);
   }
 
-  const prompt = createBuildPrompt(plan, visualConceptId, projectContext);
+  const [referenceImages, siteAssets] = await Promise.all([
+    referenceImagesForPaidBuild(plan, options),
+    siteAssetsForBuild(plan, options)
+  ]);
+  const prompt = createBuildPrompt(
+    plan,
+    visualConceptId,
+    projectContext,
+    siteAssets
+  );
 
   for (const provider of paidAIProviderOrder()) {
     if (provider === "openai") {
       const model = openAIModelFor(mode);
       if (!process.env.OPENAI_API_KEY || !model) continue;
       try {
-        const result = await buildWithOpenAI(prompt, model);
+        const result = await buildWithOpenAI(prompt, model, referenceImages);
         return {
-          artifact: buildArtifactSchema.parse(parseJsonObject(result.text)),
+          artifact: parseProviderArtifact(result.text, plan),
           provider: "openai",
           model,
           usage: result.usage
@@ -99,16 +144,13 @@ export async function createApplicationBuild(
       continue;
     }
 
-    // A paid provider that does not yet return measurable token/cost telemetry
-    // stays blocked by default. This prevents a fallback from consuming credits
-    // outside the monthly spend ledger.
     if (!options.allowUnmeteredProvider) continue;
     if (!process.env.GOOGLE_AI_API_KEY) continue;
     const model = googleModelFor(mode);
     try {
       const result = await buildWithGemini(prompt, model);
       return {
-        artifact: buildArtifactSchema.parse(parseJsonObject(result.text)),
+        artifact: parseProviderArtifact(result.text, plan),
         provider: "gemini",
         model
       };
@@ -135,12 +177,17 @@ export async function repairApplicationBuild(
 
   if (!options.allowPaidProvider) return null;
 
+  const [referenceImages, siteAssets] = await Promise.all([
+    referenceImagesForPaidBuild(plan, options),
+    siteAssetsForBuild(plan, options)
+  ]);
   const prompt = createRepairPrompt(
     plan,
     visualConceptId,
     currentArtifact,
     failureOutput,
-    projectContext
+    projectContext,
+    siteAssets
   );
 
   for (const provider of paidAIProviderOrder()) {
@@ -148,9 +195,9 @@ export async function repairApplicationBuild(
       const model = process.env.OPENAI_ESCALATION_MODEL ?? process.env.OPENAI_BUILD_MODEL;
       if (!process.env.OPENAI_API_KEY || !model) continue;
       try {
-        const result = await buildWithOpenAI(prompt, model);
+        const result = await buildWithOpenAI(prompt, model, referenceImages);
         return {
-          artifact: buildArtifactSchema.parse(parseJsonObject(result.text)),
+          artifact: parseProviderArtifact(result.text, plan),
           provider: "openai",
           model,
           usage: result.usage
@@ -172,7 +219,7 @@ export async function repairApplicationBuild(
     try {
       const result = await buildWithGemini(prompt, model);
       return {
-        artifact: buildArtifactSchema.parse(parseJsonObject(result.text)),
+        artifact: parseProviderArtifact(result.text, plan),
         provider: "gemini",
         model
       };

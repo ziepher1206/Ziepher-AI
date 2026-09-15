@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { ZLifeAssistantRouter } from "@/components/zlife-assistant-router";
+import { ZLifeHeartbeat } from "@/components/zlife-heartbeat";
 import { isSupabaseConfigured } from "@/lib/env";
 import { createClient } from "@/lib/supabase/server";
 
@@ -26,7 +27,10 @@ export default async function AssistantPage() {
           <Link href="/dashboard" style={{ color: "inherit", textDecoration: "none" }}>
             <div className="brand">
               <div className="brand-mark" style={{ background: "linear-gradient(135deg,#38e0f3,#10d981)", color: "#001112" }}>Z</div>
-              <div><div className="brand-title">Z <span style={{ color: "#38e0f3" }}>⌁</span> LIFE</div><div className="brand-subtitle">ASK Z-LIFE</div></div>
+              <div>
+                <div className="brand-title" style={{ display: "flex", alignItems: "center", gap: 6 }}><span>Z</span><ZLifeHeartbeat width={32} height={12} /><span>LIFE</span></div>
+                <div className="brand-subtitle">ASK Z-LIFE</div>
+              </div>
             </div>
           </Link>
           <Link className="button" href="/dashboard">Home</Link>

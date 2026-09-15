@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
+import { ZLifeHeartbeat } from "@/components/zlife-heartbeat";
 import { getCommunityReviewWorkspace } from "@/lib/community/review-workspace";
 import { ContributionReviewActions } from "./review-actions";
 import "../community.css";
@@ -29,6 +30,19 @@ function formatDate(value: string) {
   }).format(new Date(value));
 }
 
+function Brand() {
+  return (
+    <Link href="/" className="zlife-brand" aria-label="Z-Life home">
+      <span className="zlife-mark" aria-hidden="true">
+        <span className="zlife-z">Z</span>
+        <ZLifeHeartbeat />
+        <span className="zlife-life">LIFE</span>
+      </span>
+      <small>by Ziepher Tech</small>
+    </Link>
+  );
+}
+
 export default async function CommunityReviewPage() {
   const workspace = await getCommunityReviewWorkspace();
 
@@ -40,14 +54,7 @@ export default async function CommunityReviewPage() {
     return (
       <main className="zlife-landing zlife-review-page">
         <header className="zlife-nav">
-          <Link href="/" className="zlife-brand" aria-label="Z-Life home">
-            <span className="zlife-mark" aria-hidden="true">
-              <span className="zlife-z">Z</span>
-              <span className="zlife-pulse">⌁</span>
-              <span className="zlife-life">LIFE</span>
-            </span>
-            <small>by Ziepher Tech</small>
-          </Link>
+          <Brand />
           <nav aria-label="Community review navigation">
             <Link href="/community">Community</Link>
             <Link href="/">Home</Link>
@@ -82,14 +89,7 @@ export default async function CommunityReviewPage() {
   return (
     <main className="zlife-landing zlife-review-page">
       <header className="zlife-nav">
-        <Link href="/" className="zlife-brand" aria-label="Z-Life home">
-          <span className="zlife-mark" aria-hidden="true">
-            <span className="zlife-z">Z</span>
-            <span className="zlife-pulse">⌁</span>
-            <span className="zlife-life">LIFE</span>
-          </span>
-          <small>by Ziepher Tech</small>
-        </Link>
+        <Brand />
         <nav aria-label="Community review navigation">
           <Link href="/community">Community</Link>
           <a href="#pending">Review-ready evidence</a>

@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { ZLifeHeartbeat } from "@/components/zlife-heartbeat";
 import { getPublicContributorSummaries } from "@/lib/community/public-summary";
 import "./community.css";
 
@@ -30,7 +31,7 @@ export default async function CommunityPage() {
     <main className="zlife-landing zlife-community-page">
       <header className="zlife-nav">
         <Link href="/" className="zlife-brand" aria-label="Z-Life home">
-          <span className="zlife-mark" aria-hidden="true"><span className="zlife-z">Z</span><span className="zlife-pulse">⌁</span><span className="zlife-life">LIFE</span></span>
+          <span className="zlife-mark" aria-hidden="true"><span className="zlife-z">Z</span><ZLifeHeartbeat /><span className="zlife-life">LIFE</span></span>
           <small>by Ziepher Tech</small>
         </Link>
         <nav aria-label="Community navigation">

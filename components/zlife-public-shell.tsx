@@ -1,27 +1,23 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { ZLifeHeartbeat } from "@/components/zlife-heartbeat";
 import { zlifePublicCta, zlifePublicNavigation } from "@/lib/zlife/public-navigation";
 import styles from "./zlife-marketing-home.module.css";
-
-function Heartbeat() {
-  return (
-    <svg className="zlife-pulse" aria-hidden="true" viewBox="0 0 64 24" width="48" height="18" fill="none">
-      <path d="M1 12h12l5-9 7 18 7-17 6 14 5-6h20" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
 
 function ZMark() {
   return (
     <span className="zlife-mark" aria-hidden="true">
-      <span className="zlife-z">Z</span><Heartbeat /><span className="zlife-life">LIFE</span>
+      <span className="zlife-z">Z</span><ZLifeHeartbeat /><span className="zlife-life">LIFE</span>
     </span>
   );
 }
 
 export function ZLifePublicShell({ children }: { children: ReactNode }) {
   return (
-    <main className="zlife-landing">
+    <main
+      className="zlife-landing"
+      style={{ height: "100dvh", overflowX: "hidden", overflowY: "auto" }}
+    >
       <a className={styles.skipLink} href="#main-content">Skip to main content</a>
       <header className="zlife-nav">
         <Link href="/" className="zlife-brand" aria-label="Z-Life home"><ZMark /><small>by Ziepher Tech</small></Link>

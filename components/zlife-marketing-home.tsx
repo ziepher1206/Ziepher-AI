@@ -29,6 +29,13 @@ const launchSteps = [
   }
 ] as const;
 
+const quickLinks = [
+  { label: "Builder", href: "/auth/sign-in?next=/projects", description: "Start building a website or app." },
+  { label: "About", href: "/about", description: "See why Z-Life exists and how it is being built." },
+  { label: "Our Vision", href: "/vision", description: "See the long-term plan for one connected platform." },
+  { label: "Community", href: "/community", description: "See how people can help shape and improve Z-Life." }
+] as const;
+
 const futurePlan = [
   {
     step: "FIRST",
@@ -68,6 +75,25 @@ export function ZLifeMarketingHome() {
         </div>
       </section>
 
+      <section className="zlife-section" aria-labelledby="quick-navigation-heading">
+        <div className="zlife-section-heading">
+          <div>
+            <p className="zlife-kicker">GO WHERE YOU NEED</p>
+            <h2 id="quick-navigation-heading">No endless scrolling required.</h2>
+            <p>Jump directly to the part of Z-Life you want to see.</p>
+          </div>
+        </div>
+        <div className="zlife-flow-grid">
+          {quickLinks.map((item, index) => (
+            <Link className="zlife-module-card" href={item.href} key={item.href}>
+              <span>{String(index + 1).padStart(2, "0")}</span>
+              <h3>{item.label}</h3>
+              <p>{item.description}</p>
+            </Link>
+          ))}
+        </div>
+      </section>
+
       <section className="zlife-section" aria-labelledby="launch-flow-heading">
         <div className="zlife-section-heading">
           <div>
@@ -94,6 +120,19 @@ export function ZLifeMarketingHome() {
           <p>Upload the photos you want used, your logo, screenshots of layouts you like, or a mockup you already have. Z-Life is being built to preserve the hierarchy, visual direction, spacing, imagery, and detail that made you choose those references in the first place.</p>
           <p>After the first build, you should not have to restart. Ask for changes in normal language, compare desktop and mobile previews, and keep refining the same project until it is ready.</p>
           <div className="zlife-hero-actions"><Link className="zlife-primary" href="/auth/sign-in?next=/projects">Start a Build</Link></div>
+        </div>
+      </section>
+
+      <section className="zlife-founder-section" aria-labelledby="founder-story-heading">
+        <div className="zlife-founder-copy">
+          <p className="zlife-kicker">WHY Z-LIFE EXISTS</p>
+          <h2 id="founder-story-heading">Built by someone who got tired of needing a different app for everything.</h2>
+          <p>Ziepher Tech started from real work, not a software lab. After years as a tattoo artist and later working in tree service, AI became a practical tool for advertising, planning, building ideas, and solving bigger problems.</p>
+          <p>The bigger realization was that more apps were not the answer. Too many separate tools, subscriptions, logins, and disconnected workflows make digital life harder than it needs to be. Z-Life is the attempt to bring those pieces together into one system that starts simple and grows with the people using it.</p>
+          <div className="zlife-hero-actions">
+            <Link className="zlife-secondary" href="/about">Read the full story</Link>
+            <Link className="zlife-secondary" href="/community">See how the community fits in</Link>
+          </div>
         </div>
       </section>
 

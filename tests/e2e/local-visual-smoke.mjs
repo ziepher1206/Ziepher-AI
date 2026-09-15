@@ -36,6 +36,30 @@ async function verifyPage(context, { path, name, expectedText, mobile = false })
   await page.close();
 }
 
+async function verifyDesktopHomeScroll(context) {
+  const page = await context.newPage();
+  const finishWatch = watchPage(page, "home-scroll");
+  const response = await page.goto(`${baseURL}/`, { waitUntil: "networkidle" });
+  if (!response || !response.ok()) failures.push(`home-scroll: HTTP ${response?.status() ?? "no response"}`);
+
+  const landing = page.locator(".zlife-landing");
+  const dimensions = await landing.evaluate((element) => ({
+    clientHeight: element.clientHeight,
+    scrollHeight: element.scrollHeight
+  }));
+  if (dimensions.scrollHeight <= dimensions.clientHeight) {
+    failures.push("home-scroll: public landing does not expose a scrollable desktop journey");
+  }
+
+  await landing.evaluate((element) => element.scrollTo({ top: element.scrollHeight, behavior: "instant" }));
+  await page.waitForTimeout(100);
+  const footerText = await page.locator(".zlife-footer").innerText();
+  if (!footerText.includes("A BRIGHTER TOMORROW")) failures.push("home-scroll: footer was not reachable after scrolling public landing");
+  await page.screenshot({ path: `${outputDir}/home-desktop-bottom.png` });
+  finishWatch();
+  await page.close();
+}
+
 async function verifyContributorEntry(context) {
   const page = await context.newPage();
   const finishWatch = watchPage(page, "contributor-entry");
@@ -87,18 +111,19 @@ async function verifyContributorEntry(context) {
 
 try {
   const desktop = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
-  await verifyPage(desktop, { path: "/", name: "home", expectedText: "Life and Business" });
+  await verifyPage(desktop, { path: "/", name: "home", expectedText: "Turn your idea into a polished website or app." });
+  await verifyDesktopHomeScroll(desktop);
   await verifyPage(desktop, { path: "/modules", name: "modules", expectedText: "One platform. Specialized modules." });
   await verifyPage(desktop, { path: "/ai-teams", name: "ai-teams", expectedText: "AI" });
   await verifyPage(desktop, { path: "/about", name: "about", expectedText: "Z-Life" });
   await verifyPage(desktop, { path: "/community", name: "community", expectedText: "Build Z-Life With Us." });
   await verifyPage(desktop, { path: "/community/join", name: "contributor-join", expectedText: "One click to join the build." });
   await verifyContributorEntry(desktop);
-  await verifyPage(desktop, { path: "/auth/sign-in", name: "sign-in-safe-local", expectedText: "Connect Supabase first" });
+  await verifyPage(desktop, { path: "/auth/sign-in", name: "sign-in-safe-local", expectedText: "Builder setup is not connected yet" });
   await desktop.close();
 
   const mobile = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true });
-  await verifyPage(mobile, { path: "/", name: "home", expectedText: "Life and Business", mobile: true });
+  await verifyPage(mobile, { path: "/", name: "home", expectedText: "Turn your idea into a polished website or app.", mobile: true });
   await verifyPage(mobile, { path: "/modules", name: "modules", expectedText: "One platform. Specialized modules.", mobile: true });
   await verifyPage(mobile, { path: "/community/join", name: "contributor-join", expectedText: "One click to join the build.", mobile: true });
   await verifyPage(mobile, { path: "/community/studio", name: "contributor-studio", expectedText: "Choose how you want to help.", mobile: true });
