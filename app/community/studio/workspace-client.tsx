@@ -1,62 +1,23 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import type { StudioTask } from "@/lib/community/studio-tasks";
 
 const ACCEPT_KEY = "zlife.contributor-rules.accepted.v1";
 const PROFILE_KEY = "zlife_contributor_profile";
 const TASK_KEY = "zlife_contributor_active_task";
 
-const tasks = [
-  {
-    id: "tree-onboarding-mobile",
-    title: "Improve Tree Service mobile onboarding",
-    area: "Tree Service",
-    kind: "Design + Test",
-    priority: "High",
-    value: "Reduce setup friction for the first active business vertical.",
-    github: "https://github.com/ziepher1206/Ziepher-AI/issues",
-  },
-  {
-    id: "service-persistence",
-    title: "Verify service setup persistence",
-    area: "Tree Service",
-    kind: "QA",
-    priority: "High",
-    value: "Make sure saved services survive refresh and returning-user flows.",
-    github: "https://github.com/ziepher1206/Ziepher-AI/issues",
-  },
-  {
-    id: "home-family-ux",
-    title: "Test Home & Family empty states",
-    area: "Home & Family",
-    kind: "Test + UX",
-    priority: "Medium",
-    value: "Make the personal side understandable before a user has added any data.",
-    github: "https://github.com/ziepher1206/Ziepher-AI/issues",
-  },
-  {
-    id: "accessibility-pass",
-    title: "Accessibility review of public onboarding",
-    area: "ZLife Core",
-    kind: "Accessibility",
-    priority: "Medium",
-    value: "Catch keyboard, contrast, labeling, and mobile usability problems early.",
-    github: "https://github.com/ziepher1206/Ziepher-AI/issues",
-  },
-  {
-    id: "industry-knowledge",
-    title: "Submit a real-world industry workflow",
-    area: "Community",
-    kind: "Domain expertise",
-    priority: "Open",
-    value: "Teach ZLife how real work happens so AI can turn expertise into better software.",
-    github: "https://github.com/ziepher1206/Ziepher-AI/issues/new?template=feature-proposal.md",
-  },
-] as const;
-
 type Profile = {
   displayName: string;
   specialty: string;
+};
+
+type ContributorIdentity = {
+  authenticated: true;
+  email: string | null;
+  displayName: string;
+  status: string;
+  verified: boolean;
 };
 
 function loadJson<T>(key: string): T | null {
@@ -68,27 +29,48 @@ function loadJson<T>(key: string): T | null {
   }
 }
 
-export default function StudioWorkspaceClient() {
+export default function StudioWorkspaceClient({ tasks, identity }: { tasks: StudioTask[]; identity: ContributorIdentity | null }) {
   const [ready, setReady] = useState(false);
   const [accepted, setAccepted] = useState(false);
-  const [profile, setProfile] = useState<Profile>({ displayName: "", specialty: "" });
+  const [profile, setProfile] = useState<Profile>({ displayName: identity?.displayName ?? "", specialty: "" });
   const [activeTaskId, setActiveTaskId] = useState<string | null>(null);
+  const [syncState, setSyncState] = useState<"idle" | "saving" | "saved" | "error">("idle");
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
       setAccepted(Boolean(window.localStorage.getItem(ACCEPT_KEY)));
-      setProfile(loadJson<Profile>(PROFILE_KEY) ?? { displayName: "", specialty: "" });
+      const local = loadJson<Profile>(PROFILE_KEY);
+      setProfile({
+        displayName: identity?.displayName || local?.displayName || "",
+        specialty: local?.specialty || "",
+      });
       setActiveTaskId(window.localStorage.getItem(TASK_KEY));
       setReady(true);
     }, 0);
     return () => window.clearTimeout(timer);
-  }, []);
+  }, [identity?.displayName]);
 
-  const activeTask = useMemo(() => tasks.find((task) => task.id === activeTaskId) ?? null, [activeTaskId]);
+  const activeTask = useMemo(() => tasks.find((task) => task.id === activeTaskId) ?? null, [activeTaskId, tasks]);
 
-  function saveProfile(next: Profile) {
+  function saveLocalProfile(next: Profile) {
     setProfile(next);
     window.localStorage.setItem(PROFILE_KEY, JSON.stringify(next));
+    setSyncState("idle");
+  }
+
+  async function syncIdentity() {
+    if (!identity || !profile.displayName.trim()) return;
+    setSyncState("saving");
+    try {
+      const response = await fetch("/api/community/contributor-profile", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ displayName: profile.displayName }),
+      });
+      setSyncState(response.ok ? "saved" : "error");
+    } catch {
+      setSyncState("error");
+    }
   }
 
   function chooseTask(id: string) {
@@ -114,15 +96,15 @@ export default function StudioWorkspaceClient() {
       <section className="zlife-studio-panel">
         <div>
           <p className="zlife-kicker">YOUR CONTRIBUTOR IDENTITY</p>
-          <h2>Create your public working profile.</h2>
-          <p>This local profile is only for the current Studio foundation. GitHub/account identity linking will replace it when authenticated contributor onboarding is connected.</p>
+          <h2>{identity ? "Your ZLife identity is connected." : "Create your working profile."}</h2>
+          <p>{identity ? `Signed in${identity.email ? ` as ${identity.email}` : ""}. Your display name can be synced into the protected ZLife contribution ledger.` : "You can begin as a guest immediately. Sign in when you want ZLife to persist your contributor identity across devices and connect verified contribution history."}</p>
         </div>
         <div className="zlife-studio-profile-grid">
           <label>
             Display name
             <input
               value={profile.displayName}
-              onChange={(event) => saveProfile({ ...profile, displayName: event.target.value.slice(0, 80) })}
+              onChange={(event) => saveLocalProfile({ ...profile, displayName: event.target.value.slice(0, 80) })}
               placeholder="How should ZLife identify you?"
             />
           </label>
@@ -130,19 +112,30 @@ export default function StudioWorkspaceClient() {
             Main skill / specialty
             <input
               value={profile.specialty}
-              onChange={(event) => saveProfile({ ...profile, specialty: event.target.value.slice(0, 120) })}
+              onChange={(event) => saveLocalProfile({ ...profile, specialty: event.target.value.slice(0, 120) })}
               placeholder="Developer, designer, tree pro, tester…"
             />
           </label>
+        </div>
+        <div className="zlife-hero-actions" style={{ marginTop: 16 }}>
+          {identity ? (
+            <button className="zlife-secondary" type="button" onClick={syncIdentity} disabled={syncState === "saving" || !profile.displayName.trim()}>
+              {syncState === "saving" ? "Saving…" : syncState === "saved" ? "Identity saved" : "Save identity to ZLife"}
+            </button>
+          ) : (
+            <a className="zlife-secondary" href="/auth/sign-in">Sign in to sync identity</a>
+          )}
+          {identity && <span className="zlife-community-empty">Status: {identity.status.replaceAll("_", " ")}{identity.verified ? " · verified" : " · not yet verified"}</span>}
+          {syncState === "error" && <span className="zlife-community-empty">Identity sync failed. Your local Studio profile is still saved.</span>}
         </div>
       </section>
 
       <section className="zlife-studio-panel">
         <div className="zlife-studio-panel-head">
           <div>
-            <p className="zlife-kicker">OPEN VALUE WORK</p>
+            <p className="zlife-kicker">LIVE VALUE WORK</p>
             <h2>Choose one useful problem.</h2>
-            <p>Each assignment is isolated from production. Selection creates a local Studio assignment; implementation still happens through a fork/branch and PR review.</p>
+            <p>This board is sourced from open public ZLife GitHub work, with a safe fallback if GitHub is temporarily unavailable. Choosing a task creates a local sandbox assignment only.</p>
           </div>
           <span className="zlife-studio-sandbox-badge">Sandbox only</span>
         </div>
@@ -155,7 +148,7 @@ export default function StudioWorkspaceClient() {
                 <div className="zlife-studio-task-meta"><span>{task.area}</span><span>{task.priority}</span></div>
                 <h3>{task.title}</h3>
                 <p>{task.value}</p>
-                <small>{task.kind}</small>
+                <small>Issue #{task.issueNumber} · {task.kind}</small>
                 <button type="button" onClick={() => chooseTask(task.id)}>{selected ? "Assigned to you" : "Choose this task"}</button>
               </article>
             );
@@ -170,7 +163,7 @@ export default function StudioWorkspaceClient() {
             <h2>{activeTask.title}</h2>
             <div className="zlife-community-flow"><span>Assigned</span><b>→</b><span>Fork / Branch</span><b>→</b><span>Mock + Local Test</span><b>→</b><span>PR</span><b>→</b><span>CI + Visual E2E</span><b>→</b><span>Verified Value</span></div>
             <div className="zlife-hero-actions">
-              <a className="zlife-primary" href={activeTask.github} target="_blank" rel="noreferrer">Open build source <span>→</span></a>
+              <a className="zlife-primary" href={activeTask.github} target="_blank" rel="noreferrer">Open issue #{activeTask.issueNumber} <span>→</span></a>
               <a className="zlife-secondary" href="https://github.com/ziepher1206/Ziepher-AI" target="_blank" rel="noreferrer">Open repository</a>
             </div>
             <p className="zlife-community-empty">Assignment does not grant production credentials, customer data, billing access, or paid API access. Value is only credited after reviewed work is accepted into the verified contribution ledger.</p>

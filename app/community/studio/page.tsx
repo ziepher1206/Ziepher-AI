@@ -1,4 +1,9 @@
 import Link from "next/link";
+
+import { isSupabaseConfigured } from "@/lib/env";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/supabase/server";
+import { getStudioTasks } from "@/lib/community/studio-tasks";
 import "../community.css";
 import StudioWorkspaceClient from "./workspace-client";
 
@@ -11,7 +16,45 @@ const paths = [
   ["Report a problem", "Submit a reproducible bug without exposing private data or secrets."],
 ] as const;
 
-export default function CommunityStudioPage() {
+async function getContributorIdentity() {
+  if (!isSupabaseConfigured()) return null;
+  try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return null;
+
+    let contributor: { display_name: string | null; status: string; is_verified: boolean } | null = null;
+    if (process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      const admin = createAdminClient();
+      const result = await admin
+        .from("community_contributors")
+        .select("display_name, status, is_verified")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      contributor = result.data ?? null;
+    }
+
+    const metadataName = typeof user.user_metadata?.full_name === "string"
+      ? user.user_metadata.full_name
+      : typeof user.user_metadata?.name === "string"
+        ? user.user_metadata.name
+        : "";
+
+    return {
+      authenticated: true as const,
+      email: user.email ?? null,
+      displayName: contributor?.display_name ?? metadataName,
+      status: contributor?.status ?? "community_member",
+      verified: contributor?.is_verified ?? false,
+    };
+  } catch {
+    return null;
+  }
+}
+
+export default async function CommunityStudioPage() {
+  const [tasks, identity] = await Promise.all([getStudioTasks(), getContributorIdentity()]);
+
   return (
     <main className="zlife-landing zlife-community-page">
       <header className="zlife-nav">
@@ -34,7 +77,7 @@ export default function CommunityStudioPage() {
       </section>
 
       <section className="zlife-section">
-        <StudioWorkspaceClient />
+        <StudioWorkspaceClient tasks={tasks} identity={identity} />
       </section>
 
       <section className="zlife-section">
