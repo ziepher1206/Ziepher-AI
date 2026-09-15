@@ -52,9 +52,33 @@ async function verifyContributorEntry(context) {
   await page.waitForURL("**/community/studio");
   const studioText = await page.locator("body").innerText();
   if (!studioText.includes("Choose how you want to help.")) failures.push("contributor-entry: studio landing did not load after acceptance");
+  if (!studioText.includes("Create your public working profile.")) failures.push("contributor-entry: contributor workspace did not unlock after acceptance");
+
   const accepted = await page.evaluate(() => window.localStorage.getItem("zlife.contributor-rules.accepted.v1"));
   if (!accepted) failures.push("contributor-entry: acceptance marker was not stored");
-  await page.screenshot({ path: `${outputDir}/contributor-studio.png`, fullPage: true });
+
+  await page.getByLabel("Display name").fill("Visual Test Builder");
+  await page.getByLabel("Main skill / specialty").fill("Tree service workflow testing");
+  const taskCard = page.locator("article", { hasText: "Verify service setup persistence" });
+  await taskCard.getByRole("button", { name: "Choose this task" }).click();
+  if (!(await taskCard.getByRole("button", { name: "Assigned to you" }).isVisible())) {
+    failures.push("contributor-entry: task assignment did not update in Studio");
+  }
+
+  await page.reload({ waitUntil: "networkidle" });
+  if ((await page.getByLabel("Display name").inputValue()) !== "Visual Test Builder") {
+    failures.push("contributor-entry: contributor profile did not persist across reload");
+  }
+  const persistedTask = page.locator("article", { hasText: "Verify service setup persistence" });
+  if (!(await persistedTask.getByRole("button", { name: "Assigned to you" }).isVisible())) {
+    failures.push("contributor-entry: task assignment did not persist across reload");
+  }
+  const sandboxText = await page.locator("body").innerText();
+  if (!sandboxText.includes("YOUR SANDBOX") || !sandboxText.includes("Verify service setup persistence")) {
+    failures.push("contributor-entry: sandbox assignment summary did not render");
+  }
+
+  await page.screenshot({ path: `${outputDir}/contributor-studio-assigned.png`, fullPage: true });
   finishWatch();
   await page.close();
 }
