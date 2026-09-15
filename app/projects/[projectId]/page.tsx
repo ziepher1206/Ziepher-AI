@@ -81,9 +81,9 @@ export default async function ProjectPage({ params }: Props) {
     <main className="projects-page">
       <header className="projects-header">
         <div className="brand">
-          <div className="brand-mark">S</div>
+          <div className="brand-mark">Z</div>
           <div>
-            <div className="brand-title">SITEREFINER</div>
+            <div className="brand-title">Z-LIFE BUILD</div>
             <div className="brand-subtitle">WEBSITE WORKSPACE</div>
           </div>
         </div>
@@ -203,7 +203,7 @@ export default async function ProjectPage({ params }: Props) {
               ))}
             </ol>
           ) : (
-            <p>SiteRefiner will turn detected gaps into reviewable improvement work instead of publishing changes automatically.</p>
+            <p>Z-Life Build will turn detected gaps into reviewable improvement work instead of publishing changes automatically.</p>
           )}
         </section>
 
