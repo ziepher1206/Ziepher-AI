@@ -16,6 +16,14 @@ const paths = [
   ["Report a problem", "Submit a reproducible bug without exposing private data or secrets."],
 ] as const;
 
+type HistoryItem = {
+  id: string;
+  title: string;
+  state: string;
+  issueNumber: number | null;
+  updatedAt: string;
+};
+
 async function getContributorIdentity() {
   if (!isSupabaseConfigured()) return null;
   try {
@@ -25,6 +33,8 @@ async function getContributorIdentity() {
 
     let contributor: { id: string; display_name: string | null; status: string; is_verified: boolean } | null = null;
     let activeTaskId: string | null = null;
+    let activeTaskState = "claimed";
+    let history: HistoryItem[] = [];
 
     if (process.env.SUPABASE_SERVICE_ROLE_KEY) {
       const admin = createAdminClient();
@@ -36,20 +46,40 @@ async function getContributorIdentity() {
       contributor = result.data ?? null;
 
       if (contributor) {
-        const claimResult = await admin
+        const eventResult = await admin
           .from("contribution_events")
-          .select("metadata")
+          .select("id, github_issue_id, description, status, metadata, updated_at")
           .eq("contributor_id", contributor.id)
           .eq("repository", "ziepher1206/Ziepher-AI")
-          .eq("contribution_type", "task_claim")
-          .eq("status", "pending")
-          .order("created_at", { ascending: false })
-          .limit(1)
-          .maybeSingle();
-        const metadata = claimResult.data?.metadata;
-        if (metadata && typeof metadata === "object" && !Array.isArray(metadata)) {
-          const taskId = (metadata as Record<string, unknown>).studio_task_id;
-          activeTaskId = typeof taskId === "string" ? taskId : null;
+          .order("updated_at", { ascending: false })
+          .limit(8);
+
+        history = (eventResult.data ?? []).map((event) => {
+          const metadata = event.metadata && typeof event.metadata === "object" && !Array.isArray(event.metadata)
+            ? event.metadata as Record<string, unknown>
+            : {};
+          const metadataState = typeof metadata.claim_state === "string" ? metadata.claim_state : null;
+          const title = typeof metadata.task_title === "string" ? metadata.task_title : event.description;
+          const state = event.status === "verified" || event.status === "rejected" || event.status === "superseded"
+            ? event.status
+            : metadataState ?? "claimed";
+          return {
+            id: event.id,
+            title,
+            state,
+            issueNumber: typeof event.github_issue_id === "number" ? event.github_issue_id : null,
+            updatedAt: event.updated_at,
+          };
+        });
+
+        const active = history.find((item) => item.state === "claimed" || item.state === "submitted" || item.state === "under_review");
+        if (active) {
+          const activeEvent = (eventResult.data ?? []).find((event) => event.id === active.id);
+          const metadata = activeEvent?.metadata && typeof activeEvent.metadata === "object" && !Array.isArray(activeEvent.metadata)
+            ? activeEvent.metadata as Record<string, unknown>
+            : {};
+          activeTaskId = typeof metadata.studio_task_id === "string" ? metadata.studio_task_id : null;
+          activeTaskState = active.state;
         }
       }
     }
@@ -67,6 +97,8 @@ async function getContributorIdentity() {
       status: contributor?.status ?? "community_member",
       verified: contributor?.is_verified ?? false,
       activeTaskId,
+      activeTaskState,
+      history,
     };
   } catch {
     return null;
