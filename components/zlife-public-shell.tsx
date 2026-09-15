@@ -3,10 +3,18 @@ import type { ReactNode } from "react";
 import { zlifePublicCta, zlifePublicNavigation } from "@/lib/zlife/public-navigation";
 import styles from "./zlife-marketing-home.module.css";
 
+function Heartbeat() {
+  return (
+    <svg className="zlife-pulse" aria-hidden="true" viewBox="0 0 64 24" width="48" height="18" fill="none">
+      <path d="M1 12h12l5-9 7 18 7-17 6 14 5-6h20" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 function ZMark() {
   return (
     <span className="zlife-mark" aria-hidden="true">
-      <span className="zlife-z">Z</span><span className="zlife-pulse">⌁</span><span className="zlife-life">LIFE</span>
+      <span className="zlife-z">Z</span><Heartbeat /><span className="zlife-life">LIFE</span>
     </span>
   );
 }
