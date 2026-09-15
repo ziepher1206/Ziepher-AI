@@ -24,9 +24,9 @@ describe("central Ask Z-Life entry point", () => {
     const router = source("components/zlife-assistant-router.tsx");
     expect(router).toContain("if (matches.length > 1)");
     expect(router).toContain('area: "My Day"');
-    expect(router).toContain('href: "/dashboard"');
-    expect(router).toContain("Open Today at a Glance");
-    expect(router).toContain("instead of sending you into one isolated module");
+    expect(router).toContain('href: "/today"');
+    expect(router).toContain("Open My Day");
+    expect(router).toContain("instead of being sent into one isolated module");
   });
 
   it("does not pretend uncertain requests were understood", () => {
