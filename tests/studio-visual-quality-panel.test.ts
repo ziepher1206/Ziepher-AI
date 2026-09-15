@@ -25,6 +25,15 @@ describe("studio design quality panel", () => {
     expect(panel).not.toContain("OPENAI_API_KEY");
   });
 
+  it("does not turn missing QA evidence into a fake perfect score", () => {
+    const route = read("app/api/projects/[projectId]/visual-quality/route.ts");
+    const panel = read("components/project-visual-quality-panel.tsx");
+    expect(route).toContain("return null;");
+    expect(route).not.toContain("warnings.length ? null : 100");
+    expect(panel).toContain("No score recorded");
+    expect(panel).toContain("not the same as a perfect score");
+  });
+
   it("routes quality findings into the existing refinement flow", () => {
     const panel = read("components/project-visual-quality-panel.tsx");
     expect(panel).toContain("/changes");
