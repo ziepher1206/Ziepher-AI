@@ -39,16 +39,15 @@ export default async function ProjectsPage() {
     <main className="projects-page">
       <header className="projects-header">
         <div className="brand">
-          <div className="brand-mark">S</div>
+          <div className="brand-mark">Z</div>
           <div>
-            <div className="brand-title">SITEREFINER</div>
-            <div className="brand-subtitle">BUILT BY ZIEPHER TECH</div>
+            <div className="brand-title">Z-LIFE BUILD</div>
+            <div className="brand-subtitle">WEB BUILDER</div>
           </div>
         </div>
         <div className="inline-actions">
-          <Link className="button" href="/settings">
-            Settings
-          </Link>
+          <Link className="button" href="/modules/web-builder">About Build</Link>
+          <Link className="button" href="/settings">Settings</Link>
           <form action="/auth/sign-out" method="post">
             <button className="button">Sign out</button>
           </form>
@@ -57,10 +56,10 @@ export default async function ProjectsPage() {
 
       <section style={{ display: "grid", gap: 28 }}>
         <div>
-          <p className="panel-label">Business websites</p>
-          <h1 style={{ margin: "6px 0 10px" }}>Manage and improve your websites</h1>
-          <p className="auth-copy" style={{ maxWidth: 760 }}>
-            Connect an existing business website, review what SiteRefiner finds, request changes in plain language, and publish only after review and approval.
+          <p className="panel-label">Websites inside Z-Life</p>
+          <h1 style={{ margin: "6px 0 10px" }}>Build, connect, improve, and release websites.</h1>
+          <p className="auth-copy" style={{ maxWidth: 800 }}>
+            Z-Life Build brings website creation and refinement into the same platform as Business, Assistant, Home & Family, and future modules. Connect an existing website, scan it, request changes in plain language, review previews, and release only after approval.
           </p>
         </div>
 
@@ -91,7 +90,7 @@ export default async function ProjectsPage() {
           {!projects?.length ? (
             <section className="empty-projects">
               <h2>No websites connected yet</h2>
-              <p>Add the business name and current domain above to create the first SiteRefiner workspace.</p>
+              <p>Add a business name and current domain above to create the first Z-Life Build website workspace.</p>
             </section>
           ) : null}
         </section>

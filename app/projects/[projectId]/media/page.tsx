@@ -62,9 +62,9 @@ export default async function MediaLibraryPage({ params }: Props) {
     <main className="projects-page">
       <header className="projects-header">
         <div className="brand">
-          <div className="brand-mark">S</div>
+          <div className="brand-mark">Z</div>
           <div>
-            <div className="brand-title">SITEREFINER</div>
+            <div className="brand-title">Z-LIFE BUILD</div>
             <div className="brand-subtitle">BUSINESS PHOTO LIBRARY</div>
           </div>
         </div>
@@ -124,7 +124,7 @@ export default async function MediaLibraryPage({ params }: Props) {
           ) : (
             <section className="empty-projects" style={{ marginTop: 14 }}>
               <h2>No business photos yet</h2>
-              <p>Upload real business-owned photos above. SiteRefiner can later recommend which approved images fit specific pages and campaigns.</p>
+              <p>Upload real business-owned photos above. Z-Life Build can later recommend which approved images fit specific pages and campaigns.</p>
             </section>
           )}
         </section>

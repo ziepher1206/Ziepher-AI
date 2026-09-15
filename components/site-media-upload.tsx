@@ -110,7 +110,7 @@ export function SiteMediaUpload({
         <p className="panel-label">Upload business photos</p>
         <h2 style={{ marginTop: 6 }}>Website photo library</h2>
         <p className="auth-copy">
-          Upload only photos the business owns or is authorized to use. Files stay private to this website workspace until SiteRefiner uses them in an approved build.
+          Upload only photos the business owns or is authorized to use. Files stay private to this website workspace until Z-Life Build uses them in an approved build.
         </p>
       </div>
 

@@ -26,7 +26,7 @@ export async function POST(_request: Request, context: Context) {
 
     if (process.env.SITE_REFINER_PAID_AI_ENABLED !== "true") {
       throw new Error(
-        "AI generation is disabled by the SiteRefiner owner. Approval is recorded, but no provider call was made."
+        "AI generation is disabled by the Z-Life owner. Approval is recorded, but no provider call was made."
       );
     }
 
@@ -82,7 +82,7 @@ export async function POST(_request: Request, context: Context) {
     const aiContext = parseProjectSyncState(syncRow?.state).aiContext;
     const domain = project.primary_domain ?? project.source_domain ?? "the connected website";
     const idea = [
-      `SiteRefiner website change for ${project.business_name ?? project.name} (${domain}).`,
+      `Z-Life Build website change for ${project.business_name ?? project.name} (${domain}).`,
       `Change request: ${changeRequest.title}`,
       changeRequest.instructions,
       "Preserve the existing business website and make only the requested improvement. The output must be reviewable before production."
@@ -159,6 +159,6 @@ export async function POST(_request: Request, context: Context) {
         .eq("project_id", projectId)
         .eq("status", "generating");
     }
-    return apiError(error, "Unable to generate the SiteRefiner proposal.");
+    return apiError(error, "Unable to generate the Z-Life Build proposal.");
   }
 }

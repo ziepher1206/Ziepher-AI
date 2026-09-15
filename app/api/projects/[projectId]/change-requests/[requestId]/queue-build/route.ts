@@ -12,7 +12,7 @@ export async function POST(_request: Request, context: Context) {
   try {
     if (process.env.SITE_REFINER_PAID_BUILDS_ENABLED !== "true") {
       throw new Error(
-        "AI build execution is disabled by the SiteRefiner owner. No build credits or provider usage were started."
+        "AI build execution is disabled by the Z-Life owner. No build credits or provider usage were started."
       );
     }
 
@@ -94,6 +94,6 @@ export async function POST(_request: Request, context: Context) {
 
     return NextResponse.json({ changeRequest: updated }, { status: 202 });
   } catch (error) {
-    return apiError(error, "Unable to approve and queue the SiteRefiner build.");
+    return apiError(error, "Unable to approve and queue the Z-Life Build job.");
   }
 }

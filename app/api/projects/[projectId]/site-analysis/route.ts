@@ -71,7 +71,7 @@ export async function POST(request: Request, context: Context) {
         throw new Error("Explicit paid AI confirmation is required for live site analysis.");
       }
       if (process.env.SITE_REFINER_PAID_AI_ENABLED !== "true") {
-        throw new Error("Live SiteRefiner AI analysis is disabled by the owner.");
+        throw new Error("Live Z-Life Build AI analysis is disabled by the owner.");
       }
 
       const { data: costEvents, error: costError } = await admin

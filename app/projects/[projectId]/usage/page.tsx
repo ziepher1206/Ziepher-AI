@@ -76,9 +76,9 @@ export default async function UsagePage({ params }: Props) {
     <main className="projects-page">
       <header className="projects-header">
         <div className="brand">
-          <div className="brand-mark">S</div>
+          <div className="brand-mark">Z</div>
           <div>
-            <div className="brand-title">SITEREFINER</div>
+            <div className="brand-title">Z-LIFE BUILD</div>
             <div className="brand-subtitle">USAGE & COST</div>
           </div>
         </div>
@@ -100,7 +100,7 @@ export default async function UsagePage({ params }: Props) {
           <p className="panel-label">{project.business_name ?? project.name}</p>
           <h1 style={{ margin: "6px 0 10px" }}>Website usage and recorded cost</h1>
           <p className="auth-copy" style={{ maxWidth: 800 }}>
-            {domain ? `${domain} · ` : ""}Provider cost and customer usage are kept separate so the business can see what the underlying services cost versus what SiteRefiner records as customer usage.
+            {domain ? `${domain} · ` : ""}Provider cost and customer usage are kept separate so the business can see what the underlying services cost versus what Z-Life Build records as customer usage.
           </p>
         </div>
 

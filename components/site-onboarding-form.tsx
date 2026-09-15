@@ -62,7 +62,7 @@ export function SiteOnboardingForm() {
         <p className="panel-label">Add a business website</p>
         <h2 style={{ marginTop: 6 }}>Start with the website that already exists</h2>
         <p className="auth-copy">
-          SiteRefiner will use this domain as the source website. Nothing is published automatically.
+          Z-Life Build uses this domain as the source website. Nothing is published automatically.
         </p>
       </div>
 
