@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
+import { completeDailyItemAction } from "@/app/today/actions";
 import { ZLifeQuickAdd } from "@/components/zlife-quick-add";
 import { isSupabaseConfigured } from "@/lib/env";
 import { createClient } from "@/lib/supabase/server";
@@ -118,10 +119,21 @@ export default async function TodayPage() {
             <div style={{ marginBottom: 16 }}><p className="panel-label" style={{ color: "#7fffd4" }}>Unified daily stream</p><h2 style={{ margin: "4px 0 5px" }}>Coming up across connected modules</h2><p style={{ margin: 0, color: "#789b97", fontSize: 13 }}>Modules keep their own full records. My Day only receives the small amount of context needed to surface what deserves attention and route you back to the source.</p></div>
             <div style={{ display: "grid", gap: 10 }}>
               {unifiedItems.map((item) => (
-                <Link key={item.id} href={item.action_href || "/assistant"} style={{ color: "inherit", textDecoration: "none", display: "grid", gridTemplateColumns: "minmax(0,1fr) auto", gap: 14, padding: 14, border: `1px solid ${item.priority === "urgent" || item.priority === "high" ? "rgba(255,213,106,.26)" : "rgba(127,255,212,.14)"}`, borderRadius: 14, background: "rgba(255,255,255,.022)" }}>
-                  <div><div style={{ display: "flex", flexWrap: "wrap", gap: 7, marginBottom: 7 }}><span className="status-pill" style={{ color: "#7fffd4" }}>{item.item_kind.replaceAll("_", " ")}</span><span className="status-pill">{item.source_module}</span>{item.priority !== "normal" ? <span className="status-pill" style={{ color: item.priority === "urgent" ? "#ffd56a" : "#b8d2cf" }}>{item.priority}</span> : null}</div><strong style={{ display: "block" }}>{item.title}</strong>{item.detail ? <p style={{ margin: "5px 0 0", color: "#8faaa7", fontSize: 13, lineHeight: 1.45 }}>{item.detail}</p> : null}</div>
-                  <span style={{ color: "#9dbbb7", fontSize: 12, textAlign: "right", whiteSpace: "nowrap" }}>{formatWhen(item.due_at || item.starts_at)}</span>
-                </Link>
+                <article key={item.id} style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) auto", gap: 14, padding: 14, border: `1px solid ${item.priority === "urgent" || item.priority === "high" ? "rgba(255,213,106,.26)" : "rgba(127,255,212,.14)"}`, borderRadius: 14, background: "rgba(255,255,255,.022)" }}>
+                  <Link href={item.action_href || "/assistant"} style={{ minWidth: 0, color: "inherit", textDecoration: "none" }}>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 7, marginBottom: 7 }}><span className="status-pill" style={{ color: "#7fffd4" }}>{item.item_kind.replaceAll("_", " ")}</span><span className="status-pill">{item.source_module}</span>{item.priority !== "normal" ? <span className="status-pill" style={{ color: item.priority === "urgent" ? "#ffd56a" : "#b8d2cf" }}>{item.priority}</span> : null}</div>
+                    <strong style={{ display: "block" }}>{item.title}</strong>{item.detail ? <p style={{ margin: "5px 0 0", color: "#8faaa7", fontSize: 13, lineHeight: 1.45 }}>{item.detail}</p> : null}
+                  </Link>
+                  <div style={{ display: "grid", alignContent: "start", justifyItems: "end", gap: 8 }}>
+                    <span style={{ color: "#9dbbb7", fontSize: 12, textAlign: "right", whiteSpace: "nowrap" }}>{formatWhen(item.due_at || item.starts_at)}</span>
+                    {item.source_module === "zlife_core" ? (
+                      <form action={completeDailyItemAction}>
+                        <input type="hidden" name="dailyItemId" value={item.id} />
+                        <button className="button" type="submit" style={{ padding: "6px 9px", fontSize: 10 }}>Done</button>
+                      </form>
+                    ) : <small style={{ color: "#789b97", fontSize: 10 }}>Open source to complete</small>}
+                  </div>
+                </article>
               ))}
             </div>
           </section>
