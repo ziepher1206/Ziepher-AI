@@ -7,15 +7,12 @@ import { createClient } from "@/lib/supabase/server";
 type Props = { params: Promise<{ projectId: string }> };
 
 export default async function ProjectStudioPage({ params }: Props) {
-  if (!isSupabaseConfigured()) redirect("/auth/sign-in");
+  if (!isSupabaseConfigured()) redirect("/auth/sign-in?next=/projects");
 
   const { projectId } = await params;
   const supabase = await createClient();
-  const {
-    data: { user }
-  } = await supabase.auth.getUser();
-
-  if (!user) redirect("/auth/sign-in");
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) redirect(`/auth/sign-in?next=${encodeURIComponent(`/projects/${projectId}/studio`)}`);
 
   return (
     <>
@@ -26,24 +23,26 @@ export default async function ProjectStudioPage({ params }: Props) {
           bottom: 52,
           zIndex: 30,
           display: "grid",
-          gap: 8
+          gap: 8,
+          maxWidth: 230
         }}
       >
-        <Link className="button" href={`/projects/${projectId}`} style={{ textDecoration: "none" }}>
-          Website overview
+        <Link className="button primary" href={`/projects/${projectId}/media`} style={{ textDecoration: "none" }}>
+          Add Photos & References
         </Link>
-        <Link className="button" href={`/projects/${projectId}/ai-status`} style={{ textDecoration: "none" }}>
-          AI status
+        <Link className="button" href="/projects" style={{ textDecoration: "none" }}>
+          All Projects
         </Link>
-        <Link className="button" href={`/projects/${projectId}/source-control`} style={{ textDecoration: "none" }}>
-          Build review
-        </Link>
-        <Link className="button" href={`/projects/${projectId}/settings/repository`} style={{ textDecoration: "none" }}>
-          GitHub repository
-        </Link>
-        <Link className="button" href={`/projects/${projectId}/settings/deployment`} style={{ textDecoration: "none" }}>
-          Vercel target
-        </Link>
+        <details style={{ padding: "8px 10px", borderRadius: 10, background: "rgba(0,0,0,.28)", color: "#8faaa7", fontSize: 12 }}>
+          <summary style={{ cursor: "pointer", color: "#b8d2cf" }}>Advanced details</summary>
+          <div style={{ display: "grid", gap: 7, marginTop: 9 }}>
+            <Link href={`/projects/${projectId}`} style={{ color: "#7fffd4" }}>Project overview</Link>
+            <Link href={`/projects/${projectId}/ai-status`} style={{ color: "#7fffd4" }}>AI status</Link>
+            <Link href={`/projects/${projectId}/source-control`} style={{ color: "#7fffd4" }}>Build review</Link>
+            <Link href={`/projects/${projectId}/settings/repository`} style={{ color: "#7fffd4" }}>GitHub repository</Link>
+            <Link href={`/projects/${projectId}/settings/deployment`} style={{ color: "#7fffd4" }}>Deployment settings</Link>
+          </div>
+        </details>
       </div>
       <StudioShell authenticated userEmail={user.email} initialProjectId={projectId} />
     </>

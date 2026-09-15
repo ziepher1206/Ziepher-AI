@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { ZLifeMobileBottomNav } from "@/components/zlife-mobile-bottom-nav";
 import "./globals.css";
 import "./ziepher-theme.css";
 import "./zlife-verdant.css";
@@ -43,7 +44,10 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        {children}
+        <ZLifeMobileBottomNav />
+      </body>
     </html>
   );
 }

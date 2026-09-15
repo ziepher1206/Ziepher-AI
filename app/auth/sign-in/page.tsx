@@ -4,7 +4,17 @@ import { AuthForm } from "./auth-form";
 import { isSupabaseConfigured } from "@/lib/env";
 import { createClient } from "@/lib/supabase/server";
 
-export default async function SignInPage() {
+type Props = { searchParams: Promise<{ next?: string }> };
+
+function safeNext(value?: string) {
+  if (!value?.startsWith("/") || value.startsWith("//")) return "/dashboard";
+  return value;
+}
+
+export default async function SignInPage({ searchParams }: Props) {
+  const { next } = await searchParams;
+  const nextPath = safeNext(next);
+
   if (!isSupabaseConfigured()) {
     return (
       <main className="auth-page">
@@ -12,17 +22,16 @@ export default async function SignInPage() {
           <div className="brand auth-brand">
             <div className="brand-mark">Z</div>
             <div>
-              <div className="brand-title">ZIEPHER AI</div>
-              <div className="brand-subtitle">BUILD YOUR DREAMS</div>
+              <div className="brand-title">Z-LIFE</div>
+              <div className="brand-subtitle">BUILT BY ZIEPHER TECH</div>
             </div>
           </div>
-          <h1>Connect Supabase first</h1>
+          <h1>Builder setup is not connected yet</h1>
           <p className="auth-copy">
-            Add the Supabase URL and publishable key to your environment, then
-            run the migrations before signing in.
+            The account system needs its Supabase connection before Z-Life can open the builder.
           </p>
           <Link className="button primary auth-submit" href="/">
-            Return to local studio
+            Return home
           </Link>
         </section>
       </main>
@@ -33,11 +42,11 @@ export default async function SignInPage() {
   const {
     data: { user }
   } = await supabase.auth.getUser();
-  if (user) redirect("/");
+  if (user) redirect(nextPath);
 
   return (
     <main className="auth-page">
-      <AuthForm />
+      <AuthForm nextPath={nextPath} />
     </main>
   );
 }

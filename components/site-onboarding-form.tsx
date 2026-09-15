@@ -16,7 +16,10 @@ function normalizeDomain(value: string) {
 
 export function SiteOnboardingForm() {
   const router = useRouter();
-  const [businessName, setBusinessName] = useState("");
+  const [kind, setKind] = useState<"website" | "app">("website");
+  const [name, setName] = useState("");
+  const [idea, setIdea] = useState("");
+  const [hasExistingSite, setHasExistingSite] = useState(false);
   const [domain, setDomain] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -27,76 +30,88 @@ export function SiteOnboardingForm() {
     setError(null);
 
     try {
-      const normalizedDomain = normalizeDomain(domain);
+      const normalizedDomain = hasExistingSite ? normalizeDomain(domain) : "";
+      if (hasExistingSite && !normalizedDomain) throw new Error("Enter the existing website domain.");
+
+      const coreIdea = idea.trim() || `Create a professional ${kind} for ${name.trim()}.`;
+      const requestBody = hasExistingSite
+        ? {
+            name: name.trim(),
+            businessName: name.trim(),
+            domain: normalizedDomain,
+            idea: `${coreIdea}\n\nUse ${normalizedDomain} as an existing source. Preserve important business identity and working content while improving visual quality, mobile usability, accessibility, SEO, conversion paths, and technical quality.`
+          }
+        : {
+            name: name.trim(),
+            idea: `${coreIdea}\n\nProject type: ${kind}. Build from the user's instructions and uploaded references. Do not publish without approval.`
+          };
+
       const response = await fetch("/api/projects", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          name: businessName.trim(),
-          businessName: businessName.trim(),
-          domain: normalizedDomain,
-          idea: `Improve and manage the existing business website at ${normalizedDomain}. Preserve the business identity, important URLs, customer intent, and working functionality while improving design, mobile usability, accessibility, SEO, conversion paths, copy, and technical quality.`
-        })
+        body: JSON.stringify(requestBody)
       });
 
       const payload = await response.json();
-      if (!response.ok) {
-        throw new Error(payload?.error ?? "Unable to add website.");
-      }
+      if (!response.ok) throw new Error(payload?.error ?? "Unable to start this project.");
 
       const projectId = payload?.project?.id;
-      if (!projectId) throw new Error("Website was created without a project id.");
+      if (!projectId) throw new Error("Project was created without an id.");
 
-      router.push(`/projects/${projectId}`);
+      router.push(`/projects/${projectId}/media`);
       router.refresh();
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Unable to add website.");
+      setError(cause instanceof Error ? cause.message : "Unable to start this project.");
     } finally {
       setBusy(false);
     }
   }
 
   return (
-    <form className="auth-card" onSubmit={submit} style={{ maxWidth: 560 }}>
+    <form className="auth-card" onSubmit={submit} style={{ maxWidth: 680 }}>
       <div>
-        <p className="panel-label">Add a business website</p>
-        <h2 style={{ marginTop: 6 }}>Start with the website that already exists</h2>
-        <p className="auth-copy">
-          Z-Life Build uses this domain as the source website. Nothing is published automatically.
-        </p>
+        <p className="panel-label">Start a new build</p>
+        <h2 style={{ marginTop: 6 }}>What do you want Z-Life to build?</h2>
+        <p className="auth-copy">Keep it simple. You can add photos, screenshots, logos, and design references on the next screen.</p>
+      </div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+        <button className={`button ${kind === "website" ? "primary" : ""}`} type="button" onClick={() => setKind("website")} aria-pressed={kind === "website"}>
+          Website
+        </button>
+        <button className={`button ${kind === "app" ? "primary" : ""}`} type="button" onClick={() => setKind("app")} aria-pressed={kind === "app"}>
+          App
+        </button>
       </div>
 
       <label>
-        Business name
-        <input
-          type="text"
-          value={businessName}
-          onChange={(event) => setBusinessName(event.target.value)}
-          minLength={2}
-          maxLength={100}
-          placeholder="Family Tree Service"
-          required
-        />
+        Project or business name
+        <input type="text" value={name} onChange={(event) => setName(event.target.value)} minLength={2} maxLength={100} placeholder="Family Tree Service" required />
       </label>
 
       <label>
-        Existing domain
-        <input
-          type="text"
-          inputMode="url"
-          autoCapitalize="none"
-          autoCorrect="off"
-          value={domain}
-          onChange={(event) => setDomain(event.target.value)}
-          placeholder="family-tree-service.com"
-          required
-        />
+        What should it do or look like?
+        <textarea value={idea} onChange={(event) => setIdea(event.target.value)} rows={5} placeholder="Tell Z-Life what you want in plain English. You can keep this short and add visual references next." />
       </label>
+
+      {kind === "website" ? (
+        <label style={{ display: "flex", alignItems: "center", gap: 9 }}>
+          <input type="checkbox" checked={hasExistingSite} onChange={(event) => setHasExistingSite(event.target.checked)} style={{ width: 16, height: 16 }} />
+          I already have a website I want Z-Life to improve
+        </label>
+      ) : null}
+
+      {kind === "website" && hasExistingSite ? (
+        <label>
+          Existing domain
+          <input type="text" inputMode="url" autoCapitalize="none" autoCorrect="off" value={domain} onChange={(event) => setDomain(event.target.value)} placeholder="family-tree-service.com" required />
+        </label>
+      ) : null}
 
       {error ? <div className="auth-message">{error}</div> : null}
 
       <button className="button primary auth-submit" disabled={busy}>
-        {busy ? "Adding website…" : "Add website"}
+        {busy ? "Starting…" : "Continue to Photos & References →"}
       </button>
     </form>
   );
