@@ -14,7 +14,10 @@ function ZMark() {
 
 export function ZLifePublicShell({ children }: { children: ReactNode }) {
   return (
-    <main className="zlife-landing">
+    <main
+      className="zlife-landing"
+      style={{ height: "100dvh", overflowX: "hidden", overflowY: "auto" }}
+    >
       <a className={styles.skipLink} href="#main-content">Skip to main content</a>
       <header className="zlife-nav">
         <Link href="/" className="zlife-brand" aria-label="Z-Life home"><ZMark /><small>by Ziepher Tech</small></Link>
