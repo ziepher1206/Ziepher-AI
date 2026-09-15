@@ -44,4 +44,14 @@ describe("Z-Life My Day quick add", () => {
     expect(page).toContain("dailyStreamReady ?");
     expect(page).toContain("<ZLifeQuickAdd />");
   });
+
+  it("allows only manual core items to be completed from My Day", () => {
+    const action = source("app/today/actions.ts");
+    const page = source("app/today/page.tsx");
+    expect(action).toContain("completeDailyItemAction");
+    expect(action).toContain('item.source_module !== "zlife_core"');
+    expect(action).toContain('update({ status: "done" })');
+    expect(page).toContain('item.source_module === "zlife_core"');
+    expect(page).toContain("Open source to complete");
+  });
 });
