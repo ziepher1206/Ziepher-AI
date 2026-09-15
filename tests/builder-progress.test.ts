@@ -9,6 +9,9 @@ function read(path: string) {
 describe("guided builder progress", () => {
   it("defines the five launch stages", () => {
     const progress = read("components/builder-progress.tsx");
+    const onboarding = read("components/site-onboarding-form.tsx");
+    expect(onboarding).toContain("Step 1 of 5 · Build");
+    expect(onboarding).toContain("Continue to Step 2 · Photos & References");
     expect(progress).toContain('label: "Build"');
     expect(progress).toContain('label: "References"');
     expect(progress).toContain('label: "Preview & Refine"');
