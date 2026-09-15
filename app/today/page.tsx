@@ -10,6 +10,16 @@ function isOptionalSchemaMissing(error: { code?: string; message?: string } | nu
     || error.message?.includes("Could not find the table") === true;
 }
 
+function formatWhen(value: string | null) {
+  if (!value) return "Any time";
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit"
+  }).format(new Date(value));
+}
+
 const card: React.CSSProperties = {
   border: "1px solid rgba(78,234,221,.24)",
   borderRadius: 18,
@@ -30,20 +40,31 @@ export default async function TodayPage() {
   const next24Hours = new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString();
   const nowIso = now.toISOString();
 
-  const [leads, appointments, invoices, tasks, maintenance] = await Promise.all([
+  const [leads, appointments, invoices, tasks, maintenance, dailyItems] = await Promise.all([
     supabase.from("leads").select("id", { count: "exact", head: true }).eq("workspace_id", workspaceId).eq("status", "new"),
     supabase.from("appointments").select("id", { count: "exact", head: true }).eq("workspace_id", workspaceId).gte("starts_at", nowIso).lte("starts_at", next24Hours).neq("status", "canceled"),
     supabase.from("invoices").select("id", { count: "exact", head: true }).eq("workspace_id", workspaceId).eq("status", "overdue"),
     supabase.from("home_tasks").select("id", { count: "exact", head: true }).eq("workspace_id", workspaceId).neq("status", "done").neq("status", "cancelled"),
-    supabase.from("home_maintenance_items").select("id", { count: "exact", head: true }).eq("workspace_id", workspaceId).lte("next_due_at", next24Hours)
+    supabase.from("home_maintenance_items").select("id", { count: "exact", head: true }).eq("workspace_id", workspaceId).lte("next_due_at", next24Hours),
+    supabase
+      .from("zlife_daily_items")
+      .select("id,source_module,item_kind,title,detail,priority,starts_at,due_at,action_href")
+      .eq("workspace_id", workspaceId)
+      .eq("status", "open")
+      .order("due_at", { ascending: true, nullsFirst: false })
+      .order("starts_at", { ascending: true, nullsFirst: false })
+      .limit(12)
   ]);
 
-  for (const result of [leads, appointments, invoices, tasks, maintenance]) {
+  for (const result of [leads, appointments, invoices, tasks, maintenance, dailyItems]) {
     if (result.error && !isOptionalSchemaMissing(result.error)) throw result.error;
   }
 
   const businessReady = !leads.error && !appointments.error && !invoices.error;
   const homeReady = !tasks.error && !maintenance.error;
+  const dailyStreamReady = !dailyItems.error;
+  const unifiedItems = dailyItems.data ?? [];
+
   const rows = [
     { label: "Business", value: businessReady ? `${leads.count ?? 0} new leads` : "Not connected", href: "/operate", ready: businessReady },
     { label: "Schedule", value: businessReady ? `${appointments.count ?? 0} in the next 24 hours` : "Not connected", href: "/operate/calendar", ready: businessReady },
@@ -88,6 +109,20 @@ export default async function TodayPage() {
             <article key={label} style={{ ...card, padding: 18 }}><p style={{ margin: 0, color: "#9dbbb7", fontSize: 11, textTransform: "uppercase", letterSpacing: ".1em" }}>{label}</p><strong style={{ display: "block", marginTop: 8, fontSize: 28 }}>{value}</strong><small style={{ color: "#789b97" }}>{detail}</small></article>
           ))}
         </section>
+
+        {dailyStreamReady && unifiedItems.length ? (
+          <section style={{ ...card, marginTop: 16, padding: 22 }}>
+            <div style={{ marginBottom: 16 }}><p className="panel-label" style={{ color: "#7fffd4" }}>Unified daily stream</p><h2 style={{ margin: "4px 0 5px" }}>Coming up across connected modules</h2><p style={{ margin: 0, color: "#789b97", fontSize: 13 }}>Modules keep their own full records. My Day only receives the small amount of context needed to surface what deserves attention and route you back to the source.</p></div>
+            <div style={{ display: "grid", gap: 10 }}>
+              {unifiedItems.map((item) => (
+                <Link key={item.id} href={item.action_href || "/assistant"} style={{ color: "inherit", textDecoration: "none", display: "grid", gridTemplateColumns: "minmax(0,1fr) auto", gap: 14, padding: 14, border: `1px solid ${item.priority === "urgent" || item.priority === "high" ? "rgba(255,213,106,.26)" : "rgba(127,255,212,.14)"}`, borderRadius: 14, background: "rgba(255,255,255,.022)" }}>
+                  <div><div style={{ display: "flex", flexWrap: "wrap", gap: 7, marginBottom: 7 }}><span className="status-pill" style={{ color: "#7fffd4" }}>{item.item_kind.replaceAll("_", " ")}</span><span className="status-pill">{item.source_module}</span>{item.priority !== "normal" ? <span className="status-pill" style={{ color: item.priority === "urgent" ? "#ffd56a" : "#b8d2cf" }}>{item.priority}</span> : null}</div><strong style={{ display: "block" }}>{item.title}</strong>{item.detail ? <p style={{ margin: "5px 0 0", color: "#8faaa7", fontSize: 13, lineHeight: 1.45 }}>{item.detail}</p> : null}</div>
+                  <span style={{ color: "#9dbbb7", fontSize: 12, textAlign: "right", whiteSpace: "nowrap" }}>{formatWhen(item.due_at || item.starts_at)}</span>
+                </Link>
+              ))}
+            </div>
+          </section>
+        ) : null}
 
         <section style={{ ...card, marginTop: 16, padding: 22 }}>
           <div style={{ display: "flex", alignItems: "end", justifyContent: "space-between", gap: 12, flexWrap: "wrap", marginBottom: 16 }}><div><p className="panel-label" style={{ color: "#38e0f3" }}>Your day</p><h2 style={{ margin: "4px 0 0" }}>Life and business together</h2></div><Link href="/assistant" style={{ color: "#7fffd4", textDecoration: "none", fontSize: 13 }}>Ask Z-Life to help prioritize →</Link></div>
