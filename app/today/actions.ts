@@ -37,6 +37,11 @@ const dailyItemIdSchema = z.object({
   dailyItemId: z.string().uuid()
 });
 
+const postponeSchema = z.object({
+  dailyItemId: z.string().uuid(),
+  postpone: z.enum(["later_today", "tomorrow", "next_week"])
+});
+
 async function getTodayWorkspace() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -74,6 +79,16 @@ function readRepeat(metadata: unknown): RepeatOption {
   return repeatOptions.includes(repeat as RepeatOption) ? repeat as RepeatOption : "once";
 }
 
+function postponedDueAt(option: "later_today" | "tomorrow" | "next_week") {
+  const now = new Date();
+  if (option === "later_today") return new Date(now.getTime() + 3 * 60 * 60 * 1000);
+
+  const next = new Date(now);
+  if (option === "tomorrow") next.setDate(next.getDate() + 1);
+  if (option === "next_week") next.setDate(next.getDate() + 7);
+  return next;
+}
+
 export async function addDailyItemAction(formData: FormData) {
   const input = dailyItemSchema.parse({
     title: formData.get("title"),
@@ -107,6 +122,49 @@ export async function addDailyItemAction(formData: FormData) {
       completed_count: 0
     }
   });
+
+  if (error) throw error;
+  revalidatePath("/today");
+  revalidatePath("/dashboard");
+}
+
+export async function postponeDailyItemAction(formData: FormData) {
+  const { dailyItemId, postpone } = postponeSchema.parse({
+    dailyItemId: formData.get("dailyItemId"),
+    postpone: formData.get("postpone")
+  });
+  const { supabase, workspaceId } = await getTodayWorkspace();
+
+  const { data: item, error: itemError } = await supabase
+    .from("zlife_daily_items")
+    .select("id,source_module,metadata")
+    .eq("id", dailyItemId)
+    .eq("workspace_id", workspaceId)
+    .maybeSingle();
+
+  if (itemError) throw itemError;
+  if (!item) throw new Error("Daily item not found.");
+  if (item.source_module !== "zlife_core") {
+    throw new Error("Open the source module to reschedule this connected item.");
+  }
+
+  const metadata = item.metadata && typeof item.metadata === "object" && !Array.isArray(item.metadata)
+    ? item.metadata as Record<string, unknown>
+    : {};
+
+  const { error } = await supabase
+    .from("zlife_daily_items")
+    .update({
+      due_at: postponedDueAt(postpone).toISOString(),
+      metadata: {
+        ...metadata,
+        last_postponed_at: new Date().toISOString(),
+        last_postpone_choice: postpone
+      }
+    })
+    .eq("id", dailyItemId)
+    .eq("workspace_id", workspaceId)
+    .eq("source_module", "zlife_core");
 
   if (error) throw error;
   revalidatePath("/today");
