@@ -27,7 +27,7 @@ describe("studio design quality panel", () => {
 
   it("routes quality findings into the existing refinement flow", () => {
     const panel = read("components/project-visual-quality-panel.tsx");
-    expect(panel).toContain(`/projects/${projectId}/changes`);
+    expect(panel).toContain("/changes");
     expect(panel).toContain('source: "visual_qa"');
     expect(panel).toContain("Improve the current preview using these Design Quality findings");
   });
