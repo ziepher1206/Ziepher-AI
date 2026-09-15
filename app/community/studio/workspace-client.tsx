@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 
-const ACCEPT_KEY = "zlife_contributor_rules_accepted";
+const ACCEPT_KEY = "zlife.contributor-rules.accepted.v1";
 const PROFILE_KEY = "zlife_contributor_profile";
 const TASK_KEY = "zlife_contributor_active_task";
 
@@ -75,7 +75,7 @@ export default function StudioWorkspaceClient() {
   const [activeTaskId, setActiveTaskId] = useState<string | null>(null);
 
   useEffect(() => {
-    setAccepted(window.localStorage.getItem(ACCEPT_KEY) === "true");
+    setAccepted(Boolean(window.localStorage.getItem(ACCEPT_KEY)));
     setProfile(loadJson<Profile>(PROFILE_KEY) ?? { displayName: "", specialty: "" });
     setActiveTaskId(window.localStorage.getItem(TASK_KEY));
     setReady(true);
