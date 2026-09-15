@@ -29,6 +29,7 @@ describe("Z-Life Today at a Glance", () => {
     expect(page).toContain('href: "/operate"');
     expect(page).toContain('href: "/operate/calendar"');
     expect(page).toContain('href: "/operate/invoices"');
-    expect(page).toContain('href: "/operate/assistant"');
+    expect(page).toContain('href: "/assistant"');
+    expect(page).toContain('href="/today"');
   });
 });
