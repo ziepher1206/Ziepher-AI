@@ -7,19 +7,26 @@ function read(path: string) {
 }
 
 describe("publish readiness flow", () => {
-  it("checks preview, domain, and deployment target", () => {
+  it("checks preview, review tools, domain, and deployment target", () => {
     const page = read("app/projects/[projectId]/publish/page.tsx");
     expect(page).toContain('label: "Preview"');
-    expect(page).toContain('label: "Design review"');
+    expect(page).toContain('label: "Design review tools"');
     expect(page).toContain('label: "Domain"');
     expect(page).toContain('label: "Deployment target"');
+  });
+
+  it("does not pretend design review means approval", () => {
+    const page = read("app/projects/[projectId]/publish/page.tsx");
+    expect(page).toContain("it does not mean you already approved it");
+    expect(page).toContain("cannot approve the design for you");
+    expect(page).toContain("Your final approval is where you confirm the design");
   });
 
   it("keeps production release disabled and approval-only", () => {
     const page = read("app/projects/[projectId]/publish/page.tsx");
     expect(page).toContain("Production publish requires approval");
     expect(page).toContain("disabled");
-    expect(page).toContain("cannot publish the website/app, spend credits, buy a domain, or change DNS");
+    expect(page).toContain("publish the website/app, spend credits, buy a domain, or change DNS");
   });
 
   it("connects the domain step to the final readiness screen", () => {
