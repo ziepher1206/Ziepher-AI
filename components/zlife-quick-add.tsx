@@ -47,6 +47,16 @@ export function ZLifeQuickAdd() {
             <span>When</span>
             <input type="datetime-local" name="dueAt" />
           </label>
+          <label className="field">
+            <span>Repeat</span>
+            <select name="repeat" defaultValue="once">
+              <option value="once">Does not repeat</option>
+              <option value="daily">Every day</option>
+              <option value="weekly">Every week</option>
+              <option value="monthly">Every month</option>
+              <option value="yearly">Every year</option>
+            </select>
+          </label>
         </div>
 
         <label className="field">
@@ -61,7 +71,7 @@ export function ZLifeQuickAdd() {
 
         <div className="inline-actions">
           <button className="button primary" type="submit" style={{ background: "linear-gradient(135deg,#38e0f3,#10d981)", color: "#001112", border: 0 }}>Add to My Day</button>
-          <span style={{ color: "#789b97", fontSize: 12 }}>Stored in your workspace · no paid AI call</span>
+          <span style={{ color: "#789b97", fontSize: 12 }}>Stored in your workspace · repeating items roll forward when completed · no paid AI call</span>
         </div>
       </form>
     </section>
