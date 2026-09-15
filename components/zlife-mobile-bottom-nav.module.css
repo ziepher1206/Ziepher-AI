@@ -15,6 +15,12 @@
   backdrop-filter: blur(18px);
 }
 
+.spacer {
+  display: block;
+  height: calc(82px + env(safe-area-inset-bottom));
+  pointer-events: none;
+}
+
 .item {
   min-width: 0;
   min-height: 48px;
@@ -63,13 +69,8 @@
 }
 
 @media (min-width: 768px) {
-  .nav {
+  .nav,
+  .spacer {
     display: none;
-  }
-}
-
-@media (max-width: 767px) {
-  :global(body) {
-    padding-bottom: calc(78px + env(safe-area-inset-bottom));
   }
 }
