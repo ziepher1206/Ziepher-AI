@@ -9,7 +9,10 @@ import { paidAIProviderOrder } from "./provider-policy";
 import type { QualityMode } from "@/lib/domain/schemas";
 import { shouldUseZLifeMock } from "../community/dev-mode";
 import type { AIUsage } from "./usage";
-import type { BuildReferenceImage } from "./build-reference-images";
+import {
+  loadBuildReferenceImages,
+  type BuildReferenceImage
+} from "./build-reference-images";
 
 export type BuildRouteResult = {
   artifact: BuildArtifact;
@@ -66,6 +69,15 @@ function createDeterministicBuildResult(
   };
 }
 
+async function referenceImagesForPaidBuild(
+  plan: AppPlan,
+  options: BuildRouteOptions
+) {
+  if (options.referenceImages) return options.referenceImages;
+  if (!plan.projectId) return [];
+  return loadBuildReferenceImages(plan.projectId);
+}
+
 export async function createApplicationBuild(
   plan: AppPlan,
   visualConceptId: string,
@@ -82,13 +94,14 @@ export async function createApplicationBuild(
   }
 
   const prompt = createBuildPrompt(plan, visualConceptId, projectContext);
+  const referenceImages = await referenceImagesForPaidBuild(plan, options);
 
   for (const provider of paidAIProviderOrder()) {
     if (provider === "openai") {
       const model = openAIModelFor(mode);
       if (!process.env.OPENAI_API_KEY || !model) continue;
       try {
-        const result = await buildWithOpenAI(prompt, model, options.referenceImages);
+        const result = await buildWithOpenAI(prompt, model, referenceImages);
         return {
           artifact: buildArtifactSchema.parse(parseJsonObject(result.text)),
           provider: "openai",
@@ -144,13 +157,14 @@ export async function repairApplicationBuild(
     failureOutput,
     projectContext
   );
+  const referenceImages = await referenceImagesForPaidBuild(plan, options);
 
   for (const provider of paidAIProviderOrder()) {
     if (provider === "openai") {
       const model = process.env.OPENAI_ESCALATION_MODEL ?? process.env.OPENAI_BUILD_MODEL;
       if (!process.env.OPENAI_API_KEY || !model) continue;
       try {
-        const result = await buildWithOpenAI(prompt, model, options.referenceImages);
+        const result = await buildWithOpenAI(prompt, model, referenceImages);
         return {
           artifact: buildArtifactSchema.parse(parseJsonObject(result.text)),
           provider: "openai",
