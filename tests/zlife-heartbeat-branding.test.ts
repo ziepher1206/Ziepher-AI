@@ -34,4 +34,10 @@ describe("Z-Life heartbeat branding", () => {
     expect(heartbeat).toContain('viewBox="0 0 64 24"');
     expect(heartbeat).toContain('d="M1 12h12l5-9 7 18 7-17 6 14 5-6h20"');
   });
+
+  it("uses the shared heartbeat in the module hub brand lockup", () => {
+    const hub = readFileSync(join(process.cwd(), "app/modules/page.tsx"), "utf8");
+    expect(hub).toContain('import { ZLifeHeartbeat } from "@/components/zlife-heartbeat"');
+    expect(hub).toContain('<ZLifeHeartbeat width={34} height={13} />');
+  });
 });
