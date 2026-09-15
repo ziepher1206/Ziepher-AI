@@ -8,6 +8,10 @@ import { createClient } from "@/lib/supabase/server";
 
 type Context = { params: Promise<{ projectId: string }> };
 
+function projectTypeFromIdea(originalIdea: string | null): "website" | "app" {
+  return /project type:\s*app\b/i.test(originalIdea ?? "") ? "app" : "website";
+}
+
 export async function GET(_request: Request, context: Context) {
   try {
     const projectId = projectIdSchema.parse((await context.params).projectId);
@@ -19,15 +23,16 @@ export async function GET(_request: Request, context: Context) {
 
     const { data: project, error } = await supabase
       .from("projects")
-      .select("id,workspace_id,name,business_name,primary_domain,source_domain,current_version")
+      .select("id,workspace_id,name,business_name,primary_domain,source_domain,current_version,original_idea")
       .eq("id", projectId)
       .single();
     if (error || !project?.workspace_id) throw new Error("Project not found.");
 
+    const projectType = projectTypeFromIdea(project.original_idea);
     const candidates = generateDomainCandidates({
       name: project.name,
       businessName: project.business_name,
-      projectType: "website",
+      projectType,
       limit: 10
     });
 
@@ -40,7 +45,8 @@ export async function GET(_request: Request, context: Context) {
         project: {
           name: project.business_name ?? project.name,
           currentDomain: project.primary_domain ?? project.source_domain ?? null,
-          currentVersion: project.current_version ?? 0
+          currentVersion: project.current_version ?? 0,
+          projectType
         },
         provider: "vercel",
         providerConfigured: false,
@@ -80,7 +86,8 @@ export async function GET(_request: Request, context: Context) {
       project: {
         name: project.business_name ?? project.name,
         currentDomain: project.primary_domain ?? project.source_domain ?? null,
-        currentVersion: project.current_version ?? 0
+        currentVersion: project.current_version ?? 0,
+        projectType
       },
       provider: "vercel",
       providerConfigured: true,
