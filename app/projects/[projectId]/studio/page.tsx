@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { ProjectVisualQualityPanel } from "@/components/project-visual-quality-panel";
 import { StudioShell } from "@/components/studio-shell";
 import { isSupabaseConfigured } from "@/lib/env";
 import { createClient } from "@/lib/supabase/server";
@@ -31,9 +32,12 @@ export default async function ProjectStudioPage({ params }: Props) {
           zIndex: 30,
           display: "grid",
           gap: 8,
-          maxWidth: 245
+          width: "min(310px, calc(100vw - 36px))",
+          maxHeight: "calc(100vh - 76px)",
+          overflowY: "auto"
         }}
       >
+        {hasBuiltPreview ? <ProjectVisualQualityPanel projectId={projectId} /> : null}
         {hasBuiltPreview ? (
           <Link className="button primary" href={`/projects/${projectId}/domains`} style={{ textDecoration: "none" }}>
             Choose Domain
