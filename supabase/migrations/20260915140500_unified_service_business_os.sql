@@ -12,64 +12,11 @@ create table if not exists public.zlife_service_industries (
   updated_at timestamptz not null default now()
 );
 
-create table if not exists public.workspace_business_profiles (
-  workspace_id uuid primary key references public.workspaces(id) on delete cascade,
-  industry_key text not null references public.zlife_service_industries(industry_key) on delete restrict,
-  display_name text,
-  settings jsonb not null default '{}'::jsonb,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
-);
-
 alter table public.zlife_service_industries enable row level security;
-alter table public.workspace_business_profiles enable row level security;
 
 create policy "Authenticated users can read service industry catalog"
 on public.zlife_service_industries for select to authenticated
 using (status in ('available', 'preview'));
-
-create policy "Workspace members can read business profile"
-on public.workspace_business_profiles for select to authenticated
-using (public.is_workspace_member(workspace_id));
-
-create policy "Workspace owners and admins can create business profile"
-on public.workspace_business_profiles for insert to authenticated
-with check (
-  exists (
-    select 1
-    from public.workspaces w
-    left join public.workspace_members wm
-      on wm.workspace_id = w.id
-     and wm.user_id = (select auth.uid())
-    where w.id = workspace_id
-      and (w.owner_id = (select auth.uid()) or wm.role in ('owner', 'admin'))
-  )
-);
-
-create policy "Workspace owners and admins can update business profile"
-on public.workspace_business_profiles for update to authenticated
-using (
-  exists (
-    select 1
-    from public.workspaces w
-    left join public.workspace_members wm
-      on wm.workspace_id = w.id
-     and wm.user_id = (select auth.uid())
-    where w.id = workspace_id
-      and (w.owner_id = (select auth.uid()) or wm.role in ('owner', 'admin'))
-  )
-)
-with check (
-  exists (
-    select 1
-    from public.workspaces w
-    left join public.workspace_members wm
-      on wm.workspace_id = w.id
-     and wm.user_id = (select auth.uid())
-    where w.id = workspace_id
-      and (w.owner_id = (select auth.uid()) or wm.role in ('owner', 'admin'))
-  )
-);
 
 insert into public.zlife_service_industries (industry_key, name, description, status, default_settings)
 values
@@ -89,6 +36,19 @@ on conflict (industry_key) do update set
   status = excluded.status,
   default_settings = excluded.default_settings,
   updated_at = now();
+
+-- workspace_business_profiles already exists in the operating system. Extend it
+-- instead of replacing it so current business names, contact info, service area,
+-- insurance notes, and other profile data remain untouched.
+alter table public.workspace_business_profiles
+  add column if not exists industry_key text references public.zlife_service_industries(industry_key) on delete restrict,
+  add column if not exists industry_settings jsonb not null default '{}'::jsonb;
+
+-- Every business workspace created before this migration was running the Tree
+-- Service vertical, so preserve that context as the first industry profile.
+update public.workspace_business_profiles
+set industry_key = 'tree_service'
+where industry_key is null;
 
 insert into public.zlife_module_catalog (module_key, name, description, route, category, status, is_core)
 values (
@@ -123,15 +83,16 @@ where tree.module_key = 'tree_service'
 on conflict (workspace_id, module_key) do update set
   settings = public.workspace_module_installations.settings || excluded.settings;
 
-insert into public.workspace_business_profiles (workspace_id, industry_key, display_name, settings)
+insert into public.workspace_business_profiles (workspace_id, industry_key, industry_settings)
 select
   tree.workspace_id,
   'tree_service',
-  null,
   coalesce(tree.settings, '{}'::jsonb)
 from public.workspace_module_installations tree
 where tree.module_key = 'tree_service'
-on conflict (workspace_id) do nothing;
+on conflict (workspace_id) do update set
+  industry_key = coalesce(public.workspace_business_profiles.industry_key, excluded.industry_key),
+  industry_settings = public.workspace_business_profiles.industry_settings || excluded.industry_settings;
 
 delete from public.workspace_module_installations
 where module_key = 'tree_service';
