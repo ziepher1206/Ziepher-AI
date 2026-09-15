@@ -24,6 +24,15 @@ type HistoryItem = {
   updatedAt: string;
 };
 
+type ReviewOutcome = {
+  id: string;
+  title: string;
+  action: "verified" | "rejected";
+  reason: string;
+  verifiedScore: number | null;
+  reviewedAt: string;
+};
+
 async function getContributorIdentity() {
   if (!isSupabaseConfigured()) return null;
   try {
@@ -35,6 +44,7 @@ async function getContributorIdentity() {
     let activeTaskId: string | null = null;
     let activeTaskState = "claimed";
     let history: HistoryItem[] = [];
+    let reviewOutcomes: ReviewOutcome[] = [];
 
     if (process.env.SUPABASE_SERVICE_ROLE_KEY) {
       const admin = createAdminClient();
@@ -72,6 +82,28 @@ async function getContributorIdentity() {
           };
         });
 
+        const eventIds = history.map((item) => item.id);
+        if (eventIds.length) {
+          const reviewResult = await admin
+            .from("contribution_review_events")
+            .select("id, contribution_event_id, action, reason, new_verified_score, created_at")
+            .in("contribution_event_id", eventIds)
+            .order("created_at", { ascending: false })
+            .limit(8);
+
+          const historyById = new Map(history.map((item) => [item.id, item]));
+          reviewOutcomes = (reviewResult.data ?? [])
+            .filter((review) => review.action === "verified" || review.action === "rejected")
+            .map((review) => ({
+              id: review.id,
+              title: historyById.get(review.contribution_event_id)?.title ?? "ZLife contribution",
+              action: review.action as "verified" | "rejected",
+              reason: review.reason,
+              verifiedScore: typeof review.new_verified_score === "number" ? review.new_verified_score : null,
+              reviewedAt: review.created_at,
+            }));
+        }
+
         const active = history.find((item) => item.state === "claimed" || item.state === "submitted" || item.state === "under_review");
         if (active) {
           const activeEvent = (eventResult.data ?? []).find((event) => event.id === active.id);
@@ -99,6 +131,7 @@ async function getContributorIdentity() {
       activeTaskId,
       activeTaskState,
       history,
+      reviewOutcomes,
     };
   } catch {
     return null;
@@ -132,6 +165,35 @@ export default async function CommunityStudioPage() {
       <section className="zlife-section">
         <StudioWorkspaceClient tasks={tasks} identity={identity} />
       </section>
+
+      {identity?.reviewOutcomes.length ? (
+        <section className="zlife-section">
+          <div className="zlife-section-heading">
+            <div>
+              <p className="zlife-kicker">REVIEW RESULTS</p>
+              <h2>See why your work was accepted or rejected.</h2>
+              <p>These results come from ZLife&apos;s protected maintainer audit history, not browser-local state. A verified score is contribution value evidence, not a cash payout or ownership promise.</p>
+            </div>
+          </div>
+          <div className="zlife-studio-task-grid">
+            {identity.reviewOutcomes.map((outcome) => (
+              <article className="zlife-studio-task" key={outcome.id}>
+                <div className="zlife-studio-task-meta">
+                  <span>{outcome.action === "verified" ? "Verified" : "Rejected"}</span>
+                  <span>{new Date(outcome.reviewedAt).toLocaleDateString()}</span>
+                </div>
+                <h3>{outcome.title}</h3>
+                <p>{outcome.reason}</p>
+                {outcome.action === "verified" && outcome.verifiedScore !== null ? (
+                  <small>Verified contribution score: {outcome.verifiedScore}</small>
+                ) : (
+                  <small>No verified value was awarded.</small>
+                )}
+              </article>
+            ))}
+          </div>
+        </section>
+      ) : null}
 
       <section className="zlife-section">
         <div className="zlife-section-heading"><div><p className="zlife-kicker">CONTRIBUTION PATHS</p><h2>You do not need to be a programmer.</h2><p>Pick the kind of work you are good at. ZLife can turn useful human expertise, testing, design, and code into structured product improvements.</p></div></div>
