@@ -10,13 +10,22 @@ type RouteSuggestion = {
   detail: string;
 };
 
-const routes: Array<{ keywords: string[]; suggestion: RouteSuggestion }> = [
+type RouteDefinition = {
+  keywords: string[];
+  suggestion: RouteSuggestion;
+};
+
+const routes: RouteDefinition[] = [
   {
-    keywords: ["lead", "estimate", "invoice", "job", "crew", "customer", "business", "marketing", "payment", "schedule", "appointment"],
+    keywords: ["doctor", "health", "wellness", "medicine", "appointment", "fitness"],
+    suggestion: { area: "Health", href: "/modules/health", title: "Review the Health module", detail: "Health and wellness organization will stay permission-aware and clearly separate from medical care." }
+  },
+  {
+    keywords: ["lead", "estimate", "invoice", "job", "crew", "customer", "business", "marketing", "payment", "schedule"],
     suggestion: { area: "Business", href: "/operate/assistant", title: "Open the Business AI workspace", detail: "Use live workspace records to prioritize leads, estimates, jobs, invoices, growth, and other business work." }
   },
   {
-    keywords: ["home", "family", "house", "maintenance", "chore", "task", "school", "kid", "grocery", "shopping"],
+    keywords: ["home", "family", "house", "maintenance", "chore", "task", "school pickup", "kid", "grocery", "shopping"],
     suggestion: { area: "Home & Family", href: "/home", title: "Open Home & Family", detail: "Work with household tasks, maintenance, routines, and the home context currently connected to Z-Life." }
   },
   {
@@ -32,15 +41,11 @@ const routes: Array<{ keywords: string[]; suggestion: RouteSuggestion }> = [
     suggestion: { area: "Auto", href: "/modules/auto", title: "Review the Auto module", detail: "Vehicle records, service history, ownership costs, and maintenance reminders belong here as the module comes online." }
   },
   {
-    keywords: ["doctor", "health", "wellness", "medicine", "appointment", "fitness"],
-    suggestion: { area: "Health", href: "/modules/health", title: "Review the Health module", detail: "Health and wellness organization will stay permission-aware and clearly separate from medical care." }
-  },
-  {
     keywords: ["travel", "trip", "flight", "hotel", "vacation", "itinerary"],
     suggestion: { area: "Travel", href: "/modules/travel", title: "Review the Travel module", detail: "Trips, itineraries, reservations, documents, and shared planning will live here." }
   },
   {
-    keywords: ["learn", "study", "course", "school", "skill", "research"],
+    keywords: ["learn", "study", "course", "school work", "homework", "skill", "research"],
     suggestion: { area: "Learning", href: "/modules/learning", title: "Review the Learning module", detail: "Learning goals, plans, resources, and progress will be organized here as the module develops." }
   },
   {
@@ -55,9 +60,18 @@ function routeFor(text: string): RouteSuggestion {
     return { area: "Z-Life", href: "/dashboard", title: "Tell Z-Life what you want to do", detail: "Describe a goal, problem, reminder, business task, or part of life you want help organizing." };
   }
 
-  for (const route of routes) {
-    if (route.keywords.some((keyword) => normalized.includes(keyword))) return route.suggestion;
+  const matches = routes.filter((route) => route.keywords.some((keyword) => normalized.includes(keyword)));
+  if (matches.length > 1) {
+    const areas = Array.from(new Set(matches.map((match) => match.suggestion.area)));
+    return {
+      area: "My Day",
+      href: "/dashboard",
+      title: "Open Today at a Glance",
+      detail: `That request crosses ${areas.join(", ")}. Start from your Z-Life dashboard so the pieces stay together instead of sending you into one isolated module.`
+    };
   }
+
+  if (matches.length === 1) return matches[0].suggestion;
 
   return {
     area: "Z-Life Core",
