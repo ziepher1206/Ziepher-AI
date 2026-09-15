@@ -9,7 +9,7 @@ const createSchema = z.discriminatedUnion("type", [
     type: z.literal("service"),
     workspaceId: z.string().uuid(),
     name: z.string().trim().min(1).max(160),
-    description: z.string().trim().max(1000).optional().or(z.literal("")),
+    description: z.string().trim().max(1000).nullable().optional().or(z.literal("")),
     defaultDurationMinutes: z.number().int().min(15).max(1440).nullable().optional(),
     travelBufferMinutes: z.number().int().min(0).max(240).default(0),
     preparationBufferMinutes: z.number().int().min(0).max(240).default(0),
