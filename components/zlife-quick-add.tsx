@@ -27,10 +27,6 @@ export function ZLifeQuickAdd() {
       </div>
 
       <form action={addDailyItemAction} style={{ display: "grid", gap: 10 }}>
-        <input type="hidden" name="itemKind" value="task" />
-        <input type="hidden" name="priority" value="normal" />
-        <input type="hidden" name="repeat" value="once" />
-
         <label className="field">
           <span>Item</span>
           <input name="title" required maxLength={240} autoComplete="off" placeholder="Example: Pick up groceries after work" />
