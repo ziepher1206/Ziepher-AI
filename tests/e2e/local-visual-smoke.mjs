@@ -36,6 +36,30 @@ async function verifyPage(context, { path, name, expectedText, mobile = false })
   await page.close();
 }
 
+async function verifyDesktopHomeScroll(context) {
+  const page = await context.newPage();
+  const finishWatch = watchPage(page, "home-scroll");
+  const response = await page.goto(`${baseURL}/`, { waitUntil: "networkidle" });
+  if (!response || !response.ok()) failures.push(`home-scroll: HTTP ${response?.status() ?? "no response"}`);
+
+  const landing = page.locator(".zlife-landing");
+  const dimensions = await landing.evaluate((element) => ({
+    clientHeight: element.clientHeight,
+    scrollHeight: element.scrollHeight
+  }));
+  if (dimensions.scrollHeight <= dimensions.clientHeight) {
+    failures.push("home-scroll: public landing does not expose a scrollable desktop journey");
+  }
+
+  await landing.evaluate((element) => element.scrollTo({ top: element.scrollHeight, behavior: "instant" }));
+  await page.waitForTimeout(100);
+  const footerText = await page.locator(".zlife-footer").innerText();
+  if (!footerText.includes("A BRIGHTER TOMORROW")) failures.push("home-scroll: footer was not reachable after scrolling public landing");
+  await page.screenshot({ path: `${outputDir}/home-desktop-bottom.png` });
+  finishWatch();
+  await page.close();
+}
+
 async function verifyContributorEntry(context) {
   const page = await context.newPage();
   const finishWatch = watchPage(page, "contributor-entry");
@@ -88,6 +112,7 @@ async function verifyContributorEntry(context) {
 try {
   const desktop = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
   await verifyPage(desktop, { path: "/", name: "home", expectedText: "Turn your idea into a polished website or app." });
+  await verifyDesktopHomeScroll(desktop);
   await verifyPage(desktop, { path: "/modules", name: "modules", expectedText: "One platform. Specialized modules." });
   await verifyPage(desktop, { path: "/ai-teams", name: "ai-teams", expectedText: "AI" });
   await verifyPage(desktop, { path: "/about", name: "about", expectedText: "Z-Life" });
