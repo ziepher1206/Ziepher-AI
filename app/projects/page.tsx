@@ -14,6 +14,34 @@ function statusLabel(status: string | null) {
   }
 }
 
+function nextBuilderStep(project: {
+  id: string;
+  current_version: number | null;
+  primary_domain: string | null;
+}) {
+  if (Number(project.current_version ?? 0) <= 0) {
+    return {
+      href: `/projects/${project.id}/media`,
+      label: "Step 2 · Add photos & references",
+      detail: "Give Z-Life the real photos, logo, screenshots, or visual direction you want it to use."
+    };
+  }
+
+  if (!project.primary_domain) {
+    return {
+      href: `/projects/${project.id}/studio`,
+      label: "Step 3 · Review & refine",
+      detail: "Open the latest preview, check Design Quality, and tell Z-Life what you want changed."
+    };
+  }
+
+  return {
+    href: `/projects/${project.id}/publish`,
+    label: "Step 5 · Check publish readiness",
+    detail: "Review the preview, verified domain, and deployment target before any production approval."
+  };
+}
+
 export default async function ProjectsPage() {
   if (!isSupabaseConfigured()) redirect("/auth/sign-in?next=/projects");
 
@@ -56,18 +84,25 @@ export default async function ProjectsPage() {
         {(projects ?? []).length ? (
           <section>
             <p className="panel-label">Your projects</p>
-            <h2 style={{ margin: "6px 0 14px" }}>Continue where you left off</h2>
+            <h2 style={{ margin: "6px 0 14px" }}>Continue exactly where you left off</h2>
             <div className="project-grid" style={{ marginTop: 0 }}>
               {(projects ?? []).map((project) => {
                 const domain = project.primary_domain ?? project.source_domain;
+                const next = nextBuilderStep(project);
                 return (
-                  <Link className="project-card" href={`/projects/${project.id}/studio`} key={project.id}>
+                  <Link className="project-card" href={next.href} key={project.id} style={{ display: "grid", gap: 10 }}>
                     <div className="project-card-top">
                       <span className="status-pill">{statusLabel(project.scan_status)}</span>
-                      <span className="project-version">v{project.current_version}</span>
+                      <span className="project-version">v{project.current_version ?? 0}</span>
                     </div>
-                    <h2>{project.business_name ?? project.name}</h2>
-                    <p>{domain ? domain : "No domain yet — choose one after the design is approved."}</p>
+                    <div>
+                      <h2 style={{ marginBottom: 6 }}>{project.business_name ?? project.name}</h2>
+                      <p style={{ margin: 0 }}>{domain ? domain : "No domain yet — that comes after you approve the design."}</p>
+                    </div>
+                    <div style={{ padding: "11px 12px", borderRadius: 12, border: "1px solid rgba(127,255,212,.18)", background: "rgba(127,255,212,.055)" }}>
+                      <strong style={{ display: "block", color: "#dffbf4", marginBottom: 4 }}>{next.label}</strong>
+                      <small style={{ display: "block", lineHeight: 1.45 }}>{next.detail}</small>
+                    </div>
                     <small>Updated {new Date(project.updated_at).toLocaleDateString()}</small>
                   </Link>
                 );
