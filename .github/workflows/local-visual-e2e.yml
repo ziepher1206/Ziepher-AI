@@ -47,7 +47,7 @@ jobs:
         run: npm ci
 
       - name: Install temporary browser runner
-        run: npm install --no-save --package-lock=false playwright@1.55.0
+        run: npm install --no-save --legacy-peer-deps playwright@1.55.0
 
       - name: Install Chromium
         run: npx playwright install --with-deps chromium
