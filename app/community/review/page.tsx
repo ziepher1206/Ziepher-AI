@@ -15,6 +15,13 @@ function formatRole(value: string) {
     .join(" ");
 }
 
+function formatState(value: string) {
+  return value
+    .split("_")
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+}
+
 function formatDate(value: string) {
   return new Intl.DateTimeFormat("en-US", {
     dateStyle: "medium",
@@ -85,7 +92,7 @@ export default async function CommunityReviewPage() {
         </Link>
         <nav aria-label="Community review navigation">
           <Link href="/community">Community</Link>
-          <a href="#pending">Pending evidence</a>
+          <a href="#pending">Review-ready evidence</a>
         </nav>
       </header>
 
@@ -100,7 +107,7 @@ export default async function CommunityReviewPage() {
             </p>
           </div>
           <span className="zlife-review-count">
-            {workspace.pending.length} pending
+            {workspace.pending.length} review ready
           </span>
         </div>
 
@@ -108,8 +115,9 @@ export default async function CommunityReviewPage() {
           <strong>Audited maintainer review enabled.</strong>
           <span>
             Reviewer identity is resolved server-side from the authenticated
-            Z-Life session. Scores and reasons are validated server-side, and
-            contribution verification remains recorded in append-only audit history.
+            Z-Life session. Studio task claims only appear here after their
+            GitHub evidence becomes review-ready, and verification remains
+            recorded in append-only audit history.
           </span>
         </div>
       </section>
@@ -117,12 +125,12 @@ export default async function CommunityReviewPage() {
       <section id="pending" className="zlife-section zlife-review-section">
         <div className="zlife-section-heading">
           <div>
-            <p className="zlife-kicker">PENDING EVIDENCE</p>
+            <p className="zlife-kicker">REVIEW-READY EVIDENCE</p>
             <h2>Inspect the work before assigning value.</h2>
             <p>
-              Preliminary factors are evidence inputs only. Raw activity and
-              commit counts do not become verified contribution value without an
-              audited maintainer decision.
+              Preliminary factors are evidence inputs only. A merged pull request
+              or closed supporting issue can make a Studio task ready for review,
+              but only an audited maintainer decision can create verified value.
             </p>
           </div>
         </div>
@@ -156,6 +164,13 @@ export default async function CommunityReviewPage() {
                     <dd>{item.source}</dd>
                   </div>
                   <div>
+                    <dt>GitHub evidence</dt>
+                    <dd>
+                      {item.evidenceState ? formatState(item.evidenceState) : "Recorded source"}
+                      {item.reviewReady ? " · review ready" : ""}
+                    </dd>
+                  </div>
+                  <div>
                     <dt>Submitted</dt>
                     <dd>{formatDate(item.createdAt)}</dd>
                   </div>
@@ -177,7 +192,7 @@ export default async function CommunityReviewPage() {
                       target="_blank"
                       rel="noreferrer"
                     >
-                      Open source evidence
+                      Inspect GitHub evidence
                     </a>
                   ) : (
                     <span className="zlife-review-no-link">No verified source URL</span>
@@ -189,8 +204,8 @@ export default async function CommunityReviewPage() {
             ))
           ) : (
             <article className="zlife-community-empty-card">
-              <h3>No pending contribution evidence.</h3>
-              <p>New unverified ledger events will appear here for authorized maintainers.</p>
+              <h3>No review-ready contribution evidence.</h3>
+              <p>Studio submissions will appear here after their verified GitHub evidence reaches the review-ready state.</p>
             </article>
           )}
         </div>
