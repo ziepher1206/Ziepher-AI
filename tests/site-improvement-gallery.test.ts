@@ -7,26 +7,31 @@ function read(path: string) {
 }
 
 describe("visual scan improvement gallery", () => {
-  it("shows visual examples after scan findings", () => {
+  it("shows continuously varied visual examples after scan findings", () => {
     const page = read("app/projects/[projectId]/page.tsx");
     const gallery = read("components/site-improvement-gallery.tsx");
     expect(page).toContain("SiteImprovementGallery");
     expect(page).toContain('project.scan_status === "complete"');
-    expect(gallery).toContain("Show me more examples");
+    expect(gallery).toContain("Show me 6 more directions");
     expect(gallery).toContain("Use this direction");
-    expect(gallery).toContain("Browse endlessly");
+    expect(gallery).toContain("Hundreds of combinations");
+    expect(gallery).toContain("heroTreatments");
+    expect(gallery).toContain("proofPatterns");
+    expect(gallery).toContain("densities");
   });
 
-  it("routes a selected visual direction into the existing safe refinement flow", () => {
+  it("routes the full visual system into the existing safe refinement flow", () => {
     const gallery = read("components/site-improvement-gallery.tsx");
     expect(gallery).toContain("/projects/${projectId}/changes");
     expect(gallery).toContain('source: "scan_recommendation"');
     expect(gallery).toContain("Visual direction:");
+    expect(gallery).toContain("heroTreatment");
+    expect(gallery).toContain("proofPattern");
   });
 
   it("does not claim copied third-party designs", () => {
     const gallery = read("components/site-improvement-gallery.tsx");
-    expect(gallery).toContain("rather than copied websites");
+    expect(gallery).toContain("rather than copying somebody else&apos;s website");
     expect(gallery).toContain("No external design is copied");
   });
 });
