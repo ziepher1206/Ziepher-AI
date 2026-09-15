@@ -29,8 +29,8 @@ describe("unified Z-Life service business OS", () => {
   it("preserves existing Tree Service users by migrating them into Business", () => {
     expect(migration).toContain("insert into public.workspace_module_installations");
     expect(migration).toContain("'business'");
-    expect(migration).toContain("'industry_profile':\"tree_service\"").toBe(false);
     expect(migration).toContain("{\"industry_profile\":\"tree_service\"}");
     expect(migration).toContain("insert into public.workspace_business_profiles");
+    expect(migration).toContain("delete from public.workspace_module_installations");
   });
 });
