@@ -48,7 +48,7 @@ export function AuthForm() {
           email,
           password,
           options: {
-            emailRedirectTo: `${window.location.origin}/auth/callback`
+            emailRedirectTo: `${window.location.origin}/auth/callback?next=/dashboard`
           }
         });
         if (error) throw error;
@@ -63,7 +63,7 @@ export function AuthForm() {
         });
         if (error) throw error;
         persistRememberedEmail();
-        router.push("/operate");
+        router.push("/dashboard");
         router.refresh();
       }
     } catch (error) {
@@ -84,7 +84,7 @@ export function AuthForm() {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
-          redirectTo: `${window.location.origin}/auth/callback`
+          redirectTo: `${window.location.origin}/auth/callback?next=/dashboard`
         }
       });
       if (error) throw error;
@@ -105,7 +105,7 @@ export function AuthForm() {
       const { error } = await supabase.auth.signInWithOtp({
         email,
         options: {
-          emailRedirectTo: `${window.location.origin}/auth/callback`
+          emailRedirectTo: `${window.location.origin}/auth/callback?next=/dashboard`
         }
       });
       if (error) throw error;
@@ -133,7 +133,7 @@ export function AuthForm() {
         <p className="panel-label">One connected life</p>
         <h1>{mode === "sign-in" ? "Welcome back" : "Create your Z-Life account"}</h1>
         <p className="auth-copy">
-          Run your business and, over time, connect the rest of your life through one simple AI-assisted app.
+          Start with the modules you actually need, then plug in more as your ZLife grows.
         </p>
       </div>
 
