@@ -18,6 +18,7 @@ type ContributorIdentity = {
   displayName: string;
   status: string;
   verified: boolean;
+  activeTaskId: string | null;
 };
 
 function loadJson<T>(key: string): T | null {
@@ -33,8 +34,9 @@ export default function StudioWorkspaceClient({ tasks, identity }: { tasks: Stud
   const [ready, setReady] = useState(false);
   const [accepted, setAccepted] = useState(false);
   const [profile, setProfile] = useState<Profile>({ displayName: identity?.displayName ?? "", specialty: "" });
-  const [activeTaskId, setActiveTaskId] = useState<string | null>(null);
+  const [activeTaskId, setActiveTaskId] = useState<string | null>(identity?.activeTaskId ?? null);
   const [syncState, setSyncState] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const [claimState, setClaimState] = useState<"idle" | "saving" | "saved" | "error">("idle");
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -44,11 +46,12 @@ export default function StudioWorkspaceClient({ tasks, identity }: { tasks: Stud
         displayName: identity?.displayName || local?.displayName || "",
         specialty: local?.specialty || "",
       });
-      setActiveTaskId(window.localStorage.getItem(TASK_KEY));
+      const localTaskId = window.localStorage.getItem(TASK_KEY);
+      setActiveTaskId(identity?.activeTaskId || localTaskId);
       setReady(true);
     }, 0);
     return () => window.clearTimeout(timer);
-  }, [identity?.displayName]);
+  }, [identity?.activeTaskId, identity?.displayName]);
 
   const activeTask = useMemo(() => tasks.find((task) => task.id === activeTaskId) ?? null, [activeTaskId, tasks]);
 
@@ -73,9 +76,23 @@ export default function StudioWorkspaceClient({ tasks, identity }: { tasks: Stud
     }
   }
 
-  function chooseTask(id: string) {
+  async function chooseTask(id: string) {
     setActiveTaskId(id);
     window.localStorage.setItem(TASK_KEY, id);
+    setClaimState("idle");
+    if (!identity) return;
+
+    setClaimState("saving");
+    try {
+      const response = await fetch("/api/community/task-claim", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ taskId: id }),
+      });
+      setClaimState(response.ok ? "saved" : "error");
+    } catch {
+      setClaimState("error");
+    }
   }
 
   if (!ready) return <p className="zlife-community-empty">Loading Studio workspace…</p>;
@@ -135,7 +152,7 @@ export default function StudioWorkspaceClient({ tasks, identity }: { tasks: Stud
           <div>
             <p className="zlife-kicker">LIVE VALUE WORK</p>
             <h2>Choose one useful problem.</h2>
-            <p>This board is sourced from open public ZLife GitHub work, with a safe fallback if GitHub is temporarily unavailable. Choosing a task creates a local sandbox assignment only.</p>
+            <p>{identity ? "Choose a task and ZLife will persist the claim to your contributor history so it follows you across devices." : "This board is sourced from open public ZLife GitHub work. Guest assignments stay local until you sign in."}</p>
           </div>
           <span className="zlife-studio-sandbox-badge">Sandbox only</span>
         </div>
@@ -149,11 +166,15 @@ export default function StudioWorkspaceClient({ tasks, identity }: { tasks: Stud
                 <h3>{task.title}</h3>
                 <p>{task.value}</p>
                 <small>Issue #{task.issueNumber} · {task.kind}</small>
-                <button type="button" onClick={() => chooseTask(task.id)}>{selected ? "Assigned to you" : "Choose this task"}</button>
+                <button type="button" onClick={() => void chooseTask(task.id)} disabled={selected && claimState === "saving"}>
+                  {selected ? claimState === "saving" ? "Saving claim…" : "Assigned to you" : "Choose this task"}
+                </button>
               </article>
             );
           })}
         </div>
+        {identity && activeTask && claimState === "saved" && <p className="zlife-community-empty">Task claim saved to your ZLife contributor history.</p>}
+        {identity && claimState === "error" && <p className="zlife-community-empty">ZLife could not sync this claim. The local assignment is still saved on this device.</p>}
       </section>
 
       <section className="zlife-studio-panel">
@@ -166,7 +187,7 @@ export default function StudioWorkspaceClient({ tasks, identity }: { tasks: Stud
               <a className="zlife-primary" href={activeTask.github} target="_blank" rel="noreferrer">Open issue #{activeTask.issueNumber} <span>→</span></a>
               <a className="zlife-secondary" href="https://github.com/ziepher1206/Ziepher-AI" target="_blank" rel="noreferrer">Open repository</a>
             </div>
-            <p className="zlife-community-empty">Assignment does not grant production credentials, customer data, billing access, or paid API access. Value is only credited after reviewed work is accepted into the verified contribution ledger.</p>
+            <p className="zlife-community-empty">A task claim is not value credit. It stays pending with zero score until useful work is reviewed and accepted. Assignment does not grant production credentials, customer data, billing access, or paid API access.</p>
           </>
         ) : (
           <p className="zlife-community-empty">Choose a task above to create your first Studio sandbox assignment.</p>
