@@ -27,7 +27,7 @@ const dailyItemSchema = z.object({
     "document",
     "family",
     "other"
-  ]),
+  ]).default("task"),
   priority: z.enum(["low", "normal", "high", "urgent"]).default("normal"),
   dueAt: z.string().trim().optional(),
   repeat: z.enum(repeatOptions).default("once")
@@ -93,7 +93,7 @@ export async function addDailyItemAction(formData: FormData) {
   const input = dailyItemSchema.parse({
     title: formData.get("title"),
     detail: formData.get("detail") || undefined,
-    itemKind: formData.get("itemKind"),
+    itemKind: formData.get("itemKind") || "task",
     priority: formData.get("priority") || "normal",
     dueAt: formData.get("dueAt") || undefined,
     repeat: formData.get("repeat") || "once"
