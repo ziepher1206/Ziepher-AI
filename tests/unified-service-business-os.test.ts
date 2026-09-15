@@ -17,8 +17,10 @@ describe("unified Z-Life service business OS", () => {
   });
 
   it("stores the selected trade as an industry profile", () => {
-    expect(migration).toContain("create table if not exists public.workspace_business_profiles");
-    expect(migration).toContain("industry_key text not null references public.zlife_service_industries");
+    expect(migration).toContain("create table if not exists public.zlife_service_industries");
+    expect(migration).toContain("alter table public.workspace_business_profiles");
+    expect(migration).toContain("add column if not exists industry_key text references public.zlife_service_industries");
+    expect(migration).toContain("add column if not exists industry_settings jsonb");
     expect(migration).toContain("'tree_service'");
     expect(migration).toContain("'pressure_washing'");
     expect(migration).toContain("'landscaping'");
