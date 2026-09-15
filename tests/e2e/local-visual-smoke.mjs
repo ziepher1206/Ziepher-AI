@@ -87,18 +87,18 @@ async function verifyContributorEntry(context) {
 
 try {
   const desktop = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
-  await verifyPage(desktop, { path: "/", name: "home", expectedText: "Life and Business" });
+  await verifyPage(desktop, { path: "/", name: "home", expectedText: "Turn your idea into a polished website or app." });
   await verifyPage(desktop, { path: "/modules", name: "modules", expectedText: "One platform. Specialized modules." });
   await verifyPage(desktop, { path: "/ai-teams", name: "ai-teams", expectedText: "AI" });
   await verifyPage(desktop, { path: "/about", name: "about", expectedText: "Z-Life" });
   await verifyPage(desktop, { path: "/community", name: "community", expectedText: "Build Z-Life With Us." });
   await verifyPage(desktop, { path: "/community/join", name: "contributor-join", expectedText: "One click to join the build." });
   await verifyContributorEntry(desktop);
-  await verifyPage(desktop, { path: "/auth/sign-in", name: "sign-in-safe-local", expectedText: "Connect Supabase first" });
+  await verifyPage(desktop, { path: "/auth/sign-in", name: "sign-in-safe-local", expectedText: "Builder setup is not connected yet" });
   await desktop.close();
 
   const mobile = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true });
-  await verifyPage(mobile, { path: "/", name: "home", expectedText: "Life and Business", mobile: true });
+  await verifyPage(mobile, { path: "/", name: "home", expectedText: "Turn your idea into a polished website or app.", mobile: true });
   await verifyPage(mobile, { path: "/modules", name: "modules", expectedText: "One platform. Specialized modules.", mobile: true });
   await verifyPage(mobile, { path: "/community/join", name: "contributor-join", expectedText: "One click to join the build.", mobile: true });
   await verifyPage(mobile, { path: "/community/studio", name: "contributor-studio", expectedText: "Choose how you want to help.", mobile: true });
