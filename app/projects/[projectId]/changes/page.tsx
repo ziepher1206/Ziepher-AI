@@ -54,9 +54,9 @@ export default async function ChangesPage({ params, searchParams }: Props) {
     <main className="projects-page">
       <header className="projects-header">
         <div className="brand">
-          <div className="brand-mark">S</div>
+          <div className="brand-mark">Z</div>
           <div>
-            <div className="brand-title">SITEREFINER</div>
+            <div className="brand-title">Z-LIFE BUILD</div>
             <div className="brand-subtitle">CHANGE REQUESTS</div>
           </div>
         </div>
@@ -72,7 +72,7 @@ export default async function ChangesPage({ params, searchParams }: Props) {
           <p className="panel-label">{project.business_name ?? project.name}</p>
           <h1 style={{ margin: "6px 0 10px" }}>Request, review, then publish</h1>
           <p className="auth-copy" style={{ maxWidth: 860 }}>
-            {domain ? `${domain} · ` : ""}SiteRefiner change requests are the handoff between recommendations or business requests and the existing versioned build, QA, preview, approval, and source-control pipeline.
+            {domain ? `${domain} · ` : ""}Z-Life Build change requests are the handoff between recommendations or business requests and the existing versioned build, QA, preview, approval, and source-control pipeline.
           </p>
         </div>
 
