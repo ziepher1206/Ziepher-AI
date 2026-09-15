@@ -15,6 +15,14 @@ export type VercelProjectDomain = {
   }>;
 };
 
+export type VercelDomainConfig = {
+  configured: boolean;
+  misconfigured: boolean;
+  nameservers: string[];
+  cnames: string[];
+  aRecords: string[];
+};
+
 type DomainResponse = Record<string, unknown>;
 
 function requestUrl(pathname: string, teamId?: string | null) {
@@ -65,6 +73,11 @@ function nullableString(value: unknown) {
   return typeof value === "string" && value.trim() ? value.trim() : null;
 }
 
+function stringList(value: unknown) {
+  if (!Array.isArray(value)) return [];
+  return value.filter((item): item is string => typeof item === "string" && Boolean(item.trim()));
+}
+
 function normalizeVerification(value: unknown): VercelProjectDomain["verification"] {
   if (!Array.isArray(value)) return [];
   return value
@@ -90,6 +103,17 @@ function normalizeDomain(data: DomainResponse): VercelProjectDomain {
   };
 }
 
+function normalizeDomainConfig(data: DomainResponse): VercelDomainConfig {
+  const misconfigured = data.misconfigured === true;
+  return {
+    configured: !misconfigured,
+    misconfigured,
+    nameservers: stringList(data.nameservers),
+    cnames: stringList(data.cnames),
+    aRecords: stringList(data.aValues ?? data.aRecords)
+  };
+}
+
 export async function getVercelProjectDomain(input: {
   accessToken: string;
   projectIdOrName: string;
@@ -104,6 +128,18 @@ export async function getVercelProjectDomain(input: {
     )
   );
   return normalizeDomain(data);
+}
+
+export async function getVercelDomainConfig(input: {
+  accessToken: string;
+  domain: string;
+  teamId?: string | null;
+}) {
+  const data = await vercelRequest<DomainResponse>(
+    input.accessToken,
+    requestUrl(`/v6/domains/${encodeURIComponent(input.domain)}/config`, input.teamId)
+  );
+  return normalizeDomainConfig(data);
 }
 
 export async function addVercelProjectDomain(input: {
