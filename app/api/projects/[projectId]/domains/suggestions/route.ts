@@ -85,8 +85,12 @@ export async function GET(_request: Request, context: Context) {
       provider: "vercel",
       providerConfigured: true,
       checkedAt: new Date().toISOString(),
-      suggestions: ranked.map(({ originalIndex: _originalIndex, ...item }) => ({
-        ...item,
+      suggestions: ranked.map((item) => ({
+        domain: item.domain,
+        available: item.available,
+        purchasePrice: item.purchasePrice,
+        renewalPrice: item.renewalPrice,
+        years: item.years,
         recommended: item.domain === recommendedDomain
       }))
     });
