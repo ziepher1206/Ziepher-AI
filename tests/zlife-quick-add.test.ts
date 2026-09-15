@@ -39,6 +39,21 @@ describe("Z-Life My Day quick add", () => {
     expect(action).toContain('revalidatePath("/today")');
   });
 
+  it("supports recurring reminders without needing another module", () => {
+    const form = source("components/zlife-quick-add.tsx");
+    const action = source("app/today/actions.ts");
+    expect(form).toContain('name="repeat"');
+    expect(form).toContain("Every day");
+    expect(form).toContain("Every week");
+    expect(form).toContain("Every month");
+    expect(form).toContain("Every year");
+    expect(action).toContain('repeatOptions = ["once", "daily", "weekly", "monthly", "yearly"]');
+    expect(action).toContain("Choose a date and time for recurring My Day items.");
+    expect(action).toContain("nextFutureOccurrence");
+    expect(action).toContain("last_completed_at");
+    expect(action).toContain("completed_count");
+  });
+
   it("only renders quick add when the daily stream schema is available", () => {
     const page = source("app/today/page.tsx");
     expect(page).toContain("dailyStreamReady ?");
