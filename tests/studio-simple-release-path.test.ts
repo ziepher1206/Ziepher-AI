@@ -25,4 +25,14 @@ describe("studio simple release path", () => {
     expect(page).toContain(".preview-toolbar .inline-actions > button:has(+ button.primary)");
     expect(page).toContain(".preview-toolbar .inline-actions > button.primary");
   });
+
+  it("keeps progress and action controls from covering the mobile preview", () => {
+    const page = read("app/projects/[projectId]/studio/page.tsx");
+
+    expect(page).toContain("@media (max-width: 720px)");
+    expect(page).toContain(".zlife-studio-progress");
+    expect(page).toContain(".zlife-studio-actions");
+    expect(page).toContain("position: sticky !important");
+    expect(page).toContain("max-height: 38vh !important");
+  });
 });
