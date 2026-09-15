@@ -33,6 +33,9 @@ jobs:
       - name: Contributor smoke test
         run: npm run smoke:contributor
 
+      - name: Builder launch readiness
+        run: npm run check:builder-launch
+
       - name: Typecheck
         run: npm run typecheck
 
