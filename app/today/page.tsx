@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
-import { completeDailyItemAction } from "@/app/today/actions";
+import { completeDailyItemAction, postponeDailyItemAction } from "@/app/today/actions";
 import { ZLifeQuickAdd } from "@/components/zlife-quick-add";
 import { isSupabaseConfigured } from "@/lib/env";
 import { createClient } from "@/lib/supabase/server";
@@ -127,11 +127,21 @@ export default async function TodayPage() {
                   <div style={{ display: "grid", alignContent: "start", justifyItems: "end", gap: 8 }}>
                     <span style={{ color: "#9dbbb7", fontSize: 12, textAlign: "right", whiteSpace: "nowrap" }}>{formatWhen(item.due_at || item.starts_at)}</span>
                     {item.source_module === "zlife_core" ? (
-                      <form action={completeDailyItemAction}>
-                        <input type="hidden" name="dailyItemId" value={item.id} />
-                        <button className="button" type="submit" style={{ padding: "6px 9px", fontSize: 10 }}>Done</button>
-                      </form>
-                    ) : <small style={{ color: "#789b97", fontSize: 10 }}>Open source to complete</small>}
+                      <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "flex-end", gap: 5 }}>
+                        <form action={postponeDailyItemAction}>
+                          <input type="hidden" name="dailyItemId" value={item.id} />
+                          <button className="button" name="postpone" value="later_today" type="submit" style={{ padding: "6px 8px", fontSize: 10 }}>+3h</button>
+                        </form>
+                        <form action={postponeDailyItemAction}>
+                          <input type="hidden" name="dailyItemId" value={item.id} />
+                          <button className="button" name="postpone" value="tomorrow" type="submit" style={{ padding: "6px 8px", fontSize: 10 }}>Tomorrow</button>
+                        </form>
+                        <form action={completeDailyItemAction}>
+                          <input type="hidden" name="dailyItemId" value={item.id} />
+                          <button className="button" type="submit" style={{ padding: "6px 9px", fontSize: 10 }}>Done</button>
+                        </form>
+                      </div>
+                    ) : <small style={{ color: "#789b97", fontSize: 10 }}>Open source to reschedule or complete</small>}
                   </div>
                 </article>
               ))}
