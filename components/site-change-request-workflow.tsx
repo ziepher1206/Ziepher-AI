@@ -138,7 +138,7 @@ export function SiteChangeRequestWorkflow({
       <form className="project-card" onSubmit={createRequest} style={{ display: "grid", gap: 14 }}>
         <div>
           <p className="panel-label">New change request</p>
-          <h2 style={{ marginBottom: 8 }}>Tell SiteRefiner what should change</h2>
+          <h2 style={{ marginBottom: 8 }}>Tell Z-Life Build what should change</h2>
           <p className="auth-copy">
             Saving this request is free and does not call an AI provider, modify the website, or publish anything.
           </p>
@@ -156,7 +156,7 @@ export function SiteChangeRequestWorkflow({
           />
         </label>
         <label style={{ display: "grid", gap: 6 }}>
-          <span>What should SiteRefiner do?</span>
+          <span>What should Z-Life Build do?</span>
           <textarea
             className="input"
             value={instructions}
