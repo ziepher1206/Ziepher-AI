@@ -42,9 +42,23 @@ export type PendingContributionReview = {
   createdAt: string;
 };
 
+export type PendingRereviewRequest = {
+  id: string;
+  reviewEventId: string;
+  contributionEventId: string;
+  contributorId: string;
+  contributorLabel: string;
+  originalAction: "verified" | "rejected";
+  originalReason: string;
+  originalVerifiedScore: number | null;
+  requestReason: string;
+  createdAt: string;
+};
+
 export type CommunityReviewWorkspace = {
   access: CommunityReviewAccess;
   pending: PendingContributionReview[];
+  rereviewRequests: PendingRereviewRequest[];
 };
 
 function sourceUrlFor(input: {
@@ -94,7 +108,7 @@ export async function getCommunityReviewWorkspace(): Promise<CommunityReviewWork
   } = await sessionClient.auth.getUser();
 
   if (!user) {
-    return { access: { state: "signed_out" }, pending: [] };
+    return { access: { state: "signed_out" }, pending: [], rereviewRequests: [] };
   }
 
   const admin = createAdminClient();
@@ -110,23 +124,36 @@ export async function getCommunityReviewWorkspace(): Promise<CommunityReviewWork
     return {
       access: { state: "identity_unverified", userId: user.id },
       pending: [],
+      rereviewRequests: [],
     };
   }
 
-  const { data: events, error: eventError } = await admin
-    .from("contribution_events")
-    .select(
-      "id, contributor_id, module_id, repository, source, contribution_type, description, github_pr_id, github_issue_id, impact_score, difficulty_score, scope_score, maintenance_score, quality_score, metadata, created_at",
-    )
-    .eq("status", "pending")
-    .order("created_at", { ascending: true })
-    .limit(100);
+  const [{ data: events, error: eventError }, { data: rereviewRows, error: rereviewError }] = await Promise.all([
+    admin
+      .from("contribution_events")
+      .select(
+        "id, contributor_id, module_id, repository, source, contribution_type, description, github_pr_id, github_issue_id, impact_score, difficulty_score, scope_score, maintenance_score, quality_score, metadata, created_at",
+      )
+      .eq("status", "pending")
+      .order("created_at", { ascending: true })
+      .limit(100),
+    admin
+      .from("contribution_rereview_requests")
+      .select("id, contribution_review_event_id, contribution_event_id, contributor_id, reason, created_at")
+      .eq("status", "open")
+      .order("created_at", { ascending: true })
+      .limit(100),
+  ]);
 
   if (eventError) throw eventError;
+  if (rereviewError) throw rereviewError;
 
   const reviewableEvents = (events ?? []).filter(isReviewablePendingEvent);
   const contributorIds = [
-    ...new Set(reviewableEvents.map((event) => event.contributor_id)),
+    ...new Set([
+      ...reviewableEvents.map((event) => event.contributor_id),
+      ...(rereviewRows ?? []).map((request) => request.contributor_id),
+    ]),
   ];
   const moduleIds = [
     ...new Set(
@@ -205,6 +232,46 @@ export async function getCommunityReviewWorkspace(): Promise<CommunityReviewWork
     };
   });
 
+  const reviewEventIds = (rereviewRows ?? []).map((request) => request.contribution_review_event_id);
+  const reviewEventMap = new Map<string, { action: "verified" | "rejected"; reason: string; score: number | null }>();
+  if (reviewEventIds.length) {
+    const { data: reviewEvents, error: reviewEventsError } = await admin
+      .from("contribution_review_events")
+      .select("id, action, reason, new_verified_score")
+      .in("id", reviewEventIds);
+    if (reviewEventsError) throw reviewEventsError;
+
+    for (const reviewEvent of reviewEvents ?? []) {
+      if (reviewEvent.action === "verified" || reviewEvent.action === "rejected") {
+        reviewEventMap.set(reviewEvent.id, {
+          action: reviewEvent.action,
+          reason: reviewEvent.reason,
+          score: typeof reviewEvent.new_verified_score === "number" ? reviewEvent.new_verified_score : null,
+        });
+      }
+    }
+  }
+
+  const rereviewRequests: PendingRereviewRequest[] = (rereviewRows ?? [])
+    .map((request) => {
+      const reviewEvent = reviewEventMap.get(request.contribution_review_event_id);
+      if (!reviewEvent) return null;
+      const contributor = contributorMap.get(request.contributor_id);
+      return {
+        id: request.id,
+        reviewEventId: request.contribution_review_event_id,
+        contributionEventId: request.contribution_event_id,
+        contributorId: request.contributor_id,
+        contributorLabel: contributor?.displayName ?? contributor?.githubLogin ?? "Unknown contributor",
+        originalAction: reviewEvent.action,
+        originalReason: reviewEvent.reason,
+        originalVerifiedScore: reviewEvent.score,
+        requestReason: request.reason,
+        createdAt: request.created_at,
+      };
+    })
+    .filter((request): request is PendingRereviewRequest => request !== null);
+
   return {
     access: {
       state: "authorized",
@@ -215,5 +282,6 @@ export async function getCommunityReviewWorkspace(): Promise<CommunityReviewWork
       status: reviewer.status,
     },
     pending,
+    rereviewRequests,
   };
 }
