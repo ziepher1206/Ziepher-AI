@@ -51,7 +51,10 @@ export default function ContributorPathGuide() {
   const [path, setPath] = useState("unsure");
 
   useEffect(() => {
-    setPath(window.localStorage.getItem(CONTRIBUTOR_PATH_KEY) ?? "unsure");
+    const timer = window.setTimeout(() => {
+      setPath(window.localStorage.getItem(CONTRIBUTOR_PATH_KEY) ?? "unsure");
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, []);
 
   const guide = guides[path] ?? guides.unsure;
