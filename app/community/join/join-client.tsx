@@ -26,7 +26,7 @@ export function ContributorJoinClient() {
     if (!accepted) return;
     window.localStorage.setItem(ACCEPTANCE_KEY, new Date().toISOString());
     window.localStorage.setItem(CONTRIBUTOR_PATH_KEY, path);
-    router.push("/community/studio");
+    router.push("/community/studio/start");
   }
 
   return (
@@ -82,7 +82,7 @@ export function ContributorJoinClient() {
 
         <div className="zlife-hero-actions" style={{ marginTop: 20 }}>
           <button className="zlife-primary" type="button" disabled={!accepted} onClick={enterStudio} style={{ opacity: accepted ? 1 : 0.45 }}>
-            Accept & Enter My Studio <span>→</span>
+            Accept & Show My Starting Path <span>→</span>
           </button>
         </div>
       </section>
