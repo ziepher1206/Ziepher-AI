@@ -26,4 +26,14 @@ describe("Z-Life module launch status", () => {
     expect(detail).toContain("zlifeModuleStatusLabel");
     expect(detail).toContain("First public launch path");
   });
+
+  it("keeps launch, working, and future modules visually separated", () => {
+    const hub = read("app/modules/page.tsx");
+    expect(hub).toContain('title="LAUNCHING FIRST"');
+    expect(hub).toContain('status="launch"');
+    expect(hub).toContain('title="WORKING NOW"');
+    expect(hub).toContain('status="active"');
+    expect(hub).toContain('title="IN DEVELOPMENT"');
+    expect(hub).toContain('status="development"');
+  });
 });
