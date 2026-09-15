@@ -44,6 +44,20 @@ Read `docs/COMMUNITY-ROADMAP.md` for the proposal lifecycle and governance rules
 
 Tree Service remains the first active business module while ZLife Core, security, permissions, tenant isolation, CI, accessibility, contributor governance, and reliability remain launch-critical priorities.
 
+## Redesigning ZLife Core
+
+Outside contributors may propose and build changes to ZLife's core architecture when the goal is to improve performance, stability, reliability, scalability, security, maintainability, or cost efficiency.
+
+Large structural work follows a stricter path than an ordinary feature PR. Start with the `Core Architecture Proposal` issue template and read `docs/CORE-ARCHITECTURE-CONTRIBUTIONS.md` before implementing a rewrite.
+
+Core redesign proposals must define the current problem, measurable baseline, target improvement, affected boundaries, benchmark method, migration path, rollback path, compatibility risks, security/privacy/tenancy impact, cost impact, observability plan, and staged release strategy.
+
+A large rewrite is not considered valuable merely because it is large. ZLife prefers the smallest reversible change that produces measurable improvement. Performance gains must not silently reduce correctness, security, tenant isolation, recoverability, auditability, or test confidence.
+
+Outside contributors may design and build core changes in forks, branches, mocks, or isolated development infrastructure, but they do not receive production secrets or direct deployment authority. Production promotion remains maintainer controlled.
+
+Broad outside core contribution should not be treated as fully launched until `main` has required Pull Request and CI protection. Issue #93 tracks that repository-admin blocker.
+
 ## Contribution quality
 
 Meaningful contributions can include code, architecture, modules, security, UI/UX, documentation, tests, reviews, maintenance, product design, infrastructure, community support, and other verified work that materially improves ZLife.
