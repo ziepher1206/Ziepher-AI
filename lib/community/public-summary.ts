@@ -11,6 +11,9 @@ export type PublicContributorSummary = {
   recent90DayScore: number;
   lifetimeContributionPercent: number;
   recentContributionPercent: number;
+  verifiedContributionCount: number;
+  recent90DayVerifiedCount: number;
+  activeModuleCount: number;
   contributionTypes: Record<string, number>;
   modules: Array<{ id: string; name: string; score: number; contributionPercent: number }>;
 };
@@ -71,10 +74,11 @@ export async function getPublicContributorSummaries(): Promise<PublicContributor
   return contributors.map((contributor) => {
     const ownEvents = (events ?? []).filter((event) => event.contributor_id === contributor.id);
     const lifetimeScore = ownEvents.reduce((sum, event) => sum + (event.verified_score ?? 0), 0);
-    const recent90DayScore = ownEvents.reduce((sum, event) => {
+    const recentEvents = ownEvents.filter((event) => {
       const verifiedAt = event.verified_at ? Date.parse(event.verified_at) : 0;
-      return sum + (verifiedAt >= cutoff ? event.verified_score ?? 0 : 0);
-    }, 0);
+      return verifiedAt >= cutoff;
+    });
+    const recent90DayScore = recentEvents.reduce((sum, event) => sum + (event.verified_score ?? 0), 0);
 
     const contributionTypes: Record<string, number> = {};
     const contributorModuleScores = new Map<string, number>();
@@ -94,6 +98,9 @@ export async function getPublicContributorSummaries(): Promise<PublicContributor
       recent90DayScore,
       lifetimeContributionPercent: percent(lifetimeScore, totalLifetime),
       recentContributionPercent: percent(recent90DayScore, totalRecent),
+      verifiedContributionCount: ownEvents.length,
+      recent90DayVerifiedCount: recentEvents.length,
+      activeModuleCount: contributorModuleScores.size,
       contributionTypes,
       modules: [...contributorModuleScores.entries()].map(([id, score]) => ({
         id,
