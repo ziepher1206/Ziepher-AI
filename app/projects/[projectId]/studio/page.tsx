@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { BuilderProgress } from "@/components/builder-progress";
 import { ProjectVisualQualityPanel } from "@/components/project-visual-quality-panel";
 import { StudioShell } from "@/components/studio-shell";
 import { isSupabaseConfigured } from "@/lib/env";
@@ -27,20 +28,33 @@ export default async function ProjectStudioPage({ params }: Props) {
       <div
         style={{
           position: "fixed",
+          top: 10,
+          left: "50%",
+          transform: "translateX(-50%)",
+          zIndex: 31,
+          width: "min(920px, calc(100vw - 28px))"
+        }}
+      >
+        <BuilderProgress projectId={projectId} currentStage={3} />
+      </div>
+
+      <div
+        style={{
+          position: "fixed",
           right: 18,
           bottom: 52,
           zIndex: 30,
           display: "grid",
           gap: 8,
           width: "min(310px, calc(100vw - 36px))",
-          maxHeight: "calc(100vh - 76px)",
+          maxHeight: "calc(100vh - 148px)",
           overflowY: "auto"
         }}
       >
         {hasBuiltPreview ? <ProjectVisualQualityPanel projectId={projectId} /> : null}
         {hasBuiltPreview ? (
           <Link className="button primary" href={`/projects/${projectId}/domains`} style={{ textDecoration: "none" }}>
-            Choose Domain
+            Continue to Domain
           </Link>
         ) : null}
         <Link className={hasBuiltPreview ? "button" : "button primary"} href={`/projects/${projectId}/changes`} style={{ textDecoration: "none" }}>
