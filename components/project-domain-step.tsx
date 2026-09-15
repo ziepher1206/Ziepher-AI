@@ -59,7 +59,9 @@ export function ProjectDomainStep({ projectId }: { projectId: string }) {
 
   function continueAtVercel(domain: string) {
     setCopied(domain);
-    void navigator.clipboard?.writeText(domain).catch(() => undefined);
+    if (navigator.clipboard) {
+      void navigator.clipboard.writeText(domain).catch(() => undefined);
+    }
     window.open("https://vercel.com/domains", "_blank", "noopener,noreferrer");
   }
 
@@ -143,7 +145,7 @@ export function ProjectDomainStep({ projectId }: { projectId: string }) {
             </div>
             {suggestion.available ? (
               <button className="button primary" type="button" onClick={() => continueAtVercel(suggestion.domain)}>
-                Continue to Buy
+                Continue to Vercel Domains
               </button>
             ) : null}
             {copied === suggestion.domain ? (
@@ -155,10 +157,12 @@ export function ProjectDomainStep({ projectId }: { projectId: string }) {
 
       <section className="project-card" style={{ display: "grid", gap: 12 }}>
         <p className="panel-label">Already own a domain?</p>
-        <h2>Keep it and connect it to this project.</h2>
-        <p>The domain purchase step is optional. Z-Life will never buy a domain or change DNS without an explicit action from you.</p>
+        <h2>Keep it and connect it during deployment setup.</h2>
+        <p>
+          The domain purchase step is optional. Z-Life will never buy a domain, change DNS, or attach a domain to a deployment without an explicit action from you.
+        </p>
         <div className="inline-actions">
-          <Link className="button" href={`/projects/${projectId}/settings/deployment`}>Use my existing domain</Link>
+          <Link className="button" href={`/projects/${projectId}/settings/deployment`}>Open deployment settings</Link>
           <Link className="button" href={`/projects/${projectId}/studio`}>Back to preview</Link>
         </div>
       </section>
