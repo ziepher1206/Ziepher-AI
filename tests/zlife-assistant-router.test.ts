@@ -14,7 +14,8 @@ describe("central Ask Z-Life entry point", () => {
     expect(page).toContain("simplest working next step");
     expect(page).not.toContain("Your installed modules");
     expect(page).not.toContain("Business intelligence");
-    expect(router).toContain("Zero-cost routing · no paid AI request");
+    expect(router).toContain("Help me");
+    expect(router).toContain("No paid AI call");
   });
 
   it("routes only to working destinations", () => {
