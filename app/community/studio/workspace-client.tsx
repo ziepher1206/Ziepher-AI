@@ -75,10 +75,13 @@ export default function StudioWorkspaceClient() {
   const [activeTaskId, setActiveTaskId] = useState<string | null>(null);
 
   useEffect(() => {
-    setAccepted(Boolean(window.localStorage.getItem(ACCEPT_KEY)));
-    setProfile(loadJson<Profile>(PROFILE_KEY) ?? { displayName: "", specialty: "" });
-    setActiveTaskId(window.localStorage.getItem(TASK_KEY));
-    setReady(true);
+    const timer = window.setTimeout(() => {
+      setAccepted(Boolean(window.localStorage.getItem(ACCEPT_KEY)));
+      setProfile(loadJson<Profile>(PROFILE_KEY) ?? { displayName: "", specialty: "" });
+      setActiveTaskId(window.localStorage.getItem(TASK_KEY));
+      setReady(true);
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, []);
 
   const activeTask = useMemo(() => tasks.find((task) => task.id === activeTaskId) ?? null, [activeTaskId]);
