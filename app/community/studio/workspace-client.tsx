@@ -12,6 +12,14 @@ type Profile = {
   specialty: string;
 };
 
+type HistoryItem = {
+  id: string;
+  title: string;
+  state: string;
+  issueNumber: number | null;
+  updatedAt: string;
+};
+
 type ContributorIdentity = {
   authenticated: true;
   email: string | null;
@@ -19,6 +27,8 @@ type ContributorIdentity = {
   status: string;
   verified: boolean;
   activeTaskId: string | null;
+  activeTaskState: string;
+  history: HistoryItem[];
 };
 
 function loadJson<T>(key: string): T | null {
@@ -30,13 +40,20 @@ function loadJson<T>(key: string): T | null {
   }
 }
 
+function labelState(state: string) {
+  return state.replaceAll("_", " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
+
 export default function StudioWorkspaceClient({ tasks, identity }: { tasks: StudioTask[]; identity: ContributorIdentity | null }) {
   const [ready, setReady] = useState(false);
   const [accepted, setAccepted] = useState(false);
   const [profile, setProfile] = useState<Profile>({ displayName: identity?.displayName ?? "", specialty: "" });
   const [activeTaskId, setActiveTaskId] = useState<string | null>(identity?.activeTaskId ?? null);
+  const [activeTaskState, setActiveTaskState] = useState(identity?.activeTaskState ?? "claimed");
+  const [history, setHistory] = useState<HistoryItem[]>(identity?.history ?? []);
   const [syncState, setSyncState] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [claimState, setClaimState] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const [submitState, setSubmitState] = useState<"idle" | "saving" | "saved" | "error">("idle");
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -48,10 +65,12 @@ export default function StudioWorkspaceClient({ tasks, identity }: { tasks: Stud
       });
       const localTaskId = window.localStorage.getItem(TASK_KEY);
       setActiveTaskId(identity?.activeTaskId || localTaskId);
+      setActiveTaskState(identity?.activeTaskState ?? "claimed");
+      setHistory(identity?.history ?? []);
       setReady(true);
     }, 0);
     return () => window.clearTimeout(timer);
-  }, [identity?.activeTaskId, identity?.displayName]);
+  }, [identity?.activeTaskId, identity?.activeTaskState, identity?.displayName, identity?.history]);
 
   const activeTask = useMemo(() => tasks.find((task) => task.id === activeTaskId) ?? null, [activeTaskId, tasks]);
 
@@ -78,8 +97,10 @@ export default function StudioWorkspaceClient({ tasks, identity }: { tasks: Stud
 
   async function chooseTask(id: string) {
     setActiveTaskId(id);
+    setActiveTaskState("claimed");
     window.localStorage.setItem(TASK_KEY, id);
     setClaimState("idle");
+    setSubmitState("idle");
     if (!identity) return;
 
     setClaimState("saving");
@@ -89,9 +110,45 @@ export default function StudioWorkspaceClient({ tasks, identity }: { tasks: Stud
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ taskId: id }),
       });
-      setClaimState(response.ok ? "saved" : "error");
+      if (!response.ok) {
+        setClaimState("error");
+        return;
+      }
+      const task = tasks.find((item) => item.id === id);
+      if (task) {
+        setHistory((current) => [
+          {
+            id: `active-${id}`,
+            title: task.title,
+            state: "claimed",
+            issueNumber: task.issueNumber,
+            updatedAt: new Date().toISOString(),
+          },
+          ...current.filter((item) => item.title !== task.title),
+        ].slice(0, 8));
+      }
+      setClaimState("saved");
     } catch {
       setClaimState("error");
+    }
+  }
+
+  async function submitActiveTask() {
+    if (!identity || !activeTask) return;
+    setSubmitState("saving");
+    try {
+      const response = await fetch("/api/community/task-submit", { method: "POST" });
+      if (!response.ok) {
+        setSubmitState("error");
+        return;
+      }
+      setActiveTaskState("submitted");
+      setHistory((current) => current.map((item, index) => index === 0 || item.title === activeTask.title
+        ? { ...item, state: "submitted", updatedAt: new Date().toISOString() }
+        : item));
+      setSubmitState("saved");
+    } catch {
+      setSubmitState("error");
     }
   }
 
@@ -182,17 +239,51 @@ export default function StudioWorkspaceClient({ tasks, identity }: { tasks: Stud
         {activeTask ? (
           <>
             <h2>{activeTask.title}</h2>
-            <div className="zlife-community-flow"><span>Assigned</span><b>→</b><span>Fork / Branch</span><b>→</b><span>Mock + Local Test</span><b>→</b><span>PR</span><b>→</b><span>CI + Visual E2E</span><b>→</b><span>Verified Value</span></div>
+            <p className="zlife-community-empty">Current status: <strong>{labelState(activeTaskState)}</strong></p>
+            <div className="zlife-community-flow"><span>Claimed</span><b>→</b><span>Submitted</span><b>→</b><span>Under Review</span><b>→</b><span>Verified / Rejected</span></div>
             <div className="zlife-hero-actions">
               <a className="zlife-primary" href={activeTask.github} target="_blank" rel="noreferrer">Open issue #{activeTask.issueNumber} <span>→</span></a>
               <a className="zlife-secondary" href="https://github.com/ziepher1206/Ziepher-AI" target="_blank" rel="noreferrer">Open repository</a>
+              {identity && activeTaskState === "claimed" && (
+                <button className="zlife-secondary" type="button" onClick={() => void submitActiveTask()} disabled={submitState === "saving"}>
+                  {submitState === "saving" ? "Submitting…" : "Mark work submitted"}
+                </button>
+              )}
             </div>
-            <p className="zlife-community-empty">A task claim is not value credit. It stays pending with zero score until useful work is reviewed and accepted. Assignment does not grant production credentials, customer data, billing access, or paid API access.</p>
+            {submitState === "saved" && <p className="zlife-community-empty">Submission recorded. It still has zero value until review verifies the work.</p>}
+            {submitState === "error" && <p className="zlife-community-empty">ZLife could not record the submission. Your existing task claim was not changed.</p>}
+            <p className="zlife-community-empty">A task claim or submission is not value credit. It remains unverified until useful work is reviewed and accepted. Assignment does not grant production credentials, customer data, billing access, or paid API access.</p>
           </>
         ) : (
           <p className="zlife-community-empty">Choose a task above to create your first Studio sandbox assignment.</p>
         )}
       </section>
+
+      {identity && (
+        <section className="zlife-studio-panel">
+          <div>
+            <p className="zlife-kicker">YOUR CONTRIBUTION HISTORY</p>
+            <h2>See what happened to your work.</h2>
+            <p>This is your audit trail. It shows recent ZLife contribution records and their current review state; only verified work can later receive verified value.</p>
+          </div>
+          {history.length ? (
+            <div className="zlife-studio-task-grid">
+              {history.map((item) => (
+                <article className="zlife-studio-task" key={item.id}>
+                  <div className="zlife-studio-task-meta">
+                    <span>{item.issueNumber ? `Issue #${item.issueNumber}` : "Contribution"}</span>
+                    <span>{labelState(item.state)}</span>
+                  </div>
+                  <h3>{item.title}</h3>
+                  <small>Updated {new Date(item.updatedAt).toLocaleDateString()}</small>
+                </article>
+              ))}
+            </div>
+          ) : (
+            <p className="zlife-community-empty">Your contribution history will appear here after you claim or submit work.</p>
+          )}
+        </section>
+      )}
     </div>
   );
 }
