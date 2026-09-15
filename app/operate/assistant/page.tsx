@@ -224,7 +224,7 @@ export default async function OperateAssistantPage() {
         <div>
           <p className="panel-label">{profile?.business_name ?? "Your business"}</p>
           <h1 style={{ margin: "6px 0 8px" }}>Here’s what I would work on next.</h1>
-          <p className="auth-copy" style={{ maxWidth: 820, margin: 0 }}>One prioritized view across Tree Service operations and growth. Deterministic guidance stays zero-cost; safe internal preparation can now be queued separately while risky actions remain approval-gated.</p>
+          <p className="auth-copy" style={{ maxWidth: 820, margin: 0 }}>One prioritized view across Tree Service operations and growth. The core priority queue remains read-only and deterministic, so it costs no AI tokens and cannot take a risky action behind your back. Safe internal preparation can be queued separately and remains auditable.</p>
         </div>
 
         <section style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))", gap: 14 }}>
