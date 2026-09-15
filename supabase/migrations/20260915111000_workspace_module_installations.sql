@@ -71,3 +71,13 @@ on conflict (module_key) do update set
   status = excluded.status,
   is_core = excluded.is_core,
   updated_at = now();
+
+-- Existing workspaces were created while Tree Service was the only signed-in
+-- operating experience. Preserve that behavior during the modular-dashboard
+-- transition. Workspaces created after this migration start with no installed
+-- modules until their owner intentionally plugs one in.
+insert into public.workspace_module_installations (workspace_id, module_key, installed_by)
+select w.id, 'tree_service', w.owner_id
+from public.workspaces w
+where w.owner_id is not null
+on conflict (workspace_id, module_key) do nothing;
