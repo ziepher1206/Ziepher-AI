@@ -13,6 +13,7 @@ export const generatedFileSchema = z.object({
 });
 
 export const buildArtifactSchema = z.object({
+  projectId: z.string().uuid().optional(),
   appName: z.string().min(2).max(100),
   summary: z.string().min(10).max(1200),
   files: z.array(generatedFileSchema).min(4).max(120),
