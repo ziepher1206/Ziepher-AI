@@ -50,9 +50,10 @@ async function verifyContributorEntry(context) {
   await page.screenshot({ path: `${outputDir}/contributor-join-accepted.png`, fullPage: true });
   await acceptButton.click();
   await page.waitForURL("**/community/studio");
+  await page.getByRole("heading", { name: "Create your public working profile." }).waitFor({ state: "visible" });
+
   const studioText = await page.locator("body").innerText();
   if (!studioText.includes("Choose how you want to help.")) failures.push("contributor-entry: studio landing did not load after acceptance");
-  if (!studioText.includes("Create your public working profile.")) failures.push("contributor-entry: contributor workspace did not unlock after acceptance");
 
   const accepted = await page.evaluate(() => window.localStorage.getItem("zlife.contributor-rules.accepted.v1"));
   if (!accepted) failures.push("contributor-entry: acceptance marker was not stored");
@@ -66,13 +67,12 @@ async function verifyContributorEntry(context) {
   }
 
   await page.reload({ waitUntil: "networkidle" });
+  await page.getByRole("heading", { name: "Create your public working profile." }).waitFor({ state: "visible" });
   if ((await page.getByLabel("Display name").inputValue()) !== "Visual Test Builder") {
     failures.push("contributor-entry: contributor profile did not persist across reload");
   }
   const persistedTask = page.locator("article", { hasText: "Verify service setup persistence" });
-  if (!(await persistedTask.getByRole("button", { name: "Assigned to you" }).isVisible())) {
-    failures.push("contributor-entry: task assignment did not persist across reload");
-  }
+  await persistedTask.getByRole("button", { name: "Assigned to you" }).waitFor({ state: "visible" });
   const sandboxText = await page.locator("body").innerText();
   if (!sandboxText.includes("YOUR SANDBOX") || !sandboxText.includes("Verify service setup persistence")) {
     failures.push("contributor-entry: sandbox assignment summary did not render");
