@@ -5,6 +5,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { getStudioTasks } from "@/lib/community/studio-tasks";
 import "../community.css";
+import { requestContributionRereviewAction } from "./actions";
 import StudioWorkspaceClient from "./workspace-client";
 
 const paths = [
@@ -31,6 +32,8 @@ type ReviewOutcome = {
   reason: string;
   verifiedScore: number | null;
   reviewedAt: string;
+  rereviewStatus: "open" | "resolved" | "dismissed" | null;
+  rereviewResolution: string | null;
 };
 
 async function getContributorIdentity() {
@@ -91,17 +94,44 @@ async function getContributorIdentity() {
             .order("created_at", { ascending: false })
             .limit(8);
 
+          const reviewRows = (reviewResult.data ?? [])
+            .filter((review) => review.action === "verified" || review.action === "rejected");
+          const reviewIds = reviewRows.map((review) => review.id);
+          const rereviewByReviewId = new Map<string, { status: "open" | "resolved" | "dismissed"; resolution: string | null }>();
+
+          if (reviewIds.length) {
+            const rereviewResult = await admin
+              .from("contribution_rereview_requests")
+              .select("contribution_review_event_id, status, resolution, created_at")
+              .eq("contributor_id", contributor.id)
+              .in("contribution_review_event_id", reviewIds)
+              .order("created_at", { ascending: false });
+
+            for (const request of rereviewResult.data ?? []) {
+              if (!rereviewByReviewId.has(request.contribution_review_event_id)
+                && (request.status === "open" || request.status === "resolved" || request.status === "dismissed")) {
+                rereviewByReviewId.set(request.contribution_review_event_id, {
+                  status: request.status,
+                  resolution: request.resolution,
+                });
+              }
+            }
+          }
+
           const historyById = new Map(history.map((item) => [item.id, item]));
-          reviewOutcomes = (reviewResult.data ?? [])
-            .filter((review) => review.action === "verified" || review.action === "rejected")
-            .map((review) => ({
+          reviewOutcomes = reviewRows.map((review) => {
+            const rereview = rereviewByReviewId.get(review.id);
+            return {
               id: review.id,
               title: historyById.get(review.contribution_event_id)?.title ?? "ZLife contribution",
               action: review.action as "verified" | "rejected",
               reason: review.reason,
               verifiedScore: typeof review.new_verified_score === "number" ? review.new_verified_score : null,
               reviewedAt: review.created_at,
-            }));
+              rereviewStatus: rereview?.status ?? null,
+              rereviewResolution: rereview?.resolution ?? null,
+            };
+          });
         }
 
         const active = history.find((item) => item.state === "claimed" || item.state === "submitted" || item.state === "under_review");
@@ -188,6 +218,32 @@ export default async function CommunityStudioPage() {
                   <small>Verified contribution score: {outcome.verifiedScore}</small>
                 ) : (
                   <small>No verified value was awarded.</small>
+                )}
+
+                {outcome.rereviewStatus ? (
+                  <div className="zlife-community-empty" style={{ marginTop: 12 }}>
+                    Re-review request: <strong>{outcome.rereviewStatus}</strong>
+                    {outcome.rereviewResolution ? ` · ${outcome.rereviewResolution}` : ""}
+                  </div>
+                ) : (
+                  <form action={requestContributionRereviewAction} style={{ marginTop: 14 }}>
+                    <input type="hidden" name="reviewEventId" value={outcome.id} />
+                    <label>
+                      Request a second review
+                      <textarea
+                        name="reason"
+                        minLength={10}
+                        maxLength={2000}
+                        required
+                        placeholder="Explain what you believe should be reconsidered and point to the relevant evidence."
+                        rows={3}
+                      />
+                    </label>
+                    <button className="zlife-secondary" type="submit" style={{ marginTop: 10 }}>
+                      Request re-review
+                    </button>
+                    <small style={{ display: "block", marginTop: 8 }}>This request does not change your score or decision by itself.</small>
+                  </form>
                 )}
               </article>
             ))}
