@@ -93,6 +93,7 @@ export default async function CommunityReviewPage() {
         <nav aria-label="Community review navigation">
           <Link href="/community">Community</Link>
           <a href="#pending">Review-ready evidence</a>
+          <Link href="/community/review/rereview">Re-review queue ({workspace.rereviewRequests.length})</Link>
         </nav>
       </header>
 
@@ -107,7 +108,7 @@ export default async function CommunityReviewPage() {
             </p>
           </div>
           <span className="zlife-review-count">
-            {workspace.pending.length} review ready
+            {workspace.pending.length} review ready · {workspace.rereviewRequests.length} re-review
           </span>
         </div>
 
