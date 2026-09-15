@@ -9,6 +9,12 @@ function isMissingModuleSchema(error: { code?: string; message?: string } | null
   return error.code === "42P01" || error.code === "PGRST205" || error.message?.includes("Could not find the table") === true;
 }
 
+function isOptionalSchemaMissing(error: { code?: string; message?: string } | null) {
+  if (!error) return false;
+  return ["42P01", "42703", "PGRST204", "PGRST205"].includes(error.code ?? "")
+    || error.message?.includes("Could not find the table") === true;
+}
+
 const shell: React.CSSProperties = {
   minHeight: "100vh",
   overflowY: "auto",
@@ -77,6 +83,45 @@ export default async function DashboardPage() {
     })
     .filter(Boolean) as Array<{ module_key: string; name: string; description: string; route: string; category: string; status: string }>;
 
+  const now = new Date();
+  const next24Hours = new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString();
+  const nowIso = now.toISOString();
+  const [newLeadsResult, appointmentsResult, overdueInvoicesResult, homeTasksResult, maintenanceResult] = await Promise.all([
+    supabase.from("leads").select("id", { count: "exact", head: true }).eq("workspace_id", workspaceId).eq("status", "new"),
+    supabase.from("appointments").select("id", { count: "exact", head: true }).eq("workspace_id", workspaceId).gte("starts_at", nowIso).lte("starts_at", next24Hours).neq("status", "canceled"),
+    supabase.from("invoices").select("id", { count: "exact", head: true }).eq("workspace_id", workspaceId).eq("status", "overdue"),
+    supabase.from("home_tasks").select("id", { count: "exact", head: true }).eq("workspace_id", workspaceId).neq("status", "done").neq("status", "cancelled"),
+    supabase.from("home_maintenance_items").select("id", { count: "exact", head: true }).eq("workspace_id", workspaceId).lte("next_due_at", next24Hours)
+  ]);
+
+  for (const result of [newLeadsResult, appointmentsResult, overdueInvoicesResult]) {
+    if (result.error && !isOptionalSchemaMissing(result.error)) throw result.error;
+  }
+  for (const result of [homeTasksResult, maintenanceResult]) {
+    if (result.error && !isOptionalSchemaMissing(result.error)) throw result.error;
+  }
+
+  const newLeads = newLeadsResult.count ?? 0;
+  const upcomingAppointments = appointmentsResult.count ?? 0;
+  const overdueInvoices = overdueInvoicesResult.count ?? 0;
+  const openHomeTasks = homeTasksResult.count ?? 0;
+  const dueMaintenance = maintenanceResult.count ?? 0;
+  const homeDataReady = !homeTasksResult.error && !maintenanceResult.error;
+  const businessDataReady = !newLeadsResult.error && !appointmentsResult.error && !overdueInvoicesResult.error;
+
+  const todayRows = [
+    { label: "Life & personal", value: homeDataReady ? String(openHomeTasks) : "Connect", detail: homeDataReady ? "open household tasks" : "Add Home & Family", href: "/home" },
+    { label: "Business", value: businessDataReady ? String(newLeads) : "Connect", detail: businessDataReady ? "new leads" : "Open Business", href: "/operate" },
+    { label: "Schedule", value: businessDataReady ? String(upcomingAppointments) : "—", detail: "next 24 hours", href: "/operate/calendar" },
+    { label: "Home maintenance", value: homeDataReady ? String(dueMaintenance) : "—", detail: "due in next 24 hours", href: "/home" },
+    { label: "Bills & payments", value: businessDataReady ? String(overdueInvoices) : "—", detail: "overdue business invoices", href: "/operate/invoices" },
+    { label: "Health", value: "Connect", detail: "module in development", href: "/modules/health" },
+    { label: "Grocery & shopping", value: "Connect", detail: "future daily context", href: "/dashboard/modules" },
+    { label: "Auto & vehicle", value: "Connect", detail: "module in development", href: "/modules/auto" },
+    { label: "Documents", value: "Connect", detail: "module in development", href: "/modules/documents" },
+    { label: "End of day", value: "Ask AI", detail: "review and plan tomorrow", href: "/operate/assistant" }
+  ];
+
   const previewModules = modules.slice(0, 8);
   const firstName = user.email?.split("@")[0]?.split(/[._-]/)[0] ?? "there";
 
@@ -113,9 +158,9 @@ export default async function DashboardPage() {
         <section style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))", gap: 12, marginTop: 16 }}>
           {[
             [String(modules.length), "Active modules", "Connected to your Z-Life"],
-            ["1", "AI entry point", "One place to ask anything"],
-            [workspace?.name ?? "Your workspace", "Workspace", "Life and business context"],
-            ["On", "Z-Life Core", "Working quietly underneath"]
+            [String(upcomingAppointments), "Next 24 hours", "Scheduled appointments"],
+            [String(newLeads), "Business attention", "New leads waiting"],
+            [String(openHomeTasks), "Home attention", homeDataReady ? "Open household tasks" : "Home module data not connected"]
           ].map(([value, label, detail]) => (
             <article key={label} style={{ ...card, padding: 18 }}>
               <p style={{ margin: 0, color: "#9dbbb7", fontSize: 11, textTransform: "uppercase", letterSpacing: ".1em" }}>{label}</p>
@@ -152,15 +197,16 @@ export default async function DashboardPage() {
 
           <aside style={{ ...card, padding: 22 }}>
             <p className="panel-label" style={{ color: "#7fffd4" }}>Today at a glance</p>
-            <h2 style={{ margin: "4px 0 16px" }}>Everything important, without the clutter.</h2>
+            <h2 style={{ margin: "4px 0 16px" }}>Real connected data where it exists.</h2>
             <div style={{ display: "grid", gap: 9 }}>
-              {["Life & personal", "Business", "Health", "Family & school", "Grocery & shopping", "Bills & subscriptions", "Errands", "Auto & vehicle", "Documents", "End of day"].map((item) => (
-                <div key={item} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, padding: "11px 12px", borderRadius: 12, background: "rgba(255,255,255,.025)", border: "1px solid rgba(255,255,255,.055)" }}>
-                  <span style={{ fontSize: 13 }}>{item}</span><span style={{ color: "#38e0f3" }}>›</span>
-                </div>
+              {todayRows.map((item) => (
+                <Link key={item.label} href={item.href} style={{ color: "inherit", textDecoration: "none", display: "grid", gridTemplateColumns: "1fr auto", gap: 12, padding: "11px 12px", borderRadius: 12, background: "rgba(255,255,255,.025)", border: "1px solid rgba(255,255,255,.055)" }}>
+                  <span><strong style={{ display: "block", fontSize: 13 }}>{item.label}</strong><small style={{ color: "#789b97" }}>{item.detail}</small></span>
+                  <strong style={{ alignSelf: "center", color: "#38e0f3", fontSize: 12 }}>{item.value}</strong>
+                </Link>
               ))}
             </div>
-            <p style={{ margin: "14px 0 0", color: "#789b97", fontSize: 12, lineHeight: 1.5 }}>These categories become live as connected modules begin supplying calendar items, reminders, payments, tasks, and other daily context.</p>
+            <p style={{ margin: "14px 0 0", color: "#789b97", fontSize: 12, lineHeight: 1.5 }}>Z-Life shows live workspace information when a module is ready. Unbuilt or unconnected areas stay clearly labeled instead of displaying invented data.</p>
           </aside>
         </section>
 
