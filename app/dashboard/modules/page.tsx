@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { installModuleAction, removeModuleAction } from "@/app/dashboard/actions";
+import { ZLifeHeartbeat } from "@/components/zlife-heartbeat";
 import { isSupabaseConfigured } from "@/lib/env";
 import { createClient } from "@/lib/supabase/server";
 
@@ -52,7 +53,10 @@ export default async function DashboardModulesPage() {
           <Link href="/dashboard" style={{ color: "inherit", textDecoration: "none" }}>
             <div className="brand">
               <div className="brand-mark" style={{ background: "linear-gradient(135deg,#38e0f3,#10d981)", color: "#001112" }}>Z</div>
-              <div><div className="brand-title">Z <span style={{ color: "#38e0f3" }}>⌁</span> LIFE</div><div className="brand-subtitle">WORKING MODULES</div></div>
+              <div>
+                <div className="brand-title" style={{ display: "flex", alignItems: "center", gap: 6 }}><span>Z</span><ZLifeHeartbeat width={32} height={12} /><span>LIFE</span></div>
+                <div className="brand-subtitle">WORKING MODULES</div>
+              </div>
             </div>
           </Link>
           <div className="inline-actions"><Link className="button" href="/dashboard">Home</Link><Link className="button" href="/assistant">Ask Z-Life</Link></div>
