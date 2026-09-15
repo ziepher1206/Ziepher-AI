@@ -14,6 +14,13 @@ export default async function ProjectStudioPage({ params }: Props) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect(`/auth/sign-in?next=${encodeURIComponent(`/projects/${projectId}/studio`)}`);
 
+  const { data: project } = await supabase
+    .from("projects")
+    .select("id,current_version")
+    .eq("id", projectId)
+    .maybeSingle();
+  const hasBuiltPreview = Number(project?.current_version ?? 0) > 0;
+
   return (
     <>
       <div
@@ -27,7 +34,12 @@ export default async function ProjectStudioPage({ params }: Props) {
           maxWidth: 245
         }}
       >
-        <Link className="button primary" href={`/projects/${projectId}/changes`} style={{ textDecoration: "none" }}>
+        {hasBuiltPreview ? (
+          <Link className="button primary" href={`/projects/${projectId}/domains`} style={{ textDecoration: "none" }}>
+            Choose Domain
+          </Link>
+        ) : null}
+        <Link className={hasBuiltPreview ? "button" : "button primary"} href={`/projects/${projectId}/changes`} style={{ textDecoration: "none" }}>
           Tell Z-Life What to Change
         </Link>
         <Link className="button" href={`/projects/${projectId}/media`} style={{ textDecoration: "none" }}>
