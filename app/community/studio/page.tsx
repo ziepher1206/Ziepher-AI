@@ -34,6 +34,8 @@ type ReviewOutcome = {
   reviewedAt: string;
   rereviewStatus: "open" | "resolved" | "dismissed" | null;
   rereviewResolution: string | null;
+  rereviewResolvedAt: string | null;
+  rereviewResolvedBy: string | null;
 };
 
 async function getContributorIdentity() {
@@ -97,15 +99,36 @@ async function getContributorIdentity() {
           const reviewRows = (reviewResult.data ?? [])
             .filter((review) => review.action === "verified" || review.action === "rejected");
           const reviewIds = reviewRows.map((review) => review.id);
-          const rereviewByReviewId = new Map<string, { status: "open" | "resolved" | "dismissed"; resolution: string | null }>();
+          const rereviewByReviewId = new Map<string, {
+            status: "open" | "resolved" | "dismissed";
+            resolution: string | null;
+            resolvedAt: string | null;
+            resolvedBy: string | null;
+          }>();
 
           if (reviewIds.length) {
             const rereviewResult = await admin
               .from("contribution_rereview_requests")
-              .select("contribution_review_event_id, status, resolution, created_at")
+              .select("contribution_review_event_id, status, resolution, resolved_by, resolved_at, created_at")
               .eq("contributor_id", contributor.id)
               .in("contribution_review_event_id", reviewIds)
               .order("created_at", { ascending: false });
+
+            const resolverIds = [
+              ...new Set((rereviewResult.data ?? [])
+                .map((request) => request.resolved_by)
+                .filter((value): value is string => Boolean(value))),
+            ];
+            const resolverMap = new Map<string, string>();
+            if (resolverIds.length) {
+              const { data: resolvers } = await admin
+                .from("community_contributors")
+                .select("id, display_name, github_login")
+                .in("id", resolverIds);
+              for (const resolver of resolvers ?? []) {
+                resolverMap.set(resolver.id, resolver.display_name ?? resolver.github_login ?? "Verified ZLife reviewer");
+              }
+            }
 
             for (const request of rereviewResult.data ?? []) {
               if (!rereviewByReviewId.has(request.contribution_review_event_id)
@@ -113,6 +136,8 @@ async function getContributorIdentity() {
                 rereviewByReviewId.set(request.contribution_review_event_id, {
                   status: request.status,
                   resolution: request.resolution,
+                  resolvedAt: request.resolved_at,
+                  resolvedBy: request.resolved_by ? (resolverMap.get(request.resolved_by) ?? "Verified ZLife reviewer") : null,
                 });
               }
             }
@@ -130,6 +155,8 @@ async function getContributorIdentity() {
               reviewedAt: review.created_at,
               rereviewStatus: rereview?.status ?? null,
               rereviewResolution: rereview?.resolution ?? null,
+              rereviewResolvedAt: rereview?.resolvedAt ?? null,
+              rereviewResolvedBy: rereview?.resolvedBy ?? null,
             };
           });
         }
@@ -222,8 +249,16 @@ export default async function CommunityStudioPage() {
 
                 {outcome.rereviewStatus ? (
                   <div className="zlife-community-empty" style={{ marginTop: 12 }}>
-                    Re-review request: <strong>{outcome.rereviewStatus}</strong>
-                    {outcome.rereviewResolution ? ` · ${outcome.rereviewResolution}` : ""}
+                    <strong>Re-review: {outcome.rereviewStatus}</strong>
+                    {outcome.rereviewResolution ? <p style={{ marginTop: 6 }}>{outcome.rereviewResolution}</p> : null}
+                    {outcome.rereviewResolvedAt ? (
+                      <small style={{ display: "block", marginTop: 6 }}>
+                        Processed {new Date(outcome.rereviewResolvedAt).toLocaleDateString()}
+                        {outcome.rereviewResolvedBy ? ` by ${outcome.rereviewResolvedBy}` : ""}.
+                      </small>
+                    ) : (
+                      <small style={{ display: "block", marginTop: 6 }}>Waiting for an authorized maintainer decision.</small>
+                    )}
                   </div>
                 ) : (
                   <form action={requestContributionRereviewAction} style={{ marginTop: 14 }}>
