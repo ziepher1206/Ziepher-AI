@@ -19,24 +19,27 @@ export function ZLifeMobileBottomNav() {
   if (!signedInPrefixes.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`))) return null;
 
   return (
-    <nav aria-label="Z-Life mobile navigation" className={styles.nav}>
-      {navItems.map((item) => {
-        const active = item.href === "/dashboard"
-          ? pathname === "/dashboard"
-          : pathname === item.href || pathname.startsWith(`${item.href}/`);
-        const className = [
-          styles.item,
-          active ? styles.itemActive : "",
-          item.primary ? styles.itemPrimary : ""
-        ].filter(Boolean).join(" ");
+    <>
+      <div aria-hidden="true" className={styles.spacer} />
+      <nav aria-label="Z-Life mobile navigation" className={styles.nav}>
+        {navItems.map((item) => {
+          const active = item.href === "/dashboard"
+            ? pathname === "/dashboard"
+            : pathname === item.href || pathname.startsWith(`${item.href}/`);
+          const className = [
+            styles.item,
+            active ? styles.itemActive : "",
+            item.primary ? styles.itemPrimary : ""
+          ].filter(Boolean).join(" ");
 
-        return (
-          <Link key={`${item.label}-${item.href}`} href={item.href} aria-current={active ? "page" : undefined} className={className}>
-            <span aria-hidden="true" className={styles.icon}>{item.icon}</span>
-            <small className={styles.label}>{item.label}</small>
-          </Link>
-        );
-      })}
-    </nav>
+          return (
+            <Link key={`${item.label}-${item.href}`} href={item.href} aria-current={active ? "page" : undefined} className={className}>
+              <span aria-hidden="true" className={styles.icon}>{item.icon}</span>
+              <small className={styles.label}>{item.label}</small>
+            </Link>
+          );
+        })}
+      </nav>
+    </>
   );
 }
