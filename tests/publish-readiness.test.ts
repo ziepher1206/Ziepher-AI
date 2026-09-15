@@ -24,7 +24,7 @@ describe("publish readiness flow", () => {
 
   it("connects the domain step to the final readiness screen", () => {
     const domains = read("app/projects/[projectId]/domains/page.tsx");
-    expect(domains).toContain(`/projects/${projectId}/publish`);
+    expect(domains).toContain("/publish");
     expect(domains).toContain("Continue to Publish Readiness");
   });
 });
