@@ -13,6 +13,10 @@ import {
   loadBuildReferenceImages,
   type BuildReferenceImage
 } from "./build-reference-images";
+import {
+  loadBuildSiteAssets,
+  type BuildSiteAsset
+} from "./build-site-assets";
 
 export type BuildRouteResult = {
   artifact: BuildArtifact;
@@ -26,6 +30,7 @@ type BuildRouteOptions = {
   allowPaidProvider?: boolean;
   allowUnmeteredProvider?: boolean;
   referenceImages?: BuildReferenceImage[];
+  siteAssets?: BuildSiteAsset[];
 };
 
 function googleModelFor(mode: QualityMode) {
@@ -78,6 +83,12 @@ async function referenceImagesForPaidBuild(
   return loadBuildReferenceImages(plan.projectId);
 }
 
+async function siteAssetsForBuild(plan: AppPlan, options: BuildRouteOptions) {
+  if (options.siteAssets) return options.siteAssets;
+  if (!plan.projectId) return [];
+  return loadBuildSiteAssets(plan.projectId);
+}
+
 export async function createApplicationBuild(
   plan: AppPlan,
   visualConceptId: string,
@@ -93,8 +104,16 @@ export async function createApplicationBuild(
     return createDeterministicBuildResult(plan, visualConceptId);
   }
 
-  const prompt = createBuildPrompt(plan, visualConceptId, projectContext);
-  const referenceImages = await referenceImagesForPaidBuild(plan, options);
+  const [referenceImages, siteAssets] = await Promise.all([
+    referenceImagesForPaidBuild(plan, options),
+    siteAssetsForBuild(plan, options)
+  ]);
+  const prompt = createBuildPrompt(
+    plan,
+    visualConceptId,
+    projectContext,
+    siteAssets
+  );
 
   for (const provider of paidAIProviderOrder()) {
     if (provider === "openai") {
@@ -150,14 +169,18 @@ export async function repairApplicationBuild(
 
   if (!options.allowPaidProvider) return null;
 
+  const [referenceImages, siteAssets] = await Promise.all([
+    referenceImagesForPaidBuild(plan, options),
+    siteAssetsForBuild(plan, options)
+  ]);
   const prompt = createRepairPrompt(
     plan,
     visualConceptId,
     currentArtifact,
     failureOutput,
-    projectContext
+    projectContext,
+    siteAssets
   );
-  const referenceImages = await referenceImagesForPaidBuild(plan, options);
 
   for (const provider of paidAIProviderOrder()) {
     if (provider === "openai") {
