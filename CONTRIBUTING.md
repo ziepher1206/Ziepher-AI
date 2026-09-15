@@ -24,6 +24,8 @@ No community contributor may deploy directly to production. Production promotion
 10. Run `npm run check` before opening a PR.
 11. Open a focused Pull Request against `main`.
 
+If any of those setup or validation steps fail, use `docs/CONTRIBUTOR-TROUBLESHOOTING.md` before changing project configuration or adding provider credentials.
+
 ### Zero-cost contributor smoke test
 
 `npm run smoke:contributor` is intentionally local and deterministic. It does not call OpenAI, Google AI, Stripe, Supabase, email, SMS, notification, or other paid provider APIs. It verifies that:
