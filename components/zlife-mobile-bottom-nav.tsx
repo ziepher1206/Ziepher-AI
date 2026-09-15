@@ -15,10 +15,8 @@ const signedInPrefixes = ["/dashboard", "/today", "/assistant", "/operate", "/ho
 
 const navItems: NavItem[] = [
   { label: "Home", href: "/dashboard", icon: "⌂" },
-  { label: "My Day", href: "/today", icon: "☷" },
   { label: "Ask Z-Life", href: "/assistant", icon: "⌁", primary: true },
-  { label: "Modules", href: "/dashboard/modules", icon: "▦" },
-  { label: "More", href: "/settings", icon: "•••" }
+  { label: "My Day", href: "/today", icon: "☷" }
 ];
 
 export function ZLifeMobileBottomNav() {
