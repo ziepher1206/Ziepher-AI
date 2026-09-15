@@ -1,12 +1,18 @@
 import { describe, expect, it } from "vitest";
+import type { BuildArtifact } from "../lib/ai/build-types";
 import { evaluateVisualQuality } from "../lib/runner/visual-quality";
 
-function artifact(previewHtml: string, files: Array<{ path: string; content: string }> = []) {
+function artifact(
+  previewHtml: string,
+  files: Array<{ path: string; content: string }> = []
+): BuildArtifact {
   return {
     projectId: "11111111-1111-1111-1111-111111111111",
+    appName: "Visual QA Test",
     files,
     previewHtml,
-    summary: "test",
+    summary: "Visual quality regression test artifact.",
+    testPlan: ["Check layout", "Check mobile", "Check accessibility"],
     knownLimitations: []
   };
 }
