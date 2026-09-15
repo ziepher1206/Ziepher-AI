@@ -172,7 +172,7 @@ export default async function CommunityStudioPage() {
             <div>
               <p className="zlife-kicker">REVIEW RESULTS</p>
               <h2>See why your work was accepted or rejected.</h2>
-              <p>These results come from ZLife&apos;s protected maintainer audit history, not browser-local state. A verified score is contribution value evidence, not a cash payout or ownership promise.</p>
+              <p>These results come from ZLife&apos;s protected maintainer audit history, not browser-local state. A verified score measures reviewed contribution value inside ZLife; it is not automatically a cash payout, ownership stake, employment relationship, or payment promise.</p>
             </div>
           </div>
           <div className="zlife-studio-task-grid">
