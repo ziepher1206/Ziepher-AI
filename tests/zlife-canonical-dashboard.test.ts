@@ -13,7 +13,8 @@ describe("canonical Z-Life signed-in dashboard", () => {
     expect(page).toContain("#10d981");
     expect(page).toContain("Z <span");
     expect(page).toContain("⌁");
-    expect(page).toContain('href="/operate/assistant"');
+    expect(page).toContain('href="/assistant"');
+    expect(page).toContain('href="/today"');
     expect(page).toContain('href="/dashboard/modules"');
   });
 
@@ -22,9 +23,10 @@ describe("canonical Z-Life signed-in dashboard", () => {
     expect(page).toContain("Today at a glance");
     expect(page).toContain("Quick access");
     expect(page).toContain("Life & personal");
-    expect(page).toContain("Bills & subscriptions");
+    expect(page).toContain("Bills & payments");
     expect(page).toContain("Auto & vehicle");
     expect(page).toContain("End of day");
+    expect(page).toContain("Open My Day");
   });
 
   it("keeps Z-Life modular instead of forcing every module onto the dashboard", () => {
