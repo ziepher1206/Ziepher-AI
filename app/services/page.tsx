@@ -142,12 +142,15 @@ export default async function ServicesPage() {
                     <p className="auth-copy" style={{ margin: "8px 0 0" }}>
                       {item.billable_event_confirmed ? "Billable inspection confirmed" : "No billable event confirmed"}
                     </p>
-                    {!["closed", "canceled", "inspection_scheduled"].includes(item.status) ? (
-                      <form action={cancelServiceRequestAction} style={{ marginTop: 10 }}>
-                        <input type="hidden" name="requestId" value={item.id} />
-                        <button className="button" type="submit">Cancel request</button>
-                      </form>
-                    ) : null}
+                    <div className="inline-actions" style={{ marginTop: 10, justifyContent: "flex-end" }}>
+                      <Link className="button" href={`/services/${item.id}/match-preview`}>Preview Match handoff</Link>
+                      {!["closed", "canceled", "inspection_scheduled"].includes(item.status) ? (
+                        <form action={cancelServiceRequestAction}>
+                          <input type="hidden" name="requestId" value={item.id} />
+                          <button className="button" type="submit">Cancel request</button>
+                        </form>
+                      ) : null}
+                    </div>
                   </div>
                 </div>
               </article>
