@@ -19,7 +19,7 @@ describe("visual scan improvement gallery", () => {
 
   it("routes a selected visual direction into the existing safe refinement flow", () => {
     const gallery = read("components/site-improvement-gallery.tsx");
-    expect(gallery).toContain(`/projects/${projectId}/changes`);
+    expect(gallery).toContain("/projects/${projectId}/changes");
     expect(gallery).toContain('source: "scan_recommendation"');
     expect(gallery).toContain("Visual direction:");
   });
