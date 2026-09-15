@@ -63,18 +63,21 @@ export function ProjectDomainStep({ projectId }: { projectId: string }) {
       if (!response.ok) throw new Error(payload.error ?? "Unable to check domains.");
       const next = payload as Payload;
       setData(next);
-      if (!ownedDomain && next.project.currentDomain) {
-        setOwnedDomain(next.project.currentDomain);
+      if (next.project.currentDomain) {
+        setOwnedDomain((current) => current || next.project.currentDomain || "");
       }
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Unable to check domains.");
     } finally {
       setLoading(false);
     }
-  }, [ownedDomain, projectId]);
+  }, [projectId]);
 
   useEffect(() => {
-    void load();
+    const timer = window.setTimeout(() => {
+      void load();
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, [load]);
 
   function continueAtVercel(domain: string) {
