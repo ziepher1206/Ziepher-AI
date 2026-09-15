@@ -26,14 +26,10 @@ export default async function OperatePage() {
   if (!isSupabaseConfigured()) redirect("/auth/sign-in");
 
   const supabase = await createClient();
-  const {
-    data: { user }
-  } = await supabase.auth.getUser();
+  const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/auth/sign-in");
 
-  const { data: workspaceId, error: workspaceError } = await supabase.rpc(
-    "ensure_personal_workspace"
-  );
+  const { data: workspaceId, error: workspaceError } = await supabase.rpc("ensure_personal_workspace");
   if (workspaceError || !workspaceId) throw workspaceError ?? new Error("Workspace unavailable.");
 
   const { data: workspace } = await supabase
@@ -65,10 +61,7 @@ export default async function OperatePage() {
     .select("balance_due_cents,status")
     .eq("workspace_id", workspaceId)
     .in("status", ["sent", "partial", "overdue"]);
-  const outstandingCents = (invoiceRows ?? []).reduce(
-    (sum, invoice) => sum + (invoice.balance_due_cents ?? 0),
-    0
-  );
+  const outstandingCents = (invoiceRows ?? []).reduce((sum, invoice) => sum + (invoice.balance_due_cents ?? 0), 0);
 
   const { data: leads } = await supabase
     .from("leads")
@@ -90,33 +83,31 @@ export default async function OperatePage() {
     <main className="projects-page">
       <header className="projects-header">
         <div className="brand">
-          <div className="brand-mark">Z</div>
+          <div className="brand-mark" style={{ background: "linear-gradient(135deg,#38e0f3,#10d981)", color: "#001112" }}>Z</div>
           <div>
-            <div className="brand-title">Z-LIFE</div>
-            <div className="brand-subtitle">BUSINESS · TREE SERVICE</div>
+            <div className="brand-title">Z <span style={{ color: "#38e0f3" }}>⌁</span> LIFE</div>
+            <div className="brand-subtitle">SERVICE BUSINESS OS</div>
           </div>
         </div>
         <div className="inline-actions">
+          <Link className="button" href="/dashboard">My Z-Life</Link>
           <Link className="button" href="/operate/leads">Leads</Link>
           <Link className="button" href="/operate/estimates">Estimates</Link>
           <Link className="button" href="/operate/calendar">Calendar</Link>
           <Link className="button" href="/operate/invoices">Invoices</Link>
           <Link className="button" href="/operate/growth">Growth</Link>
-          <Link className="button" href="/operate/pilot">Pilot readiness</Link>
-          <Link className="button" href="/projects">Websites</Link>
-          <Link className="button" href="/settings">Settings</Link>
-          <form action="/auth/sign-out" method="post">
-            <button className="button">Sign out</button>
-          </form>
+          <Link className="button" href="/operate/setup">Business setup</Link>
+          <Link className="button" href="/operate/assistant">Ask Z-Life</Link>
+          <form action="/auth/sign-out" method="post"><button className="button">Sign out</button></form>
         </div>
       </header>
 
       <section style={{ display: "grid", gap: 26 }}>
         <div>
-          <p className="panel-label">{workspace?.name ?? "Your business"} · Built by Ziepher Tech</p>
+          <p className="panel-label">{workspace?.name ?? "Your business"} · One shared operating system</p>
           <h1 style={{ margin: "6px 0 10px" }}>Business today</h1>
-          <p className="auth-copy" style={{ maxWidth: 760, margin: 0 }}>
-            Z-Life Business brings leads, estimates, scheduling, crews, jobs, invoices, payments, websites, growth, and AI assistance into one simple workflow.
+          <p className="auth-copy" style={{ maxWidth: 820, margin: 0 }}>
+            Z-Life Business brings leads, estimates, scheduling, crews, jobs, invoices, payments, websites, growth, and AI assistance into one workflow. Your industry profile changes the trade-specific details without turning each service type into a separate app.
           </p>
         </div>
 
@@ -132,24 +123,16 @@ export default async function OperatePage() {
 
         <section style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))", gap: 14 }}>
           <Link href="/operate/leads" className="project-card" style={{ minHeight: 0 }}>
-            <p className="panel-label">New leads</p>
-            <h2 style={{ fontSize: 34, margin: "8px 0 4px" }}>{newLeadCount ?? 0}</h2>
-            <p>Waiting for first contact</p>
+            <p className="panel-label">New leads</p><h2 style={{ fontSize: 34, margin: "8px 0 4px" }}>{newLeadCount ?? 0}</h2><p>Waiting for first contact</p>
           </Link>
           <Link href="/operate/estimates" className="project-card" style={{ minHeight: 0 }}>
-            <p className="panel-label">Open estimates</p>
-            <h2 style={{ fontSize: 34, margin: "8px 0 4px" }}>{openEstimateCount ?? 0}</h2>
-            <p>Draft through sent</p>
+            <p className="panel-label">Open estimates</p><h2 style={{ fontSize: 34, margin: "8px 0 4px" }}>{openEstimateCount ?? 0}</h2><p>Draft through sent</p>
           </Link>
           <Link href="/operate/calendar" className="project-card" style={{ minHeight: 0 }}>
-            <p className="panel-label">Active jobs</p>
-            <h2 style={{ fontSize: 34, margin: "8px 0 4px" }}>{activeJobCount ?? 0}</h2>
-            <p>Scheduled, traveling, on site, or paused</p>
+            <p className="panel-label">Active jobs</p><h2 style={{ fontSize: 34, margin: "8px 0 4px" }}>{activeJobCount ?? 0}</h2><p>Scheduled, traveling, on site, or paused</p>
           </Link>
           <Link href="/operate/invoices" className="project-card" style={{ minHeight: 0 }}>
-            <p className="panel-label">Outstanding</p>
-            <h2 style={{ fontSize: 34, margin: "8px 0 4px" }}>{money(outstandingCents)}</h2>
-            <p>Open invoice balance</p>
+            <p className="panel-label">Outstanding</p><h2 style={{ fontSize: 34, margin: "8px 0 4px" }}>{money(outstandingCents)}</h2><p>Open invoice balance</p>
           </Link>
         </section>
 
@@ -158,27 +141,17 @@ export default async function OperatePage() {
         <section style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(320px,1fr))", gap: 18 }}>
           <article className="auth-card" style={{ maxWidth: "none" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 12 }}>
-              <div>
-                <p className="panel-label">Lead inbox</p>
-                <h2 style={{ margin: "6px 0 0" }}>Newest requests</h2>
-              </div>
+              <div><p className="panel-label">Lead inbox</p><h2 style={{ margin: "6px 0 0" }}>Newest requests</h2></div>
               <Link href="/operate/leads" className="status-pill">View all</Link>
             </div>
             <div style={{ display: "grid", gap: 10, marginTop: 18 }}>
               {(leads ?? []).map((lead) => (
                 <Link href="/operate/leads" key={lead.id} style={{ borderTop: "1px solid rgba(255,255,255,.09)", paddingTop: 12, color: "inherit", textDecoration: "none" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "start" }}>
-                    <div>
-                      <strong>{lead.contact_name}</strong>
-                      <div className="auth-copy" style={{ fontSize: 14, marginTop: 4 }}>
-                        {lead.phone ?? lead.email ?? "Contact details pending"}
-                      </div>
-                    </div>
+                    <div><strong>{lead.contact_name}</strong><div className="auth-copy" style={{ fontSize: 14, marginTop: 4 }}>{lead.phone ?? lead.email ?? "Contact details pending"}</div></div>
                     <span className="status-pill">{lead.status}</span>
                   </div>
-                  <div className="auth-copy" style={{ fontSize: 13, marginTop: 6 }}>
-                    {lead.service_address ?? "Address not added"} · {dateTime(lead.received_at)}
-                  </div>
+                  <div className="auth-copy" style={{ fontSize: 13, marginTop: 6 }}>{lead.service_address ?? "Address not added"} · {dateTime(lead.received_at)}</div>
                 </Link>
               ))}
               {!leads?.length ? <p className="auth-copy">No leads yet. Add the first one above.</p> : null}
@@ -193,13 +166,8 @@ export default async function OperatePage() {
             <div style={{ display: "grid", gap: 10, marginTop: 18 }}>
               {(appointments ?? []).map((appointment) => (
                 <Link href="/operate/calendar" key={appointment.id} style={{ borderTop: "1px solid rgba(255,255,255,.09)", paddingTop: 12, color: "inherit", textDecoration: "none" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
-                    <strong>{appointment.title}</strong>
-                    <span className="status-pill">{appointment.appointment_type}</span>
-                  </div>
-                  <div className="auth-copy" style={{ fontSize: 13, marginTop: 6 }}>
-                    {dateTime(appointment.starts_at)}{appointment.service_address ? ` · ${appointment.service_address}` : ""}
-                  </div>
+                  <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}><strong>{appointment.title}</strong><span className="status-pill">{appointment.appointment_type}</span></div>
+                  <div className="auth-copy" style={{ fontSize: 13, marginTop: 6 }}>{dateTime(appointment.starts_at)}{appointment.service_address ? ` · ${appointment.service_address}` : ""}</div>
                 </Link>
               ))}
               {!appointments?.length ? <p className="auth-copy">Nothing scheduled yet.</p> : null}
@@ -208,30 +176,24 @@ export default async function OperatePage() {
         </section>
 
         <section className="project-grid" style={{ marginTop: 0 }}>
+          <Link className="project-card" href="/operate/setup">
+            <span className="status-pill">Industry-aware</span>
+            <h2>Service Business Profile</h2>
+            <p>Choose the industry profile layered onto the shared business engine. Tree Service is the first active profile; more service trades are being validated without creating separate apps.</p>
+          </Link>
           <Link className="project-card" href="/operate/leads">
-            <span className="status-pill">Tree Service</span>
+            <span className="status-pill">Core workflow</span>
             <h2>Lead → Estimate → Job</h2>
             <p>Capture work, offer estimate windows, approve appointments, price the job, schedule the crew, and complete the work in one flow.</p>
           </Link>
           <Link className="project-card" href="/operate/invoices">
-            <span className="status-pill">Money</span>
-            <h2>Invoices & Payments</h2>
-            <p>Completed jobs create draft invoices with Stripe payment rails kept safely in test mode until live billing is explicitly approved.</p>
+            <span className="status-pill">Money</span><h2>Invoices & Payments</h2><p>Completed jobs create draft invoices with Stripe payment rails kept safely in test mode until live billing is explicitly approved.</p>
           </Link>
           <Link className="project-card" href="/operate/growth">
-            <span className="status-pill">Growth</span>
-            <h2>Marketing</h2>
-            <p>Track where leads came from, tie revenue back to sources, request reviews, and prepare approval-gated marketing actions.</p>
+            <span className="status-pill">Growth</span><h2>Marketing</h2><p>Track where leads came from, tie revenue back to sources, request reviews, and prepare approval-gated marketing actions.</p>
           </Link>
           <Link className="project-card" href="/projects">
-            <span className="status-pill">Create</span>
-            <h2>Websites</h2>
-            <p>Build, connect, scan, improve, preview, and safely publish business websites.</p>
-          </Link>
-          <Link className="project-card" href="/operate/pilot">
-            <span className="status-pill">Controlled pilot</span>
-            <h2>Readiness & evidence</h2>
-            <p>See workspace evidence separately from the manual tenant, Stripe, restore, rollback, security, legal, and pilot gates still required before broad launch.</p>
+            <span className="status-pill">Create</span><h2>Websites</h2><p>Build, connect, scan, improve, preview, and safely publish business websites.</p>
           </Link>
         </section>
       </section>
