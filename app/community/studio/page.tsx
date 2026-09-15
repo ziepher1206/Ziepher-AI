@@ -23,15 +23,35 @@ async function getContributorIdentity() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return null;
 
-    let contributor: { display_name: string | null; status: string; is_verified: boolean } | null = null;
+    let contributor: { id: string; display_name: string | null; status: string; is_verified: boolean } | null = null;
+    let activeTaskId: string | null = null;
+
     if (process.env.SUPABASE_SERVICE_ROLE_KEY) {
       const admin = createAdminClient();
       const result = await admin
         .from("community_contributors")
-        .select("display_name, status, is_verified")
+        .select("id, display_name, status, is_verified")
         .eq("user_id", user.id)
         .maybeSingle();
       contributor = result.data ?? null;
+
+      if (contributor) {
+        const claimResult = await admin
+          .from("contribution_events")
+          .select("metadata")
+          .eq("contributor_id", contributor.id)
+          .eq("repository", "ziepher1206/Ziepher-AI")
+          .eq("contribution_type", "task_claim")
+          .eq("status", "pending")
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        const metadata = claimResult.data?.metadata;
+        if (metadata && typeof metadata === "object" && !Array.isArray(metadata)) {
+          const taskId = (metadata as Record<string, unknown>).studio_task_id;
+          activeTaskId = typeof taskId === "string" ? taskId : null;
+        }
+      }
     }
 
     const metadataName = typeof user.user_metadata?.full_name === "string"
@@ -46,6 +66,7 @@ async function getContributorIdentity() {
       displayName: contributor?.display_name ?? metadataName,
       status: contributor?.status ?? "community_member",
       verified: contributor?.is_verified ?? false,
+      activeTaskId,
     };
   } catch {
     return null;
