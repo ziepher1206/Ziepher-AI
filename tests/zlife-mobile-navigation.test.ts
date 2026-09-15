@@ -6,7 +6,7 @@ function source(path: string) {
 }
 
 describe("ZLife mobile navigation", () => {
-  it("keeps the same multi-page destinations reachable when desktop navigation is hidden", () => {
+  it("keeps public multi-page destinations reachable when desktop navigation is hidden", () => {
     const shell = source("components/zlife-public-shell.tsx");
     const navigation = source("lib/zlife/public-navigation.ts");
     const styles = source("components/zlife-marketing-home.module.css");
@@ -22,5 +22,27 @@ describe("ZLife mobile navigation", () => {
     expect(styles).toContain("@media (max-width: 820px)");
     expect(styles).toContain(".mobileNav");
     expect(styles).toContain("overflow-x: auto");
+  });
+
+  it("adds the approved five-part bottom navigation to signed-in Z-Life", () => {
+    const nav = source("components/zlife-mobile-bottom-nav.tsx");
+    expect(nav).toContain('label: "Home"');
+    expect(nav).toContain('label: "My Day"');
+    expect(nav).toContain('label: "Ask Z-Life"');
+    expect(nav).toContain('label: "Modules"');
+    expect(nav).toContain('label: "More"');
+    expect(nav).toContain('href: "/assistant"');
+    expect(nav).toContain('href: "/dashboard/modules"');
+    expect(nav).toContain("signedInPrefixes");
+    expect(nav).toContain("return null");
+  });
+
+  it("mounts signed-in navigation once at the app shell and hides it on desktop", () => {
+    const layout = source("app/layout.tsx");
+    const styles = source("components/zlife-mobile-bottom-nav.module.css");
+    expect(layout).toContain("<ZLifeMobileBottomNav />");
+    expect(styles).toContain("@media (min-width: 768px)");
+    expect(styles).toContain("display: none");
+    expect(styles).toContain("env(safe-area-inset-bottom)");
   });
 });
