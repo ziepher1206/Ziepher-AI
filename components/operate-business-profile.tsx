@@ -76,11 +76,11 @@ export function OperateBusinessProfile({ workspaceId, profile }: { workspaceId: 
   return (
     <section className="auth-card" style={{ maxWidth: "none" }}>
       <p className="panel-label">Company profile</p>
-      <h2 style={{ margin: "6px 0 8px" }}>Tree service business details</h2>
-      <p className="auth-copy" style={{ marginTop: 0 }}>These details become the shared business context for operations, website content, recommendations, and future modules. Enter only facts you want Ziepher to reuse.</p>
+      <h2 style={{ margin: "6px 0 8px" }}>Service business details</h2>
+      <p className="auth-copy" style={{ marginTop: 0 }}>These details become the shared business context for operations, website content, recommendations, and future modules. Your selected industry profile controls the trade-specific fields and workflows layered on top.</p>
       <form onSubmit={submit} style={{ display: "grid", gap: 14, marginTop: 16 }}>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))", gap: 12 }}>
-          <label className="field"><span>Business name</span><input value={businessName} onChange={(e) => setBusinessName(e.target.value)} maxLength={160} placeholder="Example Tree Service" /></label>
+          <label className="field"><span>Business name</span><input value={businessName} onChange={(e) => setBusinessName(e.target.value)} maxLength={160} placeholder="Example Service Business" /></label>
           <label className="field"><span>Owner / primary contact</span><input value={ownerName} onChange={(e) => setOwnerName(e.target.value)} maxLength={160} /></label>
           <label className="field"><span>Phone</span><input value={phone} onChange={(e) => setPhone(e.target.value)} maxLength={80} /></label>
           <label className="field"><span>Email</span><input type="email" value={email} onChange={(e) => setEmail(e.target.value)} maxLength={254} /></label>
@@ -96,7 +96,7 @@ export function OperateBusinessProfile({ workspaceId, profile }: { workspaceId: 
           <div>
             <p className="panel-label" style={{ marginBottom: 6 }}>Insurance status</p>
             <strong style={{ display: "block", fontSize: 18 }}>{insuranceLabel}</strong>
-            <p className="auth-copy" style={{ margin: "6px 0 0" }}>Insurance is not required to use Ziepher. This status will be shown clearly to customers. “Insured” is self-reported unless Ziepher later verifies documentation.</p>
+            <p className="auth-copy" style={{ margin: "6px 0 0" }}>Insurance is not required to use Z-Life. This status can be shown clearly to customers where relevant. “Insured” is self-reported unless Z-Life later verifies documentation.</p>
           </div>
           <label className="field">
             <span>Does this company currently carry business liability insurance?</span>
@@ -109,7 +109,7 @@ export function OperateBusinessProfile({ workspaceId, profile }: { workspaceId: 
           <label className="field"><span>Optional insurance / license details</span><textarea rows={2} value={insuranceNotes} onChange={(e) => setInsuranceNotes(e.target.value)} maxLength={3000} placeholder="Optional: carrier, policy details, license number, or other verified credential notes." /></label>
         </div>
 
-        <label style={{ display: "flex", gap: 10, alignItems: "center" }}><input type="checkbox" checked={emergency} onChange={(e) => setEmergency(e.target.checked)} /> <span>Offers emergency / after-hours tree service</span></label>
+        <label style={{ display: "flex", gap: 10, alignItems: "center" }}><input type="checkbox" checked={emergency} onChange={(e) => setEmergency(e.target.checked)} /> <span>Offers emergency / after-hours service</span></label>
         <div className="inline-actions"><button className="button primary" disabled={busy} type="submit">{busy ? "Saving…" : "Save company profile"}</button>{message ? <span className="auth-copy">{message}</span> : null}</div>
       </form>
     </section>
