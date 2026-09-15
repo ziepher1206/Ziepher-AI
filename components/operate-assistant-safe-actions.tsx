@@ -62,6 +62,29 @@ export function OperateAssistantSafeActions({
     router.refresh();
   }
 
+  async function processEvent(eventId: string) {
+    const busyId = `process:${eventId}`;
+    setBusyKey(busyId);
+    setMessage(null);
+
+    const response = await fetch("/api/operate/assistant/actions/process", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ eventId }),
+    });
+    const payload = await response.json().catch(() => ({}));
+    setBusyKey(null);
+
+    if (!response.ok) {
+      setMessage(payload?.error ?? "Unable to process this internal event.");
+      router.refresh();
+      return;
+    }
+
+    setMessage("Internal event completed. No customer communication, publishing, charge, scheduling, or provider purchase was executed.");
+    router.refresh();
+  }
+
   return (
     <section className="auth-card" style={{ maxWidth: "none" }}>
       <div
@@ -77,12 +100,12 @@ export function OperateAssistantSafeActions({
           <p className="panel-label">Safe action orchestration</p>
           <h2 style={{ margin: "6px 0 8px" }}>Let ZLife prepare internal work, not risky execution.</h2>
           <p className="auth-copy" style={{ maxWidth: 850, margin: 0 }}>
-            These controls can only add audited internal preparation events. Appointment scheduling,
+            These controls can add and process audited internal events. Appointment scheduling,
             crew assignment, customer communication, publishing, charging, provider purchases, and
-            destructive actions remain blocked here.
+            destructive actions remain outside this worker.
           </p>
         </div>
-        <span className="status-pill">Internal-only queue</span>
+        <span className="status-pill">Internal-only worker</span>
       </div>
 
       <div style={{ display: "grid", gap: 10, marginTop: 16 }}>
@@ -120,18 +143,40 @@ export function OperateAssistantSafeActions({
       {message ? <p className="auth-copy" style={{ marginTop: 12 }}>{message}</p> : null}
 
       <div style={{ borderTop: "1px solid var(--border)", marginTop: 20, paddingTop: 16 }}>
-        <p className="panel-label">Recent automation evidence</p>
+        <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap", alignItems: "end" }}>
+          <div>
+            <p className="panel-label">Recent automation evidence</p>
+            <strong>Queue → worker → result</strong>
+          </div>
+          <small className="auth-copy">Unsupported types are blocked instead of guessed.</small>
+        </div>
         <div style={{ display: "grid", gap: 8, marginTop: 10 }}>
-          {recentEvents.map((event) => (
-            <div key={event.id} style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
-              <span>
-                <strong>{event.event_type.replaceAll("_", " ")}</strong>
-                <span className="auth-copy"> · {event.entity_type} · {event.risk_level}</span>
-              </span>
-              <span className="status-pill">{event.status}</span>
-              {event.last_error ? <small className="auth-copy" style={{ width: "100%" }}>{event.last_error}</small> : null}
-            </div>
-          ))}
+          {recentEvents.map((event) => {
+            const processable = event.risk_level === "internal" && ["pending", "failed"].includes(event.status);
+            const busyId = `process:${event.id}`;
+            return (
+              <div key={event.id} style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
+                <span>
+                  <strong>{event.event_type.replaceAll("_", " ")}</strong>
+                  <span className="auth-copy"> · {event.entity_type} · {event.risk_level}</span>
+                </span>
+                <div className="inline-actions">
+                  <span className="status-pill">{event.status}</span>
+                  {processable ? (
+                    <button
+                      className="button"
+                      type="button"
+                      disabled={busyKey !== null}
+                      onClick={() => processEvent(event.id)}
+                    >
+                      {busyKey === busyId ? "Processing…" : "Process internal event"}
+                    </button>
+                  ) : null}
+                </div>
+                {event.last_error ? <small className="auth-copy" style={{ width: "100%" }}>{event.last_error}</small> : null}
+              </div>
+            );
+          })}
           {!recentEvents.length ? <p className="auth-copy">No automation events have been queued yet.</p> : null}
         </div>
       </div>
