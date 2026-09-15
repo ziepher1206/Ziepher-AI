@@ -1,0 +1,80 @@
+name: Local Visual E2E
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: local-visual-e2e-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  visual-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      NEXT_PUBLIC_APP_URL: http://127.0.0.1:3000
+      NEXT_PUBLIC_PREVIEW_ORIGIN: http://127.0.0.1:3000
+      NEXT_TELEMETRY_DISABLED: "1"
+      ZLIFE_DEV_MODE: "true"
+      ZLIFE_MOCK_AI: "true"
+      ZLIFE_MOCK_EMAIL: "true"
+      ZLIFE_MOCK_SMS: "true"
+      ZLIFE_MOCK_PAYMENTS: "true"
+      ZLIFE_MOCK_NOTIFICATIONS: "true"
+      ZLIFE_MOCK_MATCH: "true"
+      STRIPE_ENABLED: "false"
+      ZIEPHER_AGENT_LIVE_ENABLED: "false"
+      ZIEPHER_AI_ALLOW_PAID_FALLBACK: "false"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install application dependencies
+        run: npm ci
+
+      - name: Install temporary browser runner
+        run: npm install --no-save --package-lock=false playwright@1.55.0
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Start Z-Life on localhost
+        run: |
+          npm run dev -- --hostname 127.0.0.1 > zlife-dev.log 2>&1 &
+          echo $! > zlife-dev.pid
+          for attempt in {1..60}; do
+            if curl --fail --silent http://127.0.0.1:3000/ > /dev/null; then
+              exit 0
+            fi
+            sleep 2
+          done
+          cat zlife-dev.log
+          exit 1
+
+      - name: Run browser workflow
+        run: node tests/e2e/local-visual-smoke.mjs
+
+      - name: Upload screenshots and server log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: local-visual-e2e-${{ github.run_id }}
+          path: |
+            e2e-artifacts/
+            zlife-dev.log
+          if-no-files-found: warn
+          retention-days: 14
