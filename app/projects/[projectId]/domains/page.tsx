@@ -67,11 +67,16 @@ export default async function ProjectDomainsPage({ params }: Props) {
         <ProjectDomainStep projectId={projectId} />
 
         <section className="project-card" style={{ display: "grid", gap: 10 }}>
-          <p className="panel-label">Next</p>
-          <h2>Connect → Publish</h2>
+          <p className="panel-label">Next · Step 5 of 5</p>
+          <h2>Check everything before publishing</h2>
           <p>
-            Choosing a name does not publish the project. Domain ownership/DNS connection and production publishing remain separate approval steps.
+            Choosing or connecting a domain does not publish the project. Use the final readiness screen to verify the preview, domain, and deployment target before any production approval is possible.
           </p>
+          <div>
+            <Link className="button primary" href={`/projects/${projectId}/publish`}>
+              Continue to Publish Readiness
+            </Link>
+          </div>
         </section>
       </section>
     </main>
