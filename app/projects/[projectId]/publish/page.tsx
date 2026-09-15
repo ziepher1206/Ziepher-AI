@@ -22,7 +22,7 @@ function CheckCard({ check }: { check: Check }) {
       <div className="project-card-top">
         <h2 style={{ margin: 0 }}>{check.label}</h2>
         <span className={`status-pill ${check.ready ? "free" : ""}`}>
-          {check.ready ? "Ready" : "Needs attention"}
+          {check.ready ? "Available" : "Needs attention"}
         </span>
       </div>
       <p>{check.detail}</p>
@@ -88,11 +88,11 @@ export default async function PublishReadinessPage({ params }: Props) {
       action: "Return to builder"
     },
     {
-      label: "Design review",
+      label: "Design review tools",
       ready: hasPreview,
       detail: hasPreview
-        ? "The studio includes zero-cost Design Quality findings and the plain-language refinement path. Review those before release."
-        : "Design Quality becomes available after the first completed preview.",
+        ? "Design Quality and plain-language refinement are available in the studio. This means the design can be reviewed; it does not mean you already approved it."
+        : "Design review tools become available after the first completed preview.",
       href: `/projects/${projectId}/studio`,
       action: "Review design"
     },
@@ -137,8 +137,8 @@ export default async function PublishReadinessPage({ params }: Props) {
         <section className="project-card" style={{ display: "grid", gap: 12 }}>
           <p className="panel-label">Step 5 of 5 · Publish</p>
           <h1 style={{ margin: 0 }}>{project.business_name ?? project.name}</h1>
-          <h2 style={{ margin: 0 }}>{allReady ? "Everything required is ready for approval." : "Finish the items below before production."}</h2>
-          <p>This page is a readiness check only. It cannot publish the website/app, spend credits, buy a domain, or change DNS.</p>
+          <h2 style={{ margin: 0 }}>{allReady ? "The technical prerequisites are ready for your final review." : "Finish the items below before production."}</h2>
+          <p>This page is a readiness check only. It cannot approve the design for you, publish the website/app, spend credits, buy a domain, or change DNS.</p>
         </section>
 
         <section className="project-grid" style={{ marginTop: 0 }}>
@@ -149,11 +149,11 @@ export default async function PublishReadinessPage({ params }: Props) {
           <div className="project-card-top">
             <div>
               <p className="panel-label">Production release</p>
-              <h2 style={{ margin: "4px 0" }}>{allReady ? "Ready for explicit approval" : "Locked until ready"}</h2>
+              <h2 style={{ margin: "4px 0" }}>{allReady ? "Ready for your explicit approval" : "Locked until ready"}</h2>
             </div>
             <span className={`status-pill ${allReady ? "free" : ""}`}>{allReady ? "Approval required" : "Not ready"}</span>
           </div>
-          <p>Z-Life will keep the actual production deployment as a separate, explicit approval action. No release is triggered from this checklist.</p>
+          <p>Your final approval is where you confirm the design and authorize the production release. No release is triggered from this checklist.</p>
           <button className="button primary" type="button" disabled>Production publish requires approval</button>
         </section>
       </section>
