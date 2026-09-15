@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ZLifeHeartbeat } from "@/components/zlife-heartbeat";
 import { ZLifePublicShell } from "@/components/zlife-public-shell";
 import { zlifeModules, zlifeModuleStatusLabel, zlifeModuleStatusShortLabel, type ZLifeModuleDefinition, type ZLifeModuleStatus } from "@/lib/zlife/modules";
 
@@ -9,7 +10,11 @@ function ModuleCard({ item }: { item: ZLifeModuleDefinition }) {
       className={`zlife-module-card ${item.status === "active" || item.status === "launch" ? "is-active" : ""} ${item.nestedLabel ? "has-nested" : ""}`}
       href={`/modules/${item.slug}`}
     >
-      <div className="zlife-module-brand"><span className="module-z">Z</span><span>Z-LIFE</span></div>
+      <div className="zlife-module-brand" aria-hidden="true">
+        <span className="module-z">Z</span>
+        <ZLifeHeartbeat width={34} height={13} />
+        <span>LIFE</span>
+      </div>
       <div className="zlife-module-main">
         <span className="zlife-module-icon" aria-hidden="true">{item.icon}</span>
         <div><h3>{item.shortName}</h3><p>{item.description}</p></div>
