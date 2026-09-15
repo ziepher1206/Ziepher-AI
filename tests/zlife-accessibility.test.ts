@@ -17,14 +17,16 @@ describe("ZLife public accessibility", () => {
     expect(styles).toContain("outline: 3px solid");
   });
 
-  it("adds accessible labels to the home visual and active module region", () => {
+  it("adds accessible labels to the home visual and major homepage regions", () => {
     const page = source("components/zlife-marketing-home.tsx");
 
     expect(page).toContain('role="img"');
-    expect(page).toContain('aria-labelledby="modules-heading"');
-    expect(page).toContain('id="modules-heading"');
+    expect(page).toContain('aria-label="Z-Life star-filled landscape connecting life and business"');
     expect(page).toContain('aria-labelledby="gateway-heading"');
-    expect(page).toContain('aria-labelledby="founder-heading"');
-    expect(page).toContain('aria-label={`${item.name}. ${item.status === "active" ? "Active module" : "In development"}.`}');
+    expect(page).toContain('id="gateway-heading"');
+    expect(page).toContain('aria-labelledby="about-heading"');
+    expect(page).toContain('id="about-heading"');
+    expect(page).toContain('aria-labelledby="future-heading"');
+    expect(page).toContain('id="future-heading"');
   });
 });
