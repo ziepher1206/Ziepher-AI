@@ -29,6 +29,21 @@ const dailyItemSchema = z.object({
   dueAt: z.string().trim().optional()
 });
 
+const dailyItemIdSchema = z.object({
+  dailyItemId: z.string().uuid()
+});
+
+async function getTodayWorkspace() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) redirect("/auth/sign-in");
+
+  const { data: workspaceId, error: workspaceError } = await supabase.rpc("ensure_personal_workspace");
+  if (workspaceError || !workspaceId) throw workspaceError ?? new Error("Workspace unavailable.");
+
+  return { supabase, user, workspaceId };
+}
+
 export async function addDailyItemAction(formData: FormData) {
   const input = dailyItemSchema.parse({
     title: formData.get("title"),
@@ -38,13 +53,7 @@ export async function addDailyItemAction(formData: FormData) {
     dueAt: formData.get("dueAt") || undefined
   });
 
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect("/auth/sign-in");
-
-  const { data: workspaceId, error: workspaceError } = await supabase.rpc("ensure_personal_workspace");
-  if (workspaceError || !workspaceId) throw workspaceError ?? new Error("Workspace unavailable.");
-
+  const { supabase, user, workspaceId } = await getTodayWorkspace();
   const dueAt = input.dueAt ? new Date(input.dueAt) : null;
   if (dueAt && Number.isNaN(dueAt.getTime())) throw new Error("Invalid date or time.");
 
@@ -62,6 +71,35 @@ export async function addDailyItemAction(formData: FormData) {
     created_by: user.id,
     metadata: { entry_method: "manual_quick_add" }
   });
+
+  if (error) throw error;
+  revalidatePath("/today");
+  revalidatePath("/dashboard");
+}
+
+export async function completeDailyItemAction(formData: FormData) {
+  const { dailyItemId } = dailyItemIdSchema.parse({ dailyItemId: formData.get("dailyItemId") });
+  const { supabase, workspaceId } = await getTodayWorkspace();
+
+  const { data: item, error: itemError } = await supabase
+    .from("zlife_daily_items")
+    .select("id,source_module")
+    .eq("id", dailyItemId)
+    .eq("workspace_id", workspaceId)
+    .maybeSingle();
+
+  if (itemError) throw itemError;
+  if (!item) throw new Error("Daily item not found.");
+  if (item.source_module !== "zlife_core") {
+    throw new Error("Open the source module to complete this connected item.");
+  }
+
+  const { error } = await supabase
+    .from("zlife_daily_items")
+    .update({ status: "done" })
+    .eq("id", dailyItemId)
+    .eq("workspace_id", workspaceId)
+    .eq("source_module", "zlife_core");
 
   if (error) throw error;
   revalidatePath("/today");
