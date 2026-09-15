@@ -1,5 +1,6 @@
 import "server-only";
 
+import { isSupabaseConfigured } from "@/lib/env";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export type PublicContributorSummary = {
@@ -20,6 +21,8 @@ function percent(part: number, whole: number) {
 }
 
 export async function getPublicContributorSummaries(): Promise<PublicContributorSummary[]> {
+  if (!isSupabaseConfigured() || !process.env.SUPABASE_SERVICE_ROLE_KEY) return [];
+
   const supabase = createAdminClient();
   const { data: contributors, error: contributorError } = await supabase
     .from("community_contributors")
