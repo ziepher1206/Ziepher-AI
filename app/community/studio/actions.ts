@@ -77,4 +77,5 @@ export async function requestContributionRereviewAction(formData: FormData) {
   }
 
   revalidatePath("/community/studio");
+  revalidatePath("/community/review");
 }
