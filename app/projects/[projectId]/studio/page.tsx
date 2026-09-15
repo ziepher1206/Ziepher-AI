@@ -32,9 +32,39 @@ export default async function ProjectStudioPage({ params }: Props) {
         .preview-toolbar .inline-actions > button.primary {
           display: none;
         }
+
+        @media (max-width: 720px) {
+          .zlife-studio-progress {
+            position: sticky !important;
+            top: 0 !important;
+            left: auto !important;
+            transform: none !important;
+            z-index: 32 !important;
+            width: auto !important;
+            margin: 0 10px;
+            padding-top: 6px;
+          }
+
+          .zlife-studio-actions {
+            position: sticky !important;
+            top: 72px !important;
+            right: auto !important;
+            bottom: auto !important;
+            z-index: 31 !important;
+            width: auto !important;
+            max-height: 38vh !important;
+            margin: 8px 10px 12px;
+            padding: 8px;
+            border: 1px solid rgba(127,255,212,.16);
+            border-radius: 14px;
+            background: rgba(2,14,16,.92);
+            backdrop-filter: blur(16px);
+          }
+        }
       `}</style>
 
       <div
+        className="zlife-studio-progress"
         style={{
           position: "fixed",
           top: 10,
@@ -48,6 +78,7 @@ export default async function ProjectStudioPage({ params }: Props) {
       </div>
 
       <div
+        className="zlife-studio-actions"
         style={{
           position: "fixed",
           right: 18,
