@@ -102,6 +102,7 @@ export default async function OperatePage() {
           <Link className="button" href="/operate/calendar">Calendar</Link>
           <Link className="button" href="/operate/invoices">Invoices</Link>
           <Link className="button" href="/operate/growth">Growth</Link>
+          <Link className="button" href="/operate/pilot">Pilot readiness</Link>
           <Link className="button" href="/projects">Websites</Link>
           <Link className="button" href="/settings">Settings</Link>
           <form action="/auth/sign-out" method="post">
@@ -226,6 +227,11 @@ export default async function OperatePage() {
             <span className="status-pill">Create</span>
             <h2>Websites</h2>
             <p>Build, connect, scan, improve, preview, and safely publish business websites.</p>
+          </Link>
+          <Link className="project-card" href="/operate/pilot">
+            <span className="status-pill">Controlled pilot</span>
+            <h2>Readiness & evidence</h2>
+            <p>See workspace evidence separately from the manual tenant, Stripe, restore, rollback, security, legal, and pilot gates still required before broad launch.</p>
           </Link>
         </section>
       </section>
