@@ -59,6 +59,12 @@ async function verifyContributorEntry(context) {
   const accepted = await page.evaluate(() => window.localStorage.getItem("zlife.contributor-rules.accepted.v1"));
   if (!accepted) failures.push("contributor-entry: acceptance marker was not stored");
 
+  await page.getByRole("link", { name: /Preview My Build/i }).first().click();
+  await page.waitForURL("**/community/studio/preview");
+  await page.getByRole("heading", { name: "Look at your build before you submit it." }).waitFor({ state: "visible" });
+  await page.getByRole("button", { name: /Preview My Build/i }).waitFor({ state: "visible" });
+  await page.goBack({ waitUntil: "networkidle" });
+
   await page.screenshot({ path: `${outputDir}/contributor-fast-start.png`, fullPage: true });
   await page.getByRole("link", { name: /Open My Studio/i }).click();
   await page.waitForURL("**/community/studio");
@@ -102,6 +108,7 @@ try {
   await verifyPage(desktop, { path: "/about", name: "about", expectedText: "Z-Life" });
   await verifyPage(desktop, { path: "/community", name: "community", expectedText: "Build Z-Life With Us." });
   await verifyPage(desktop, { path: "/community/join", name: "contributor-join", expectedText: "One click to join the build." });
+  await verifyPage(desktop, { path: "/community/studio/preview", name: "contributor-build-preview", expectedText: "Look at your build before you submit it." });
   await verifyContributorEntry(desktop);
   await verifyPage(desktop, { path: "/auth/sign-in", name: "sign-in-safe-local", expectedText: "Connect Supabase first" });
   await desktop.close();
@@ -111,6 +118,7 @@ try {
   await verifyPage(mobile, { path: "/modules", name: "modules", expectedText: "One platform. Specialized modules.", mobile: true });
   await verifyPage(mobile, { path: "/community/join", name: "contributor-join", expectedText: "One click to join the build.", mobile: true });
   await verifyPage(mobile, { path: "/community/studio/start", name: "contributor-fast-start", expectedText: "Start with what you already know.", mobile: true });
+  await verifyPage(mobile, { path: "/community/studio/preview", name: "contributor-build-preview", expectedText: "Look at your build before you submit it.", mobile: true });
   await verifyPage(mobile, { path: "/community/studio", name: "contributor-studio", expectedText: "Choose how you want to help.", mobile: true });
   await mobile.close();
 } finally {

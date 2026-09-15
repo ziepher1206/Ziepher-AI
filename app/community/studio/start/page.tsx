@@ -13,6 +13,7 @@ export default function ContributorFastStartPage() {
         </Link>
         <nav aria-label="Contributor start navigation">
           <Link href="/community">Community</Link>
+          <Link href="/community/studio/preview">Preview My Build</Link>
           <Link href="/community/join">Change path</Link>
         </nav>
       </header>
@@ -27,6 +28,7 @@ export default function ContributorFastStartPage() {
         <ContributorPathGuide />
         <div className="zlife-hero-actions" style={{ marginTop: 20 }}>
           <Link className="zlife-primary" href="/community/studio">Open My Studio <span>→</span></Link>
+          <Link className="zlife-secondary" href="/community/studio/preview">Preview My Build</Link>
           <Link className="zlife-secondary" href="/community/join">Choose a different path</Link>
         </div>
       </section>
