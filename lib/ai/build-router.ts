@@ -51,12 +51,16 @@ function openAIModelFor(mode: QualityMode) {
   return process.env.OPENAI_BUILD_MODEL;
 }
 
+function withProjectId(artifact: BuildArtifact, plan: AppPlan): BuildArtifact {
+  return plan.projectId ? { ...artifact, projectId: plan.projectId } : artifact;
+}
+
 function createMockBuild(
   plan: AppPlan,
   visualConceptId: string,
 ): BuildRouteResult {
   return {
-    artifact: createDeterministicBuild(plan, visualConceptId),
+    artifact: withProjectId(createDeterministicBuild(plan, visualConceptId), plan),
     provider: "mock",
     model: "zlife-development-mock-ai-v1",
     developmentData: true
@@ -68,7 +72,7 @@ function createDeterministicBuildResult(
   visualConceptId: string
 ): BuildRouteResult {
   return {
-    artifact: createDeterministicBuild(plan, visualConceptId),
+    artifact: withProjectId(createDeterministicBuild(plan, visualConceptId), plan),
     provider: "deterministic",
     model: "ziepher-scaffold-v2"
   };
@@ -87,6 +91,13 @@ async function siteAssetsForBuild(plan: AppPlan, options: BuildRouteOptions) {
   if (options.siteAssets) return options.siteAssets;
   if (!plan.projectId) return [];
   return loadBuildSiteAssets(plan.projectId);
+}
+
+function parseProviderArtifact(text: string, plan: AppPlan) {
+  return withProjectId(
+    buildArtifactSchema.parse(parseJsonObject(text)),
+    plan
+  );
 }
 
 export async function createApplicationBuild(
@@ -122,7 +133,7 @@ export async function createApplicationBuild(
       try {
         const result = await buildWithOpenAI(prompt, model, referenceImages);
         return {
-          artifact: buildArtifactSchema.parse(parseJsonObject(result.text)),
+          artifact: parseProviderArtifact(result.text, plan),
           provider: "openai",
           model,
           usage: result.usage
@@ -133,16 +144,13 @@ export async function createApplicationBuild(
       continue;
     }
 
-    // A paid provider that does not yet return measurable token/cost telemetry
-    // stays blocked by default. This prevents a fallback from consuming credits
-    // outside the monthly spend ledger.
     if (!options.allowUnmeteredProvider) continue;
     if (!process.env.GOOGLE_AI_API_KEY) continue;
     const model = googleModelFor(mode);
     try {
       const result = await buildWithGemini(prompt, model);
       return {
-        artifact: buildArtifactSchema.parse(parseJsonObject(result.text)),
+        artifact: parseProviderArtifact(result.text, plan),
         provider: "gemini",
         model
       };
@@ -189,7 +197,7 @@ export async function repairApplicationBuild(
       try {
         const result = await buildWithOpenAI(prompt, model, referenceImages);
         return {
-          artifact: buildArtifactSchema.parse(parseJsonObject(result.text)),
+          artifact: parseProviderArtifact(result.text, plan),
           provider: "openai",
           model,
           usage: result.usage
@@ -211,7 +219,7 @@ export async function repairApplicationBuild(
     try {
       const result = await buildWithGemini(prompt, model);
       return {
-        artifact: buildArtifactSchema.parse(parseJsonObject(result.text)),
+        artifact: parseProviderArtifact(result.text, plan),
         provider: "gemini",
         model
       };
