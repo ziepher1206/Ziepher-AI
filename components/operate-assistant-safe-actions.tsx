@@ -100,7 +100,7 @@ export function OperateAssistantSafeActions({
           <p className="panel-label">Safe action orchestration</p>
           <h2 style={{ margin: "6px 0 8px" }}>Let ZLife prepare internal work, not risky execution.</h2>
           <p className="auth-copy" style={{ maxWidth: 850, margin: 0 }}>
-            These controls can add and process audited internal events. Appointment scheduling,
+            The Internal-only queue is now backed by an Internal-only worker. These controls can add and process audited internal events. Appointment scheduling,
             crew assignment, customer communication, publishing, charging, provider purchases, and
             destructive actions remain outside this worker.
           </p>
