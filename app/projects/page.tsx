@@ -14,6 +14,10 @@ function statusLabel(status: string | null) {
   }
 }
 
+function projectType(originalIdea: string | null) {
+  return /project type:\s*app\b/i.test(originalIdea ?? "") ? "App" : "Website";
+}
+
 function nextBuilderStep(project: {
   id: string;
   current_version: number | null;
@@ -51,7 +55,7 @@ export default async function ProjectsPage() {
 
   const { data: projects } = await supabase
     .from("projects")
-    .select("id,name,business_name,source_domain,primary_domain,scan_status,status,current_version,updated_at")
+    .select("id,name,business_name,original_idea,source_domain,primary_domain,scan_status,status,current_version,updated_at")
     .order("updated_at", { ascending: false });
 
   return (
@@ -89,10 +93,14 @@ export default async function ProjectsPage() {
               {(projects ?? []).map((project) => {
                 const domain = project.primary_domain ?? project.source_domain;
                 const next = nextBuilderStep(project);
+                const type = projectType(project.original_idea);
                 return (
                   <Link className="project-card" href={next.href} key={project.id} style={{ display: "grid", gap: 10 }}>
                     <div className="project-card-top">
-                      <span className="status-pill">{statusLabel(project.scan_status)}</span>
+                      <div style={{ display: "flex", gap: 7, flexWrap: "wrap" }}>
+                        <span className="status-pill">{type}</span>
+                        <span className="status-pill">{statusLabel(project.scan_status)}</span>
+                      </div>
                       <span className="project-version">v{project.current_version ?? 0}</span>
                     </div>
                     <div>
