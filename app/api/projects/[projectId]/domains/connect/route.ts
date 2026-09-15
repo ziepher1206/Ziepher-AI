@@ -3,6 +3,7 @@ import { z } from "zod";
 import { domainSchema, projectIdSchema } from "@/lib/domain/schemas";
 import {
   addVercelProjectDomain,
+  getVercelDomainConfig,
   getVercelProjectDomain,
   verifyVercelProjectDomain
 } from "@/lib/deployment/vercel-project-domains";
@@ -37,7 +38,9 @@ async function projectAccess(context: Context) {
     .eq("id", projectId)
     .single();
   if (error || !project?.workspace_id) throw new Error("Project not found.");
-  if (!project.vercel_project_id && !project.vercel_project_name) {
+
+  const projectRef = project.vercel_project_id ?? project.vercel_project_name;
+  if (!projectRef) {
     throw new Error("Choose a Vercel deployment target before connecting a domain.");
   }
 
@@ -56,22 +59,39 @@ async function projectAccess(context: Context) {
     projectId,
     project,
     accessToken: connection.accessToken,
-    projectRef: project.vercel_project_id ?? project.vercel_project_name,
+    projectRef,
     teamId
   };
+}
+
+async function diagnostics(input: {
+  accessToken: string;
+  projectRef: string;
+  domain: string;
+  teamId?: string | null;
+}) {
+  const [projectDomain, dnsConfig] = await Promise.all([
+    getVercelProjectDomain({
+      accessToken: input.accessToken,
+      projectIdOrName: input.projectRef,
+      domain: input.domain,
+      teamId: input.teamId
+    }),
+    getVercelDomainConfig({
+      accessToken: input.accessToken,
+      domain: input.domain,
+      teamId: input.teamId
+    })
+  ]);
+  return { projectDomain, dnsConfig };
 }
 
 export async function GET(request: Request, context: Context) {
   try {
     const { accessToken, projectRef, teamId } = await projectAccess(context);
     const domain = domainSchema.parse(new URL(request.url).searchParams.get("domain"));
-    const status = await getVercelProjectDomain({
-      accessToken,
-      projectIdOrName: projectRef,
-      domain,
-      teamId
-    });
-    return NextResponse.json({ domain: status });
+    const result = await diagnostics({ accessToken, projectRef, domain, teamId });
+    return NextResponse.json(result);
   } catch (error) {
     return apiError(error, "Unable to check the project domain.");
   }
@@ -84,17 +104,23 @@ export async function POST(request: Request, context: Context) {
 
     if (body?.action === "verify") {
       const input = verifySchema.parse(body);
-      const status = await verifyVercelProjectDomain({
+      await verifyVercelProjectDomain({
         accessToken,
         projectIdOrName: projectRef,
         domain: input.domain,
         teamId
       });
-      return NextResponse.json({ domain: status });
+      const result = await diagnostics({
+        accessToken,
+        projectRef,
+        domain: input.domain,
+        teamId
+      });
+      return NextResponse.json(result);
     }
 
     const input = connectSchema.parse(body);
-    const status = await addVercelProjectDomain({
+    await addVercelProjectDomain({
       accessToken,
       projectIdOrName: projectRef,
       domain: input.domain,
@@ -108,8 +134,15 @@ export async function POST(request: Request, context: Context) {
       .eq("id", projectId);
     if (saveError) throw saveError;
 
+    const result = await diagnostics({
+      accessToken,
+      projectRef,
+      domain: input.domain,
+      teamId
+    });
+
     return NextResponse.json({
-      domain: status,
+      ...result,
       connected: true,
       dnsChangedByZLife: false,
       publishedByZLife: false
