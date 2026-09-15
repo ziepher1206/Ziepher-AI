@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
+import { BuilderProgress } from "@/components/builder-progress";
 import { getVercelProjectDomain } from "@/lib/deployment/vercel-project-domains";
 import { isSupabaseConfigured } from "@/lib/env";
 import { getProviderConnection } from "@/lib/provider-connections/store";
@@ -25,11 +26,7 @@ function CheckCard({ check }: { check: Check }) {
         </span>
       </div>
       <p>{check.detail}</p>
-      {!check.ready ? (
-        <div>
-          <Link className="button" href={check.href}>{check.action}</Link>
-        </div>
-      ) : null}
+      {!check.ready ? <div><Link className="button" href={check.href}>{check.action}</Link></div> : null}
     </article>
   );
 }
@@ -39,12 +36,8 @@ export default async function PublishReadinessPage({ params }: Props) {
 
   const { projectId } = await params;
   const supabase = await createClient();
-  const {
-    data: { user }
-  } = await supabase.auth.getUser();
-  if (!user) {
-    redirect(`/auth/sign-in?next=${encodeURIComponent(`/projects/${projectId}/publish`)}`);
-  }
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) redirect(`/auth/sign-in?next=${encodeURIComponent(`/projects/${projectId}/publish`)}`);
 
   const { data: project, error } = await supabase
     .from("projects")
@@ -90,9 +83,7 @@ export default async function PublishReadinessPage({ params }: Props) {
     {
       label: "Preview",
       ready: hasPreview,
-      detail: hasPreview
-        ? `Build v${project.current_version} has a reviewable preview.`
-        : "A completed preview is required before production release.",
+      detail: hasPreview ? `Build v${project.current_version} has a reviewable preview.` : "A completed preview is required before production release.",
       href: `/projects/${projectId}/studio`,
       action: "Return to builder"
     },
@@ -142,13 +133,12 @@ export default async function PublishReadinessPage({ params }: Props) {
       </header>
 
       <section style={{ display: "grid", gap: 24 }}>
+        <BuilderProgress projectId={projectId} currentStage={5} />
         <section className="project-card" style={{ display: "grid", gap: 12 }}>
           <p className="panel-label">Step 5 of 5 · Publish</p>
           <h1 style={{ margin: 0 }}>{project.business_name ?? project.name}</h1>
           <h2 style={{ margin: 0 }}>{allReady ? "Everything required is ready for approval." : "Finish the items below before production."}</h2>
-          <p>
-            This page is a readiness check only. It cannot publish the website/app, spend credits, buy a domain, or change DNS.
-          </p>
+          <p>This page is a readiness check only. It cannot publish the website/app, spend credits, buy a domain, or change DNS.</p>
         </section>
 
         <section className="project-grid" style={{ marginTop: 0 }}>
@@ -163,12 +153,8 @@ export default async function PublishReadinessPage({ params }: Props) {
             </div>
             <span className={`status-pill ${allReady ? "free" : ""}`}>{allReady ? "Approval required" : "Not ready"}</span>
           </div>
-          <p>
-            Z-Life will keep the actual production deployment as a separate, explicit approval action. No release is triggered from this checklist.
-          </p>
-          <button className="button primary" type="button" disabled>
-            Production publish requires approval
-          </button>
+          <p>Z-Life will keep the actual production deployment as a separate, explicit approval action. No release is triggered from this checklist.</p>
+          <button className="button primary" type="button" disabled>Production publish requires approval</button>
         </section>
       </section>
     </main>
