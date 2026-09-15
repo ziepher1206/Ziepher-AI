@@ -21,7 +21,7 @@ function scoreFromWarnings(warnings: string[]) {
     const match = warning.match(/^Visual QA \((\d{1,3})\/100\):/);
     if (match) return Math.max(0, Math.min(100, Number(match[1])));
   }
-  return warnings.length ? null : 100;
+  return null;
 }
 
 function cleanWarning(warning: string) {
