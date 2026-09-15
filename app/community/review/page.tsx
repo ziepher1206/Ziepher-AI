@@ -92,7 +92,7 @@ export default async function CommunityReviewPage() {
         </Link>
         <nav aria-label="Community review navigation">
           <Link href="/community">Community</Link>
-          <a href="#pending">Pending evidence</a>
+          <a href="#pending">Review-ready evidence</a>
         </nav>
       </header>
 
@@ -192,7 +192,7 @@ export default async function CommunityReviewPage() {
                       target="_blank"
                       rel="noreferrer"
                     >
-                      Open verified source evidence
+                      Inspect GitHub evidence
                     </a>
                   ) : (
                     <span className="zlife-review-no-link">No verified source URL</span>
