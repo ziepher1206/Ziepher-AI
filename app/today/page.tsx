@@ -50,10 +50,21 @@ export default async function TodayPage() {
     { label: "Bills & payments", value: businessReady ? `${invoices.count ?? 0} overdue business invoices` : "Not connected", href: "/operate/invoices", ready: businessReady },
     { label: "Home & family", value: homeReady ? `${tasks.count ?? 0} open tasks` : "Not connected", href: "/home", ready: homeReady },
     { label: "Home maintenance", value: homeReady ? `${maintenance.count ?? 0} due in the next 24 hours` : "Not connected", href: "/home", ready: homeReady },
+    { label: "Family & school", value: "Planned daily context", href: "/dashboard/modules", ready: false },
     { label: "Health", value: "In development", href: "/modules/health", ready: false },
     { label: "Grocery & shopping", value: "Planned daily context", href: "/dashboard/modules", ready: false },
+    { label: "Subscriptions due", value: "Planned daily context", href: "/modules/money", ready: false },
+    { label: "Errands", value: "Planned daily context", href: "/dashboard/modules", ready: false },
     { label: "Auto & vehicle", value: "In development", href: "/modules/auto", ready: false },
     { label: "Documents", value: "In development", href: "/modules/documents", ready: false }
+  ];
+
+  const summaryCards = [
+    { value: businessReady ? String(leads.count ?? 0) : "—", label: "New leads", detail: businessReady ? "Business" : "Not connected" },
+    { value: businessReady ? String(appointments.count ?? 0) : "—", label: "Next 24 hours", detail: businessReady ? "Appointments" : "Not connected" },
+    { value: homeReady ? String(tasks.count ?? 0) : "—", label: "Open home tasks", detail: homeReady ? "Home & Family" : "Not connected" },
+    { value: homeReady ? String(maintenance.count ?? 0) : "—", label: "Maintenance due", detail: homeReady ? "Next 24 hours" : "Not connected" },
+    { value: businessReady ? String(invoices.count ?? 0) : "—", label: "Overdue payments", detail: businessReady ? "Business invoices" : "Not connected" }
   ];
 
   return (
@@ -72,13 +83,8 @@ export default async function TodayPage() {
           <p style={{ maxWidth: 820, margin: 0, color: "#b0cac7", lineHeight: 1.65 }}>This page only shows live totals when the relevant Z-Life area is actually connected. Planned modules stay labeled as planned instead of filling your day with fake information.</p>
         </section>
 
-        <section style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))", gap: 12, marginTop: 16 }}>
-          {[
-            [String(leads.count ?? 0), "New leads", businessReady ? "Business" : "Not connected"],
-            [String(appointments.count ?? 0), "Next 24 hours", businessReady ? "Appointments" : "Not connected"],
-            [String(tasks.count ?? 0), "Open home tasks", homeReady ? "Home & Family" : "Not connected"],
-            [String(maintenance.count ?? 0), "Maintenance due", homeReady ? "Next 24 hours" : "Not connected"]
-          ].map(([value, label, detail]) => (
+        <section style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(170px,1fr))", gap: 12, marginTop: 16 }}>
+          {summaryCards.map(({ value, label, detail }) => (
             <article key={label} style={{ ...card, padding: 18 }}><p style={{ margin: 0, color: "#9dbbb7", fontSize: 11, textTransform: "uppercase", letterSpacing: ".1em" }}>{label}</p><strong style={{ display: "block", marginTop: 8, fontSize: 28 }}>{value}</strong><small style={{ color: "#789b97" }}>{detail}</small></article>
           ))}
         </section>
