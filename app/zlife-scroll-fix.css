@@ -1,4 +1,7 @@
 .zlife-landing {
+  height: 100dvh;
+  min-height: 100dvh;
   overflow-x: hidden;
-  overflow-y: visible;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
 }
