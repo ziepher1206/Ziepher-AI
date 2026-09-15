@@ -20,11 +20,21 @@ describe("visual scan improvement gallery", () => {
     expect(gallery).toContain("densities");
   });
 
+  it("sorts findings into a plain-language work order", () => {
+    const gallery = read("components/site-improvement-gallery.tsx");
+    expect(gallery).toContain("Fix first");
+    expect(gallery).toContain("Improve next");
+    expect(gallery).toContain("Nice to have");
+    expect(gallery).toContain("priorityRank");
+    expect(gallery).toContain("Why now:");
+  });
+
   it("routes the full visual system into the existing safe refinement flow", () => {
     const gallery = read("components/site-improvement-gallery.tsx");
     expect(gallery).toContain("/projects/${projectId}/changes");
     expect(gallery).toContain('source: "scan_recommendation"');
     expect(gallery).toContain("Visual direction:");
+    expect(gallery).toContain("Priority:");
     expect(gallery).toContain("heroTreatment");
     expect(gallery).toContain("proofPattern");
   });
