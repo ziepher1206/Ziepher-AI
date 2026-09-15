@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
+import { BuilderProgress } from "@/components/builder-progress";
 import { SiteChangeRequestWorkflow } from "@/components/site-change-request-workflow";
 import { isSupabaseConfigured } from "@/lib/env";
 import { createClient } from "@/lib/supabase/server";
@@ -27,9 +28,7 @@ export default async function ChangesPage({ params, searchParams }: Props) {
   const { projectId } = await params;
   const query = await searchParams;
   const supabase = await createClient();
-  const {
-    data: { user }
-  } = await supabase.auth.getUser();
+  const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/auth/sign-in");
 
   const { data: project, error: projectError } = await supabase
@@ -61,18 +60,15 @@ export default async function ChangesPage({ params, searchParams }: Props) {
           </div>
         </div>
         <div className="inline-actions">
-          <Link className="button primary" href={`/projects/${projectId}/studio`}>
-            Back to live preview
-          </Link>
-          <Link className="button" href={`/projects/${projectId}/media`}>
-            Photos & references
-          </Link>
+          <Link className="button primary" href={`/projects/${projectId}/studio`}>Back to live preview</Link>
+          <Link className="button" href={`/projects/${projectId}/media`}>Photos & references</Link>
         </div>
       </header>
 
       <section style={{ display: "grid", gap: 24 }}>
+        <BuilderProgress projectId={projectId} currentStage={3} />
         <div style={{ maxWidth: 900 }}>
-          <p className="panel-label">{project.business_name ?? project.name}</p>
+          <p className="panel-label">Step 3 of 5 · {project.business_name ?? project.name}</p>
           <h1 style={{ margin: "6px 0 10px", fontSize: "clamp(34px,6vw,64px)", lineHeight: .98 }}>
             Keep improving the same build.
           </h1>
