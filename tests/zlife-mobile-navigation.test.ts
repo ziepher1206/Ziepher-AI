@@ -24,17 +24,15 @@ describe("ZLife mobile navigation", () => {
     expect(styles).toContain("overflow-x: auto");
   });
 
-  it("adds the approved five-part bottom navigation to signed-in Z-Life", () => {
+  it("keeps only the three essential signed-in mobile destinations", () => {
     const nav = source("components/zlife-mobile-bottom-nav.tsx");
+    const styles = source("components/zlife-mobile-bottom-nav.module.css");
     expect(nav).toContain('label: "Home"');
     expect(nav).toContain('label: "My Day"');
     expect(nav).toContain('label: "Ask Z-Life"');
-    expect(nav).toContain('label: "Modules"');
-    expect(nav).toContain('label: "More"');
-    expect(nav).toContain('href: "/assistant"');
-    expect(nav).toContain('href: "/dashboard/modules"');
-    expect(nav).toContain("signedInPrefixes");
-    expect(nav).toContain("return null");
+    expect(nav).not.toContain('label: "Modules"');
+    expect(nav).not.toContain('label: "More"');
+    expect(styles).toContain("grid-template-columns: repeat(3");
   });
 
   it("mounts signed-in navigation once at the app shell and hides it on desktop", () => {
