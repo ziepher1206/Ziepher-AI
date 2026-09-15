@@ -42,23 +42,32 @@ async function verifyContributorEntry(context) {
   const response = await page.goto(`${baseURL}/community/join`, { waitUntil: "networkidle" });
   if (!response || !response.ok()) failures.push(`contributor-entry: HTTP ${response?.status() ?? "no response"}`);
 
-  const acceptButton = page.getByRole("button", { name: /Accept & Enter ZLife Studio/i });
-  if (!(await acceptButton.isDisabled())) failures.push("contributor-entry: studio button should be disabled before acceptance");
+  await page.getByRole("button", { name: /Tester \/ QA/i }).click();
+  const acceptButton = page.getByRole("button", { name: /Accept & Show My Starting Path/i });
+  if (!(await acceptButton.isDisabled())) failures.push("contributor-entry: start button should be disabled before acceptance");
 
   await page.getByLabel("Accept ZLife contributor rules").check();
-  if (await acceptButton.isDisabled()) failures.push("contributor-entry: studio button stayed disabled after acceptance");
+  if (await acceptButton.isDisabled()) failures.push("contributor-entry: start button stayed disabled after acceptance");
   await page.screenshot({ path: `${outputDir}/contributor-join-accepted.png`, fullPage: true });
   await acceptButton.click();
+  await page.waitForURL("**/community/studio/start");
+  await page.getByRole("heading", { name: "Tester / QA path" }).waitFor({ state: "visible" });
+
+  const storedPath = await page.evaluate(() => window.localStorage.getItem("zlife.contributor.path.v1"));
+  if (storedPath !== "tester") failures.push("contributor-entry: contributor path was not stored");
+
+  const accepted = await page.evaluate(() => window.localStorage.getItem("zlife.contributor-rules.accepted.v1"));
+  if (!accepted) failures.push("contributor-entry: acceptance marker was not stored");
+
+  await page.screenshot({ path: `${outputDir}/contributor-fast-start.png`, fullPage: true });
+  await page.getByRole("link", { name: /Open My Studio/i }).click();
   await page.waitForURL("**/community/studio");
   await page.getByRole("heading", { name: "Create your working profile." }).waitFor({ state: "visible" });
 
   const studioText = await page.locator("body").innerText();
-  if (!studioText.includes("Choose how you want to help.")) failures.push("contributor-entry: studio landing did not load after acceptance");
+  if (!studioText.includes("Choose how you want to help.")) failures.push("contributor-entry: studio landing did not load after fast start");
   if (!studioText.includes("LIVE VALUE WORK")) failures.push("contributor-entry: live value-work board did not render");
   if (!studioText.includes("Sign in to sync identity")) failures.push("contributor-entry: guest identity upgrade path did not render");
-
-  const accepted = await page.evaluate(() => window.localStorage.getItem("zlife.contributor-rules.accepted.v1"));
-  if (!accepted) failures.push("contributor-entry: acceptance marker was not stored");
 
   await page.getByLabel("Display name").fill("Visual Test Builder");
   await page.getByLabel("Main skill / specialty").fill("Tree service workflow testing");
@@ -101,6 +110,7 @@ try {
   await verifyPage(mobile, { path: "/", name: "home", expectedText: "Life and Business", mobile: true });
   await verifyPage(mobile, { path: "/modules", name: "modules", expectedText: "One platform. Specialized modules.", mobile: true });
   await verifyPage(mobile, { path: "/community/join", name: "contributor-join", expectedText: "One click to join the build.", mobile: true });
+  await verifyPage(mobile, { path: "/community/studio/start", name: "contributor-fast-start", expectedText: "Start with what you already know.", mobile: true });
   await verifyPage(mobile, { path: "/community/studio", name: "contributor-studio", expectedText: "Choose how you want to help.", mobile: true });
   await mobile.close();
 } finally {
