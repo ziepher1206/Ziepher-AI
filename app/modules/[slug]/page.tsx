@@ -66,7 +66,12 @@ export default async function ZLifeModulePage({ params }: { params: Promise<{ sl
 
         {selectedModule.nestedLabel ? (
           <div className="zlife-nested-module" style={{ marginBottom: "24px" }}>
-            <span>▲</span><div><strong>Tree Service</strong><small>First active business vertical</small></div><b>ACTIVE</b>
+            <span aria-hidden="true">▲</span>
+            <div>
+              <strong>{selectedModule.nestedLabel}</strong>
+              <small>{selectedModule.status === "active" ? "Connected working capability" : "Connected development foundation"}</small>
+            </div>
+            <b>{selectedModule.status === "active" ? "ACTIVE" : "WORKING"}</b>
           </div>
         ) : null}
 
