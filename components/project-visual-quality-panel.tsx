@@ -15,8 +15,8 @@ type Payload = {
   ready: boolean;
 };
 
-function qualityLabel(score: number | null) {
-  if (score === null) return "Checking";
+function qualityLabel(score: number | null, ready: boolean) {
+  if (score === null) return ready ? "No recorded score" : "Checking";
   if (score >= 90) return "Strong";
   if (score >= 80) return "Good";
   if (score >= 70) return "Needs polish";
@@ -57,11 +57,11 @@ export function ProjectVisualQualityPanel({ projectId }: { projectId: string }) 
         <div>
           <p className="panel-label">Design Quality</p>
           <h2 style={{ margin: "4px 0" }}>
-            {data.score === null ? "Build analysis" : `${data.score}/100`}
+            {data.score === null ? (data.ready ? "No score recorded" : "Build analysis") : `${data.score}/100`}
           </h2>
         </div>
         <span className={`status-pill ${data.score !== null && data.score >= 85 ? "free" : ""}`}>
-          {qualityLabel(data.score)}
+          {qualityLabel(data.score, data.ready)}
         </span>
       </div>
 
@@ -92,7 +92,7 @@ export function ProjectVisualQualityPanel({ projectId }: { projectId: string }) 
           </div>
         </>
       ) : (
-        <p>No major zero-cost visual-quality warnings were detected in the latest generated preview.</p>
+        <p>No visual-quality warnings were stored for the latest generated preview. That is not the same as a perfect score; review the preview before approving it.</p>
       )}
 
       <small>This check uses local rules only. It does not spend AI credits or publish anything.</small>
