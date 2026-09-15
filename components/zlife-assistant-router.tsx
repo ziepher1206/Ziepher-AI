@@ -65,9 +65,9 @@ function routeFor(text: string): RouteSuggestion {
     const areas = Array.from(new Set(matches.map((match) => match.suggestion.area)));
     return {
       area: "My Day",
-      href: "/dashboard",
-      title: "Open Today at a Glance",
-      detail: `That request crosses ${areas.join(", ")}. Start from your Z-Life dashboard so the pieces stay together instead of sending you into one isolated module.`
+      href: "/today",
+      title: "Open My Day",
+      detail: `That request crosses ${areas.join(", ")}. Keep the pieces together in My Day instead of being sent into one isolated module.`
     };
   }
 
