@@ -25,6 +25,15 @@ export default async function ProjectStudioPage({ params }: Props) {
 
   return (
     <>
+      <style>{`
+        /* Keep technical deployment actions out of the normal builder path.
+           The visible release flow is Preview → Domain → Publish Readiness. */
+        .preview-toolbar .inline-actions > button:has(+ button.primary),
+        .preview-toolbar .inline-actions > button.primary {
+          display: none;
+        }
+      `}</style>
+
       <div
         style={{
           position: "fixed",
@@ -69,6 +78,7 @@ export default async function ProjectStudioPage({ params }: Props) {
         <details style={{ padding: "8px 10px", borderRadius: 10, background: "rgba(0,0,0,.28)", color: "#8faaa7", fontSize: 12 }}>
           <summary style={{ cursor: "pointer", color: "#b8d2cf" }}>Advanced details</summary>
           <div style={{ display: "grid", gap: 7, marginTop: 9 }}>
+            <small>Deployment controls are kept here so the main builder stays simple. Production release still requires explicit approval.</small>
             <Link href={`/projects/${projectId}`} style={{ color: "#7fffd4" }}>Project overview</Link>
             <Link href={`/projects/${projectId}/ai-status`} style={{ color: "#7fffd4" }}>AI status</Link>
             <Link href={`/projects/${projectId}/source-control`} style={{ color: "#7fffd4" }}>Build review</Link>
