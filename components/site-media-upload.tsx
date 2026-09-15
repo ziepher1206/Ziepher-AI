@@ -82,6 +82,7 @@ export function SiteMediaUpload({
     setMessage(null);
     const supabase = createClient();
     const uploadedPaths: string[] = [];
+    const insertedAssetIds: string[] = [];
 
     try {
       const {
@@ -102,28 +103,35 @@ export function SiteMediaUpload({
         if (uploadError) throw uploadError;
         uploadedPaths.push(storagePath);
 
-        const { error: assetError } = await supabase.from("media_assets").insert({
-          workspace_id: workspaceId,
-          project_id: projectId,
-          uploaded_by: user.id,
-          source_type: "upload",
-          storage_bucket: "site-media",
-          storage_path: storagePath,
-          display_name: file.name,
-          mime_type: file.type,
-          usage_status: "available",
-          provenance: {
-            original_name: file.name,
-            original_size_bytes: file.size,
-            purpose,
-            builder_instruction:
-              purpose === "design_reference"
-                ? "Use this image as a visual design reference for layout, hierarchy, composition, density, and styling."
-                : "Approved project photo that may be used in the generated website or application."
-          }
-        });
+        const { data: createdAsset, error: assetError } = await supabase
+          .from("media_assets")
+          .insert({
+            workspace_id: workspaceId,
+            project_id: projectId,
+            uploaded_by: user.id,
+            source_type: "upload",
+            storage_bucket: "site-media",
+            storage_path: storagePath,
+            display_name: file.name,
+            mime_type: file.type,
+            usage_status: "available",
+            provenance: {
+              original_name: file.name,
+              original_size_bytes: file.size,
+              purpose,
+              builder_instruction:
+                purpose === "design_reference"
+                  ? "Use this image as a visual design reference for layout, hierarchy, composition, density, and styling."
+                  : "Approved project photo that may be used in the generated website or application."
+            }
+          })
+          .select("id")
+          .single();
 
-        if (assetError) throw assetError;
+        if (assetError || !createdAsset?.id) {
+          throw assetError ?? new Error("Image metadata could not be saved.");
+        }
+        insertedAssetIds.push(createdAsset.id);
       }
 
       if (inputRef.current) inputRef.current.value = "";
@@ -131,6 +139,9 @@ export function SiteMediaUpload({
       setMessage(`${files.length} image${files.length === 1 ? "" : "s"} uploaded.`);
       router.refresh();
     } catch (cause) {
+      if (insertedAssetIds.length) {
+        await supabase.from("media_assets").delete().in("id", insertedAssetIds);
+      }
       if (uploadedPaths.length) {
         await supabase.storage.from("site-media").remove(uploadedPaths);
       }
