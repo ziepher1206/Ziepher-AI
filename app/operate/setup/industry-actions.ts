@@ -23,11 +23,11 @@ export async function selectBusinessIndustryAction(formData: FormData) {
     .from("zlife_service_industries")
     .select("industry_key,status,default_settings")
     .eq("industry_key", industryKey)
-    .in("status", ["available", "preview"])
+    .eq("status", "available")
     .maybeSingle();
 
   if (industryError) throw industryError;
-  if (!industry) throw new Error("Industry profile is not available.");
+  if (!industry) throw new Error("This industry profile is not active yet.");
 
   const { error: profileError } = await supabase
     .from("workspace_business_profiles")
