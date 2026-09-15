@@ -30,6 +30,8 @@ export type PendingContributionReview = {
   githubPrId: number | null;
   githubIssueId: number | null;
   sourceUrl: string | null;
+  evidenceState: string | null;
+  reviewReady: boolean;
   preliminaryFactors: {
     impact: number;
     difficulty: number;
@@ -58,6 +60,31 @@ function sourceUrlFor(input: {
   if (input.githubPrId) return `${base}/pull/${input.githubPrId}`;
   if (input.githubIssueId) return `${base}/issues/${input.githubIssueId}`;
   return base;
+}
+
+function metadataRecord(value: unknown) {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? value as Record<string, unknown>
+    : {};
+}
+
+function isReviewablePendingEvent(event: {
+  contribution_type: string;
+  metadata: unknown;
+  github_pr_id: number | null;
+  github_issue_id: number | null;
+}) {
+  if (event.contribution_type !== "task_claim") return true;
+
+  const metadata = metadataRecord(event.metadata);
+  const evidenceKind = metadata.evidence_kind;
+  const evidenceNumber = metadata.evidence_number;
+  const evidenceUrl = metadata.evidence_url;
+
+  if (metadata.claim_state !== "under_review" || metadata.review_ready !== true) return false;
+  if ((evidenceKind !== "pull_request" && evidenceKind !== "issue") || typeof evidenceNumber !== "number" || typeof evidenceUrl !== "string") return false;
+  if (evidenceKind === "pull_request") return event.github_pr_id === evidenceNumber;
+  return event.github_issue_id === evidenceNumber;
 }
 
 export async function getCommunityReviewWorkspace(): Promise<CommunityReviewWorkspace> {
@@ -89,7 +116,7 @@ export async function getCommunityReviewWorkspace(): Promise<CommunityReviewWork
   const { data: events, error: eventError } = await admin
     .from("contribution_events")
     .select(
-      "id, contributor_id, module_id, repository, source, contribution_type, description, github_pr_id, github_issue_id, impact_score, difficulty_score, scope_score, maintenance_score, quality_score, created_at",
+      "id, contributor_id, module_id, repository, source, contribution_type, description, github_pr_id, github_issue_id, impact_score, difficulty_score, scope_score, maintenance_score, quality_score, metadata, created_at",
     )
     .eq("status", "pending")
     .order("created_at", { ascending: true })
@@ -97,12 +124,13 @@ export async function getCommunityReviewWorkspace(): Promise<CommunityReviewWork
 
   if (eventError) throw eventError;
 
+  const reviewableEvents = (events ?? []).filter(isReviewablePendingEvent);
   const contributorIds = [
-    ...new Set((events ?? []).map((event) => event.contributor_id)),
+    ...new Set(reviewableEvents.map((event) => event.contributor_id)),
   ];
   const moduleIds = [
     ...new Set(
-      (events ?? [])
+      reviewableEvents
         .map((event) => event.module_id)
         .filter((value): value is string => Boolean(value)),
     ),
@@ -140,9 +168,10 @@ export async function getCommunityReviewWorkspace(): Promise<CommunityReviewWork
     }
   }
 
-  const pending: PendingContributionReview[] = (events ?? []).map((event) => {
+  const pending: PendingContributionReview[] = reviewableEvents.map((event) => {
     const contributor = contributorMap.get(event.contributor_id);
     const githubLogin = contributor?.githubLogin ?? null;
+    const metadata = metadataRecord(event.metadata);
 
     return {
       id: event.id,
@@ -163,6 +192,8 @@ export async function getCommunityReviewWorkspace(): Promise<CommunityReviewWork
         githubPrId: event.github_pr_id,
         githubIssueId: event.github_issue_id,
       }),
+      evidenceState: typeof metadata.evidence_state === "string" ? metadata.evidence_state : null,
+      reviewReady: event.contribution_type === "task_claim" ? metadata.review_ready === true : true,
       preliminaryFactors: {
         impact: event.impact_score,
         difficulty: event.difficulty_score,
