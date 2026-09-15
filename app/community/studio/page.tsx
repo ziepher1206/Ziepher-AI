@@ -1,5 +1,6 @@
 import Link from "next/link";
 import "../community.css";
+import StudioWorkspaceClient from "./workspace-client";
 
 const paths = [
   ["Build a feature", "Choose an open product task, work in a fork or sandbox branch, and submit a pull request."],
@@ -30,6 +31,10 @@ export default function CommunityStudioPage() {
         <h1>Choose how you want to help.</h1>
         <p className="zlife-lede">ZLife Studio is the safe public entry point for people and AI-assisted builders to improve the company together. Public work stays isolated from production until it passes the release gates.</p>
         <div className="zlife-community-flow"><span>Choose</span><b>→</b><span>Build/Test</span><b>→</b><span>Submit</span><b>→</b><span>CI + Visual E2E</span><b>→</b><span>Review</span><b>→</b><span>Verified Value</span></div>
+      </section>
+
+      <section className="zlife-section">
+        <StudioWorkspaceClient />
       </section>
 
       <section className="zlife-section">
