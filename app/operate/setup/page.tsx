@@ -6,6 +6,7 @@ import { OperateBusinessSetup } from "@/components/operate-business-setup";
 import { OperateScheduleExceptions } from "@/components/operate-schedule-exceptions";
 import { OperateServiceSelector } from "@/components/operate-service-selector";
 import { OperateTimezoneSetup } from "@/components/operate-timezone-setup";
+import { ZLifeHeartbeat } from "@/components/zlife-heartbeat";
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/env";
 
@@ -79,7 +80,10 @@ export default async function OperateSetupPage() {
       <header className="projects-header">
         <div className="brand">
           <div className="brand-mark" style={{ background: "linear-gradient(135deg,#38e0f3,#10d981)", color: "#001112" }}>Z</div>
-          <div><div className="brand-title">Z <span style={{ color: "#38e0f3" }}>⌁</span> LIFE</div><div className="brand-subtitle">SERVICE BUSINESS OS</div></div>
+          <div>
+            <div className="brand-title" style={{ display: "flex", alignItems: "center", gap: 6 }}><span>Z</span><ZLifeHeartbeat width={32} height={12} /><span>LIFE</span></div>
+            <div className="brand-subtitle">SERVICE BUSINESS OS</div>
+          </div>
         </div>
         <div className="inline-actions">
           <Link className="button" href="/operate">Business home</Link>
