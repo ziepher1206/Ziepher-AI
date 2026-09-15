@@ -22,6 +22,22 @@ function formatWhen(value: string | null) {
   }).format(new Date(value));
 }
 
+function repeatLabel(metadata: unknown) {
+  if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) return null;
+  const repeat = (metadata as Record<string, unknown>).repeat;
+  if (repeat === "daily") return "Repeats daily";
+  if (repeat === "weekly") return "Repeats weekly";
+  if (repeat === "monthly") return "Repeats monthly";
+  if (repeat === "yearly") return "Repeats yearly";
+  return null;
+}
+
+function isOverdue(value: string | null) {
+  if (!value) return false;
+  const parsed = new Date(value);
+  return !Number.isNaN(parsed.getTime()) && parsed.getTime() < Date.now();
+}
+
 const card: React.CSSProperties = {
   border: "1px solid rgba(78,234,221,.24)",
   borderRadius: 18,
@@ -50,7 +66,7 @@ export default async function TodayPage() {
     supabase.from("home_maintenance_items").select("id", { count: "exact", head: true }).eq("workspace_id", workspaceId).lte("next_due_at", next24Hours),
     supabase
       .from("zlife_daily_items")
-      .select("id,source_module,item_kind,title,detail,priority,starts_at,due_at,action_href")
+      .select("id,source_module,item_kind,title,detail,priority,starts_at,due_at,action_href,metadata")
       .eq("workspace_id", workspaceId)
       .eq("status", "open")
       .order("due_at", { ascending: true, nullsFirst: false })
@@ -66,6 +82,8 @@ export default async function TodayPage() {
   const homeReady = !tasks.error && !maintenance.error;
   const dailyStreamReady = !dailyItems.error;
   const unifiedItems = dailyItems.data ?? [];
+  const overdueDailyItems = unifiedItems.filter((item) => isOverdue(item.due_at || item.starts_at)).length;
+  const urgentDailyItems = unifiedItems.filter((item) => item.priority === "urgent" || item.priority === "high").length;
 
   const rows = [
     { label: "Business", value: businessReady ? `${leads.count ?? 0} new leads` : "Not connected", href: "/operate", ready: businessReady },
@@ -85,8 +103,8 @@ export default async function TodayPage() {
   const summaryCards = [
     { value: businessReady ? String(leads.count ?? 0) : "—", label: "New leads", detail: businessReady ? "Business" : "Not connected" },
     { value: businessReady ? String(appointments.count ?? 0) : "—", label: "Next 24 hours", detail: businessReady ? "Appointments" : "Not connected" },
-    { value: homeReady ? String(tasks.count ?? 0) : "—", label: "Open home tasks", detail: homeReady ? "Home & Family" : "Not connected" },
-    { value: homeReady ? String(maintenance.count ?? 0) : "—", label: "Maintenance due", detail: homeReady ? "Next 24 hours" : "Not connected" },
+    { value: dailyStreamReady ? String(overdueDailyItems) : "—", label: "Overdue", detail: dailyStreamReady ? "Across My Day" : "Daily stream not connected" },
+    { value: dailyStreamReady ? String(urgentDailyItems) : "—", label: "Priority", detail: dailyStreamReady ? "High or urgent" : "Daily stream not connected" },
     { value: businessReady ? String(invoices.count ?? 0) : "—", label: "Overdue payments", detail: businessReady ? "Business invoices" : "Not connected" }
   ];
 
@@ -118,33 +136,47 @@ export default async function TodayPage() {
           <section style={{ ...card, marginTop: 16, padding: 22 }}>
             <div style={{ marginBottom: 16 }}><p className="panel-label" style={{ color: "#7fffd4" }}>Unified daily stream</p><h2 style={{ margin: "4px 0 5px" }}>Coming up across connected modules</h2><p style={{ margin: 0, color: "#789b97", fontSize: 13 }}>Modules keep their own full records. My Day only receives the small amount of context needed to surface what deserves attention and route you back to the source.</p></div>
             <div style={{ display: "grid", gap: 10 }}>
-              {unifiedItems.map((item) => (
-                <article key={item.id} style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) auto", gap: 14, padding: 14, border: `1px solid ${item.priority === "urgent" || item.priority === "high" ? "rgba(255,213,106,.26)" : "rgba(127,255,212,.14)"}`, borderRadius: 14, background: "rgba(255,255,255,.022)" }}>
-                  <Link href={item.action_href || "/assistant"} style={{ minWidth: 0, color: "inherit", textDecoration: "none" }}>
-                    <div style={{ display: "flex", flexWrap: "wrap", gap: 7, marginBottom: 7 }}><span className="status-pill" style={{ color: "#7fffd4" }}>{item.item_kind.replaceAll("_", " ")}</span><span className="status-pill">{item.source_module}</span>{item.priority !== "normal" ? <span className="status-pill" style={{ color: item.priority === "urgent" ? "#ffd56a" : "#b8d2cf" }}>{item.priority}</span> : null}</div>
-                    <strong style={{ display: "block" }}>{item.title}</strong>{item.detail ? <p style={{ margin: "5px 0 0", color: "#8faaa7", fontSize: 13, lineHeight: 1.45 }}>{item.detail}</p> : null}
-                  </Link>
-                  <div style={{ display: "grid", alignContent: "start", justifyItems: "end", gap: 8 }}>
-                    <span style={{ color: "#9dbbb7", fontSize: 12, textAlign: "right", whiteSpace: "nowrap" }}>{formatWhen(item.due_at || item.starts_at)}</span>
-                    {item.source_module === "zlife_core" ? (
-                      <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "flex-end", gap: 5 }}>
-                        <form action={postponeDailyItemAction}>
-                          <input type="hidden" name="dailyItemId" value={item.id} />
-                          <button className="button" name="postpone" value="later_today" type="submit" style={{ padding: "6px 8px", fontSize: 10 }}>+3h</button>
-                        </form>
-                        <form action={postponeDailyItemAction}>
-                          <input type="hidden" name="dailyItemId" value={item.id} />
-                          <button className="button" name="postpone" value="tomorrow" type="submit" style={{ padding: "6px 8px", fontSize: 10 }}>Tomorrow</button>
-                        </form>
-                        <form action={completeDailyItemAction}>
-                          <input type="hidden" name="dailyItemId" value={item.id} />
-                          <button className="button" type="submit" style={{ padding: "6px 9px", fontSize: 10 }}>Done</button>
-                        </form>
+              {unifiedItems.map((item) => {
+                const overdue = isOverdue(item.due_at || item.starts_at);
+                const repeat = repeatLabel(item.metadata);
+                return (
+                  <article key={item.id} style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) auto", gap: 14, padding: 14, border: `1px solid ${overdue ? "rgba(255,130,130,.38)" : item.priority === "urgent" || item.priority === "high" ? "rgba(255,213,106,.26)" : "rgba(127,255,212,.14)"}`, borderRadius: 14, background: overdue ? "rgba(255,90,90,.035)" : "rgba(255,255,255,.022)" }}>
+                    <Link href={item.action_href || "/assistant"} style={{ minWidth: 0, color: "inherit", textDecoration: "none" }}>
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: 7, marginBottom: 7 }}>
+                        <span className="status-pill" style={{ color: "#7fffd4" }}>{item.item_kind.replaceAll("_", " ")}</span>
+                        <span className="status-pill">{item.source_module}</span>
+                        {item.priority !== "normal" ? <span className="status-pill" style={{ color: item.priority === "urgent" ? "#ffd56a" : "#b8d2cf" }}>{item.priority}</span> : null}
+                        {overdue ? <span className="status-pill" style={{ color: "#ff9a9a" }}>Overdue</span> : null}
+                        {repeat ? <span className="status-pill" style={{ color: "#38e0f3" }}>{repeat}</span> : null}
                       </div>
-                    ) : <small style={{ color: "#789b97", fontSize: 10 }}>Open source to reschedule or complete</small>}
-                  </div>
-                </article>
-              ))}
+                      <strong style={{ display: "block" }}>{item.title}</strong>{item.detail ? <p style={{ margin: "5px 0 0", color: "#8faaa7", fontSize: 13, lineHeight: 1.45 }}>{item.detail}</p> : null}
+                    </Link>
+                    <div style={{ display: "grid", alignContent: "start", justifyItems: "end", gap: 8 }}>
+                      <span style={{ color: overdue ? "#ff9a9a" : "#9dbbb7", fontSize: 12, textAlign: "right", whiteSpace: "nowrap" }}>{formatWhen(item.due_at || item.starts_at)}</span>
+                      {item.source_module === "zlife_core" ? (
+                        <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "flex-end", gap: 5 }}>
+                          <form action={postponeDailyItemAction}>
+                            <input type="hidden" name="dailyItemId" value={item.id} />
+                            <button className="button" name="postpone" value="later_today" type="submit" style={{ padding: "6px 8px", fontSize: 10 }}>+3h</button>
+                          </form>
+                          <form action={postponeDailyItemAction}>
+                            <input type="hidden" name="dailyItemId" value={item.id} />
+                            <button className="button" name="postpone" value="tomorrow" type="submit" style={{ padding: "6px 8px", fontSize: 10 }}>Tomorrow</button>
+                          </form>
+                          <form action={postponeDailyItemAction}>
+                            <input type="hidden" name="dailyItemId" value={item.id} />
+                            <button className="button" name="postpone" value="next_week" type="submit" style={{ padding: "6px 8px", fontSize: 10 }}>Next week</button>
+                          </form>
+                          <form action={completeDailyItemAction}>
+                            <input type="hidden" name="dailyItemId" value={item.id} />
+                            <button className="button" type="submit" style={{ padding: "6px 9px", fontSize: 10 }}>Done</button>
+                          </form>
+                        </div>
+                      ) : <small style={{ color: "#789b97", fontSize: 10 }}>Open source to reschedule or complete</small>}
+                    </div>
+                  </article>
+                );
+              })}
             </div>
           </section>
         ) : null}
