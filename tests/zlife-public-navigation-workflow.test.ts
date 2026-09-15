@@ -50,11 +50,11 @@ describe("ZLife public multi-page navigation workflow", () => {
   it("turns the homepage into a concise gateway instead of an anchor-driven mega page", () => {
     const home = read("components/zlife-marketing-home.tsx");
     for (const oldAnchor of ["#team", "#modules", "#founder", "#vision"]) expect(home).not.toContain(oldAnchor);
-    expect(home).toContain('href="/ai-teams"');
-    expect(home).toContain('href="/modules"');
-    expect(home).toContain('href="/about"');
-    expect(home).toContain('href="/vision"');
-    expect(home).toContain('href="/community"');
+    for (const href of ["/ai-teams", "/modules", "/about", "/vision", "/community"]) {
+      expect(home).toContain(`href: "${href}"`);
+    }
+    expect(home).toContain("homeDestinations.map");
+    expect(home).toContain("href={item.href}");
   });
 
   it("supports module drill-down and a stable /modules fallback while preserving browser back", () => {
