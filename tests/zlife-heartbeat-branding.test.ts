@@ -19,6 +19,10 @@ function filesUnder(path: string): string[] {
   });
 }
 
+function read(path: string) {
+  return readFileSync(join(process.cwd(), path), "utf8");
+}
+
 describe("Z-Life heartbeat branding", () => {
   it("uses the ECG heartbeat instead of the legacy text pulse everywhere", () => {
     const offenders = roots
@@ -30,14 +34,37 @@ describe("Z-Life heartbeat branding", () => {
   });
 
   it("keeps one shared SVG heartbeat component", () => {
-    const heartbeat = readFileSync(join(process.cwd(), "components/zlife-heartbeat.tsx"), "utf8");
+    const heartbeat = read("components/zlife-heartbeat.tsx");
     expect(heartbeat).toContain('viewBox="0 0 64 24"');
     expect(heartbeat).toContain('d="M1 12h12l5-9 7 18 7-17 6 14 5-6h20"');
   });
 
   it("uses the shared heartbeat in the module hub brand lockup", () => {
-    const hub = readFileSync(join(process.cwd(), "app/modules/page.tsx"), "utf8");
+    const hub = read("app/modules/page.tsx");
     expect(hub).toContain('import { ZLifeHeartbeat } from "@/components/zlife-heartbeat"');
     expect(hub).toContain('<ZLifeHeartbeat width={34} height={13} />');
+  });
+
+  it("keeps the shared ECG heartbeat on major branded Z-Life surfaces", () => {
+    const brandedSurfaces = [
+      "components/zlife-public-shell.tsx",
+      "components/zlife-mobile-bottom-nav.tsx",
+      "app/modules/page.tsx",
+      "app/modules/[slug]/page.tsx",
+      "app/dashboard/page.tsx",
+      "app/dashboard/modules/page.tsx",
+      "app/assistant/page.tsx",
+      "app/operate/page.tsx",
+      "app/operate/setup/page.tsx",
+      "app/today/page.tsx",
+      "app/community/page.tsx",
+      "app/community/join/page.tsx",
+      "app/community/review/page.tsx",
+      "app/community/review/rereview/page.tsx",
+      "app/community/value/page.tsx"
+    ];
+
+    const missing = brandedSurfaces.filter((path) => !read(path).includes("ZLifeHeartbeat"));
+    expect(missing, `Shared heartbeat missing from: ${missing.join(", ")}`).toEqual([]);
   });
 });
