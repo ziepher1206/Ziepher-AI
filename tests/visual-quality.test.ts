@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { BuildArtifact } from "../lib/ai/build-types";
+import { validateGeneratedArtifact } from "../lib/runner/security";
 import { evaluateVisualQuality } from "../lib/runner/visual-quality";
 
 function artifact(
@@ -33,5 +34,12 @@ describe("zero-cost visual quality report", () => {
     const report = evaluateVisualQuality(artifact(html));
     expect(report.score).toBeGreaterThanOrEqual(90);
     expect(report.findings.length).toBeLessThanOrEqual(1);
+  });
+
+  it("attaches low visual quality findings without failing the build", () => {
+    const weak = artifact("<html><body><h1>Title</h1><p>Text only</p></body></html>");
+    const report = validateGeneratedArtifact(weak);
+    expect(report.score).toBeLessThan(85);
+    expect(weak.knownLimitations.some((item) => item.startsWith("Visual QA ("))).toBe(true);
   });
 });
