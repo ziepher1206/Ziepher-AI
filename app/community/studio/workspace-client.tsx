@@ -51,9 +51,11 @@ export default function StudioWorkspaceClient({ tasks, identity }: { tasks: Stud
   const [activeTaskId, setActiveTaskId] = useState<string | null>(identity?.activeTaskId ?? null);
   const [activeTaskState, setActiveTaskState] = useState(identity?.activeTaskState ?? "claimed");
   const [history, setHistory] = useState<HistoryItem[]>(identity?.history ?? []);
+  const [evidenceUrl, setEvidenceUrl] = useState("");
   const [syncState, setSyncState] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [claimState, setClaimState] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [submitState, setSubmitState] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const [submitMessage, setSubmitMessage] = useState("");
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -98,6 +100,8 @@ export default function StudioWorkspaceClient({ tasks, identity }: { tasks: Stud
   async function chooseTask(id: string) {
     setActiveTaskId(id);
     setActiveTaskState("claimed");
+    setEvidenceUrl("");
+    setSubmitMessage("");
     window.localStorage.setItem(TASK_KEY, id);
     setClaimState("idle");
     setSubmitState("idle");
@@ -134,11 +138,18 @@ export default function StudioWorkspaceClient({ tasks, identity }: { tasks: Stud
   }
 
   async function submitActiveTask() {
-    if (!identity || !activeTask) return;
+    if (!identity || !activeTask || !evidenceUrl.trim()) return;
     setSubmitState("saving");
+    setSubmitMessage("");
     try {
-      const response = await fetch("/api/community/task-submit", { method: "POST" });
+      const response = await fetch("/api/community/task-submit", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ evidenceUrl }),
+      });
+      const payload = await response.json().catch(() => null) as { error?: string; evidence?: { kind?: string; number?: number; state?: string } } | null;
       if (!response.ok) {
+        setSubmitMessage(payload?.error ?? "ZLife could not verify that GitHub evidence.");
         setSubmitState("error");
         return;
       }
@@ -146,8 +157,11 @@ export default function StudioWorkspaceClient({ tasks, identity }: { tasks: Stud
       setHistory((current) => current.map((item, index) => index === 0 || item.title === activeTask.title
         ? { ...item, state: "submitted", updatedAt: new Date().toISOString() }
         : item));
+      const evidenceLabel = payload?.evidence?.kind === "pull_request" ? "PR" : "issue";
+      setSubmitMessage(`Verified ${evidenceLabel} #${payload?.evidence?.number ?? ""} and attached it to this submission.`);
       setSubmitState("saved");
     } catch {
+      setSubmitMessage("ZLife could not verify that GitHub evidence.");
       setSubmitState("error");
     }
   }
@@ -244,15 +258,33 @@ export default function StudioWorkspaceClient({ tasks, identity }: { tasks: Stud
             <div className="zlife-hero-actions">
               <a className="zlife-primary" href={activeTask.github} target="_blank" rel="noreferrer">Open issue #{activeTask.issueNumber} <span>→</span></a>
               <a className="zlife-secondary" href="https://github.com/ziepher1206/Ziepher-AI" target="_blank" rel="noreferrer">Open repository</a>
-              {identity && activeTaskState === "claimed" && (
-                <button className="zlife-secondary" type="button" onClick={() => void submitActiveTask()} disabled={submitState === "saving"}>
-                  {submitState === "saving" ? "Submitting…" : "Mark work submitted"}
-                </button>
-              )}
             </div>
-            {submitState === "saved" && <p className="zlife-community-empty">Submission recorded. It still has zero value until review verifies the work.</p>}
-            {submitState === "error" && <p className="zlife-community-empty">ZLife could not record the submission. Your existing task claim was not changed.</p>}
-            <p className="zlife-community-empty">A task claim or submission is not value credit. It remains unverified until useful work is reviewed and accepted. Assignment does not grant production credentials, customer data, billing access, or paid API access.</p>
+            {identity && activeTaskState === "claimed" && (
+              <div className="zlife-studio-profile-grid" style={{ marginTop: 16 }}>
+                <label>
+                  GitHub proof link
+                  <input
+                    type="url"
+                    value={evidenceUrl}
+                    onChange={(event) => {
+                      setEvidenceUrl(event.target.value.slice(0, 300));
+                      setSubmitState("idle");
+                      setSubmitMessage("");
+                    }}
+                    placeholder="https://github.com/ziepher1206/Ziepher-AI/pull/123"
+                  />
+                  <small>Paste the real Ziepher-AI pull request or issue that shows what you delivered.</small>
+                </label>
+                <div className="zlife-hero-actions" style={{ alignItems: "end" }}>
+                  <button className="zlife-secondary" type="button" onClick={() => void submitActiveTask()} disabled={submitState === "saving" || !evidenceUrl.trim()}>
+                    {submitState === "saving" ? "Verifying proof…" : "Verify proof & submit"}
+                  </button>
+                </div>
+              </div>
+            )}
+            {submitState === "saved" && <p className="zlife-community-empty">{submitMessage} Submission recorded, but it still has zero value until review verifies the work.</p>}
+            {submitState === "error" && <p className="zlife-community-empty">{submitMessage} Your existing task claim was not changed.</p>}
+            <p className="zlife-community-empty">A task claim or submission is not value credit. ZLife checks the GitHub evidence first, then review decides whether the work is actually useful and eligible for verified value. Assignment does not grant production credentials, customer data, billing access, or paid API access.</p>
           </>
         ) : (
           <p className="zlife-community-empty">Choose a task above to create your first Studio sandbox assignment.</p>
