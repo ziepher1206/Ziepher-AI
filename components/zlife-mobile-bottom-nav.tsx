@@ -4,15 +4,22 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import styles from "./zlife-mobile-bottom-nav.module.css";
 
+type NavItem = {
+  label: string;
+  href: string;
+  icon: string;
+  primary?: boolean;
+};
+
 const signedInPrefixes = ["/dashboard", "/today", "/assistant", "/operate", "/home", "/services", "/projects", "/settings"];
 
-const navItems = [
+const navItems: NavItem[] = [
   { label: "Home", href: "/dashboard", icon: "⌂" },
   { label: "My Day", href: "/today", icon: "☷" },
   { label: "Ask Z-Life", href: "/assistant", icon: "⌁", primary: true },
   { label: "Modules", href: "/dashboard/modules", icon: "▦" },
   { label: "More", href: "/settings", icon: "•••" }
-] as const;
+];
 
 export function ZLifeMobileBottomNav() {
   const pathname = usePathname();
