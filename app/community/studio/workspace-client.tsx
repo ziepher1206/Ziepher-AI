@@ -31,6 +31,15 @@ type ContributorIdentity = {
   history: HistoryItem[];
 };
 
+type RefreshedEvidence = {
+  kind: string;
+  number: number;
+  state: string;
+  title: string;
+  url: string;
+  reviewReady: boolean;
+};
+
 function loadJson<T>(key: string): T | null {
   try {
     const value = window.localStorage.getItem(key);
@@ -52,10 +61,13 @@ export default function StudioWorkspaceClient({ tasks, identity }: { tasks: Stud
   const [activeTaskState, setActiveTaskState] = useState(identity?.activeTaskState ?? "claimed");
   const [history, setHistory] = useState<HistoryItem[]>(identity?.history ?? []);
   const [evidenceUrl, setEvidenceUrl] = useState("");
+  const [evidenceStatus, setEvidenceStatus] = useState<RefreshedEvidence | null>(null);
   const [syncState, setSyncState] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [claimState, setClaimState] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [submitState, setSubmitState] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const [refreshState, setRefreshState] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [submitMessage, setSubmitMessage] = useState("");
+  const [refreshMessage, setRefreshMessage] = useState("");
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -101,10 +113,13 @@ export default function StudioWorkspaceClient({ tasks, identity }: { tasks: Stud
     setActiveTaskId(id);
     setActiveTaskState("claimed");
     setEvidenceUrl("");
+    setEvidenceStatus(null);
     setSubmitMessage("");
+    setRefreshMessage("");
     window.localStorage.setItem(TASK_KEY, id);
     setClaimState("idle");
     setSubmitState("idle");
+    setRefreshState("idle");
     if (!identity) return;
 
     setClaimState("saving");
@@ -147,13 +162,14 @@ export default function StudioWorkspaceClient({ tasks, identity }: { tasks: Stud
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ evidenceUrl }),
       });
-      const payload = await response.json().catch(() => null) as { error?: string; evidence?: { kind?: string; number?: number; state?: string } } | null;
+      const payload = await response.json().catch(() => null) as { error?: string; evidence?: RefreshedEvidence } | null;
       if (!response.ok) {
         setSubmitMessage(payload?.error ?? "ZLife could not verify that GitHub evidence.");
         setSubmitState("error");
         return;
       }
       setActiveTaskState("submitted");
+      setEvidenceStatus(payload?.evidence ?? null);
       setHistory((current) => current.map((item, index) => index === 0 || item.title === activeTask.title
         ? { ...item, state: "submitted", updatedAt: new Date().toISOString() }
         : item));
@@ -163,6 +179,34 @@ export default function StudioWorkspaceClient({ tasks, identity }: { tasks: Stud
     } catch {
       setSubmitMessage("ZLife could not verify that GitHub evidence.");
       setSubmitState("error");
+    }
+  }
+
+  async function refreshEvidence() {
+    if (!identity || !activeTask || (activeTaskState !== "submitted" && activeTaskState !== "under_review")) return;
+    setRefreshState("saving");
+    setRefreshMessage("");
+    try {
+      const response = await fetch("/api/community/task-evidence-refresh", { method: "POST" });
+      const payload = await response.json().catch(() => null) as { error?: string; state?: string; evidence?: RefreshedEvidence } | null;
+      if (!response.ok) {
+        setRefreshMessage(payload?.error ?? "ZLife could not refresh the GitHub evidence.");
+        setRefreshState("error");
+        return;
+      }
+      const nextState = payload?.state ?? activeTaskState;
+      setActiveTaskState(nextState);
+      setEvidenceStatus(payload?.evidence ?? null);
+      setHistory((current) => current.map((item, index) => index === 0 || item.title === activeTask.title
+        ? { ...item, state: nextState, updatedAt: new Date().toISOString() }
+        : item));
+      setRefreshMessage(payload?.evidence?.reviewReady
+        ? "GitHub shows this evidence is complete enough to enter review. Final verified value still requires maintainer review."
+        : "GitHub evidence refreshed. The work is still waiting for the linked PR or issue to reach a review-ready state.");
+      setRefreshState("saved");
+    } catch {
+      setRefreshMessage("ZLife could not refresh the GitHub evidence.");
+      setRefreshState("error");
     }
   }
 
@@ -258,6 +302,11 @@ export default function StudioWorkspaceClient({ tasks, identity }: { tasks: Stud
             <div className="zlife-hero-actions">
               <a className="zlife-primary" href={activeTask.github} target="_blank" rel="noreferrer">Open issue #{activeTask.issueNumber} <span>→</span></a>
               <a className="zlife-secondary" href="https://github.com/ziepher1206/Ziepher-AI" target="_blank" rel="noreferrer">Open repository</a>
+              {identity && (activeTaskState === "submitted" || activeTaskState === "under_review") && (
+                <button className="zlife-secondary" type="button" onClick={() => void refreshEvidence()} disabled={refreshState === "saving"}>
+                  {refreshState === "saving" ? "Checking GitHub…" : "Refresh GitHub status"}
+                </button>
+              )}
             </div>
             {identity && activeTaskState === "claimed" && (
               <div className="zlife-studio-profile-grid" style={{ marginTop: 16 }}>
@@ -282,8 +331,16 @@ export default function StudioWorkspaceClient({ tasks, identity }: { tasks: Stud
                 </div>
               </div>
             )}
+            {evidenceStatus && (
+              <p className="zlife-community-empty">
+                GitHub evidence: <strong>{evidenceStatus.kind === "pull_request" ? "PR" : "Issue"} #{evidenceStatus.number} · {labelState(evidenceStatus.state)}</strong>
+                {evidenceStatus.reviewReady ? " · ready for maintainer review" : ""}
+              </p>
+            )}
             {submitState === "saved" && <p className="zlife-community-empty">{submitMessage} Submission recorded, but it still has zero value until review verifies the work.</p>}
             {submitState === "error" && <p className="zlife-community-empty">{submitMessage} Your existing task claim was not changed.</p>}
+            {refreshState === "saved" && <p className="zlife-community-empty">{refreshMessage}</p>}
+            {refreshState === "error" && <p className="zlife-community-empty">{refreshMessage}</p>}
             <p className="zlife-community-empty">A task claim or submission is not value credit. ZLife checks the GitHub evidence first, then review decides whether the work is actually useful and eligible for verified value. Assignment does not grant production credentials, customer data, billing access, or paid API access.</p>
           </>
         ) : (
