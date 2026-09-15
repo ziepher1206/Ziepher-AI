@@ -10,7 +10,7 @@ describe("Z-Life My Day honesty", () => {
     const page = source("app/today/page.tsx");
     expect(page).toContain('businessReady ? String(leads.count ?? 0) : "—"');
     expect(page).toContain('homeReady ? String(tasks.count ?? 0) : "—"');
-    expect(page).toContain('value: "Not connected"').toBe(false);
+    expect(page).not.toContain('value: "0", label: "New leads"');
     expect(page).toContain('"Not connected"');
   });
 
