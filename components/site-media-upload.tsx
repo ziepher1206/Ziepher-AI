@@ -157,20 +157,38 @@ export function SiteMediaUpload({
         <p className="panel-label">Project images</p>
         <h2 style={{ marginTop: 6 }}>Upload photos or design references</h2>
         <p className="auth-copy">
-          Add real business photos, graphics, screenshots, or mockups you want the builder to follow. Upload only files you own or are authorized to use.
+          Add real photos, graphics, screenshots, logos, or mockups. Upload only files you own or are authorized to use.
         </p>
       </div>
 
-      <label>
-        How should Z-Life use these images?
-        <select value={purpose} onChange={(event) => setPurpose(event.target.value as "site_photo" | "design_reference")}>
-          <option value="site_photo">Use these photos in the website or app</option>
-          <option value="design_reference">Use these as design references to match</option>
-        </select>
-      </label>
+      <fieldset style={{ border: 0, padding: 0, margin: 0, display: "grid", gap: 10 }}>
+        <legend style={{ fontWeight: 800, marginBottom: 8 }}>What should Z-Life do with these images?</legend>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))", gap: 10 }}>
+          <button
+            type="button"
+            className={`button ${purpose === "site_photo" ? "primary" : ""}`}
+            aria-pressed={purpose === "site_photo"}
+            onClick={() => setPurpose("site_photo")}
+            style={{ textAlign: "left", display: "grid", gap: 5, padding: 14 }}
+          >
+            <strong>Use these images</strong>
+            <span style={{ fontSize: 12, opacity: .78, lineHeight: 1.4 }}>Actual photos, logo, graphics, products, team, work, or other images that should appear in the finished website/app.</span>
+          </button>
+          <button
+            type="button"
+            className={`button ${purpose === "design_reference" ? "primary" : ""}`}
+            aria-pressed={purpose === "design_reference"}
+            onClick={() => setPurpose("design_reference")}
+            style={{ textAlign: "left", display: "grid", gap: 5, padding: 14 }}
+          >
+            <strong>Match these images</strong>
+            <span style={{ fontSize: 12, opacity: .78, lineHeight: 1.4 }}>Screenshots, mockups, or inspiration Z-Life should visually study for layout, spacing, hierarchy, detail, and style.</span>
+          </button>
+        </div>
+      </fieldset>
 
       <label>
-        Images
+        Choose images
         <input
           ref={inputRef}
           type="file"
@@ -182,8 +200,20 @@ export function SiteMediaUpload({
       </label>
 
       {selectedFiles.length ? (
-        <div className="auth-message">
-          {selectedFiles.length} selected · {bytesToMb(totalBytes).toFixed(1)} MB total · about ${estimatedStorageCost(totalBytes).toFixed(4)}/month in storage if the account is already above its included storage quota.
+        <div className="auth-message" style={{ display: "grid", gap: 8 }}>
+          <strong>{selectedFiles.length} selected · {bytesToMb(totalBytes).toFixed(1)} MB total</strong>
+          <span>
+            These will be treated as {purpose === "site_photo" ? "images to use in the finished project" : "visual references to match"}.
+          </span>
+          <div style={{ display: "grid", gap: 3 }}>
+            {selectedFiles.slice(0, 5).map((file) => (
+              <small key={`${file.name}-${file.size}`} style={{ overflowWrap: "anywhere" }}>{file.name} · {bytesToMb(file.size).toFixed(1)} MB</small>
+            ))}
+            {selectedFiles.length > 5 ? <small>+ {selectedFiles.length - 5} more image{selectedFiles.length - 5 === 1 ? "" : "s"}</small> : null}
+          </div>
+          <small>
+            Estimated storage after the included provider quota: about ${estimatedStorageCost(totalBytes).toFixed(4)}/month.
+          </small>
         </div>
       ) : null}
 
