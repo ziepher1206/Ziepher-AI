@@ -31,7 +31,7 @@ describe("guided builder progress", () => {
     }
   });
 
-  it("does not add publishing or provider actions", () => {
+  it("stays navigation-only and zero-cost", () => {
     const progress = read("components/builder-progress.tsx");
     expect(progress).not.toContain("fetch(");
     expect(progress).not.toContain("OPENAI_API_KEY");
