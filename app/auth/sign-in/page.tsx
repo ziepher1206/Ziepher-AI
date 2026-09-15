@@ -33,7 +33,7 @@ export default async function SignInPage() {
   const {
     data: { user }
   } = await supabase.auth.getUser();
-  if (user) redirect("/");
+  if (user) redirect("/dashboard");
 
   return (
     <main className="auth-page">
